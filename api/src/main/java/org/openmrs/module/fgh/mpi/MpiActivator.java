@@ -18,33 +18,19 @@ public class MpiActivator extends BaseModuleActivator {
 	private static final Logger log = LoggerFactory.getLogger(MpiActivator.class);
 	
 	/**
-	 * @see BaseModuleActivator#contextRefreshed()
+	 * @see BaseModuleActivator#started()
 	 */
 	@Override
-	public void contextRefreshed() {
-		log.info("Starting OpenMRS debezium engine after context refresh");
-		
-		DebeziumEngineManager.start();
+	public void started() {
+		log.info("Mpi module started");
 	}
 	
 	/**
-	 * @see BaseModuleActivator#willRefreshContext()
+	 * @see BaseModuleActivator#stopped()
 	 */
 	@Override
-	public void willRefreshContext() {
-		log.info("Stopping OpenMRS debezium engine before context refresh");
-		
-		DebeziumEngineManager.stop();
-	}
-	
-	/**
-	 * @see BaseModuleActivator#willStop()
-	 */
-	@Override
-	public void willStop() {
-		log.info("Stopping OpenMRS debezium engine before MPI module is stopped");
-		
-		DebeziumEngineManager.stop();
+	public void stopped() {
+		log.info("Mpi module stopped");
 	}
 	
 }
