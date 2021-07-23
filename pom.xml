@@ -9,7 +9,7 @@
     <artifactId>mpi</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>Debezium Module</name>
+    <name>MPI Module</name>
     <description>
         Provides a mechanism to integrate OpenMRS with OpenCR, the module monitors low level operations in an OpenMRS
         database i.e. inserts, updates and deletes in order to be able to create or update a patient's record in OpenCR.
@@ -45,7 +45,6 @@
         <openmrsPlatformVersion>2.3.0</openmrsPlatformVersion>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <debeziumVersion>1.0.0-SNAPSHOT</debeziumVersion>
-        <testContainersVersion>1.15.3</testContainersVersion>
     </properties>
 
     <dependencyManagement>
@@ -78,12 +77,6 @@
                 <type>pom</type>
                 <scope>test</scope>
             </dependency>
-            <dependency>
-                <groupId>org.testcontainers</groupId>
-                <artifactId>mysql</artifactId>
-                <version>${testContainersVersion}</version>
-                <scope>test</scope>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -104,6 +97,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.8.1</version>
                     <configuration>
                         <target>${javaCompilerVersion}</target>
                         <source>${javaCompilerVersion}</source>
@@ -127,15 +121,6 @@
                     <configuration>
                         <tagNameFormat>@{project.version}</tagNameFormat>
                         <arguments>-Dmaven.javadoc.skip=true</arguments>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.8.1</version>
-                    <configuration>
-                        <source>1.8</source>
-                        <target>1.8</target>
                     </configuration>
                 </plugin>
             </plugins>
