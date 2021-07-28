@@ -22,7 +22,7 @@ public class MpiActivator extends BaseModuleActivator {
 	 */
 	@Override
 	public void started() {
-		log.info("Mpi module started");
+		log.info("MPI module started");
 	}
 	
 	/**
@@ -30,7 +30,7 @@ public class MpiActivator extends BaseModuleActivator {
 	 */
 	@Override
 	public void stopped() {
-		log.info("Mpi module stopped");
+		log.info("MPI module stopped");
 	}
 	
 }
