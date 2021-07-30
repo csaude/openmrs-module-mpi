@@ -67,39 +67,14 @@ public class MpiIntegrationProcessor {
 	
 	private ObjectMapper mapper = new ObjectMapper();
 	
-	public void process(Integer patientId) throws Exception {
-		log.info("Processing patient with id -> " + patientId);
-		
-		//Add variable to check for errors inside the daemon thread
-		final AtomicReference<Patient> patientRef = new AtomicReference();
-		final AtomicReference<List<PatientIdentifier>> patientIdsRef = new AtomicReference();
-		final AtomicReference<Set<PersonName>> namesRef = new AtomicReference();
-		
-		Daemon.runInDaemonThreadAndWait(() -> {
-			log.info("Looking up patient with id: " + patientId);
-			Patient p = Context.getPatientService().getPatient(patientId);
-			if (p != null) {
-				patientRef.set(p);
-				patientIdsRef.set(p.getActiveIdentifiers());
-				namesRef.set(p.getNames());
-				log.info("Found patient with id: " + patientId);
-			} else {
-				log.info("No patient found with id: " + patientId);
-			}
-			
-		}, DaemonTokenHolder.getToken());
-		
-		if (patientRef.get() == null) {
-			return;
-		}
-		
-		Patient patient = patientRef.get();
+	public void process(Patient patient) throws Exception {
+		log.info("Processing patient -> " + patient);
 		
 		Map<String, Object> fhirRes = new HashMap();
 		fhirRes.put(FIELD_RESOURCE_TYPE, "Patient");
 		
 		//TODO Add all identifiers
-		List<Map<String, Object>> identifiers = new ArrayList(patientIdsRef.get().size());
+		List<Map<String, Object>> identifiers = new ArrayList(patient.getActiveIdentifiers().size());
 		Map<String, Object> identifier = new HashMap();
 		identifier.put(FIELD_SYSTEM, SYSTEM_SOURCE_ID);
 		identifier.put(FIELD_VALUE, patient.getUuid());
@@ -107,8 +82,8 @@ public class MpiIntegrationProcessor {
 		fhirRes.put(FIELD_IDENTIFIER, identifiers);
 		fhirRes.put(FIELD_ACTIVE, !patient.getVoided());
 		
-		List<Map<String, Object>> names = new ArrayList(namesRef.get().size());
-		namesRef.get().stream().filter(name -> !name.getVoided()).forEach(name -> {
+		List<Map<String, Object>> names = new ArrayList(patient.getNames().size());
+		patient.getNames().stream().filter(name -> !name.getVoided()).forEach(name -> {
 			Map<String, Object> nameRes = new HashMap();
 			if (StringUtils.isNotBlank(name.getPrefix())) {
 				nameRes.put(FIELD_PREFIX, name.getPrefix());
@@ -144,7 +119,7 @@ public class MpiIntegrationProcessor {
 			fhirRes.put(FIELD_BIRTHDATE, DATE_FORMATTER.format(patient.getBirthdate()));
 		}
 		
-		//TODO add death info, address, relationships
+		//TODO add death info and addresses
 		
 		//TODO Add person attributes, user a GP to list attribute types to include
 		

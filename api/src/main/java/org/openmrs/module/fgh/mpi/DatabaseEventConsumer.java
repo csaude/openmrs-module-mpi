@@ -18,7 +18,11 @@ public class DatabaseEventConsumer implements Consumer<DatabaseEvent> {
 	
 	@Autowired
 	@Qualifier("patientEventHandler")
-	private PatientEventHandler patientHandler;
+	private BaseEventHandler patientHandler;
+	
+	@Autowired
+	@Qualifier("personEventHandler")
+	private BaseEventHandler personHandler;
 	
 	@Override
 	public void accept(DatabaseEvent event) {
@@ -26,7 +30,8 @@ public class DatabaseEventConsumer implements Consumer<DatabaseEvent> {
 		
 		try {
 			switch (event.getTableName()) {
-				//case "person":
+				case "person":
+					personHandler.handle(event);
 				case "patient":
 					patientHandler.handle(event);
 			}
