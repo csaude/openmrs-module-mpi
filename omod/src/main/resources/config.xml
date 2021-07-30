@@ -22,7 +22,30 @@
     </require_modules>
     
     <!-- Global properties -->
-
+    <globalProperty>
+        <property>${project.parent.artifactId}.server.base.url</property>
+        <description>
+            Base server URL for OpenCR e.g. https://localhost:3000
+        </description>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.keystore.path</property>
+        <description>
+            Path to the keystore containing the client certificate to use to authenticate with OpenCR
+        </description>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.keystore.password</property>
+        <description>
+            Password for the keystore containing the client certificate to use to authenticate with OpenCR
+        </description>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.keystore.type</property>
+        <description>
+            The type for the keystore containing the client certificate to use to authenticate with OpenCR
+        </description>
+    </globalProperty>
 
 </module>
 

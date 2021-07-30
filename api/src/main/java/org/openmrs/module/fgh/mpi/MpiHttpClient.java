@@ -1,5 +1,10 @@
 package org.openmrs.module.fgh.mpi;
 
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PASS;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PATH;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_TYPE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_BASE_URL;
+
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -29,33 +34,62 @@ public class MpiHttpClient {
 	
 	private static final Logger log = LoggerFactory.getLogger(MpiHttpClient.class);
 	
+	private SSLContext sslContext;
+	
 	public void submitPatient(String patientData) throws Exception {
 		if (log.isDebugEnabled()) {
 			log.debug("Received request to submit patient to MPI");
 		}
 		
 		AdministrationService adminService = Context.getAdministrationService();
-		String keyStorePath = adminService.getGlobalProperty(MpiConstants.GP_KEYSTORE_PATH);
-		String keyStorePass = adminService.getGlobalProperty(MpiConstants.GP_KEYSTORE_PASS);
-		String keyStoreType = adminService.getGlobalProperty(MpiConstants.GP_KEYSTORE_TYPE);
-		char[] keyStorePassArray = null;
-		if (StringUtils.isBlank(keyStorePass)) {
-			keyStorePassArray = keyStorePass.toCharArray();
+		
+		synchronized (this) {
+			if (sslContext == null) {
+				log.info("Setting up SSL context using configured client certificate");
+				
+				String keyStorePath = adminService.getGlobalProperty(GP_KEYSTORE_PATH);
+				if (StringUtils.isBlank(keyStorePath)) {
+					throw new APIException(GP_KEYSTORE_PATH + " global property value is not set");
+				}
+				
+				String keyStorePass = adminService.getGlobalProperty(GP_KEYSTORE_PASS);
+				char[] keyStorePassArray = "".toCharArray();
+				if (keyStorePass != null) {
+					keyStorePassArray = keyStorePass.toCharArray();
+				}
+				
+				String keyStoreType = adminService.getGlobalProperty(GP_KEYSTORE_TYPE);
+				if (StringUtils.isBlank(keyStoreType)) {
+					throw new APIException(GP_KEYSTORE_TYPE + " global property value is not set");
+				}
+				
+				log.info("Setting up SSL context");
+				log.info("Keystore path: " + keyStorePath);
+				log.info("Keystore Type: " + keyStoreType);
+				
+				KeyStore ks = KeyStore.getInstance(keyStoreType);
+				ks.load(new FileInputStream(keyStorePath), keyStorePassArray);
+				
+				KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+				kmf.init(ks, keyStorePassArray);
+				sslContext = SSLContext.getInstance("TLSv1.2");
+				sslContext.init(kmf.getKeyManagers(), null, new SecureRandom());
+			}
 		}
 		
-		KeyStore ks = KeyStore.getInstance(keyStoreType);
-		ks.load(new FileInputStream(keyStorePath), keyStorePassArray);
+		String serverBaseUrl = adminService.getGlobalProperty(GP_MPI_BASE_URL);
+		if (StringUtils.isBlank(serverBaseUrl)) {
+			throw new APIException(GP_MPI_BASE_URL + " global property value is not set");
+		}
 		
-		KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
-		kmf.init(ks, keyStorePassArray);
-		SSLContext sc = SSLContext.getInstance("TLSv1.2");
-		sc.init(kmf.getKeyManagers(), null, new SecureRandom());
+		if (log.isDebugEnabled()) {
+			log.debug("OpenCR base server URL: " + serverBaseUrl);
+		}
 		
-		String serverBaseUrl = adminService.getGlobalProperty(MpiConstants.GP_MPI_BASE_URL);
 		HttpsURLConnection connection = (HttpsURLConnection) new URL(serverBaseUrl + "/fhir/Patient").openConnection();
 		
 		try {
-			connection.setSSLSocketFactory(sc.getSocketFactory());
+			connection.setSSLSocketFactory(sslContext.getSocketFactory());
 			connection.setRequestMethod("POST");
 			connection.setRequestProperty("Content-Type", "application/json");
 			connection.setDoInput(true);
