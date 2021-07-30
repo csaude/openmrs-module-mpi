@@ -24,10 +24,6 @@
             <groupId>org.openmrs.module</groupId>
             <artifactId>debezium-api</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-        </dependency>
 
         <!-- Test dependencies -->
         <dependency>

@@ -62,11 +62,6 @@
                 <scope>provided</scope>
                 <version>${debeziumVersion}</version>
             </dependency>
-            <dependency>
-                <groupId>org.apache.httpcomponents</groupId>
-                <artifactId>httpclient</artifactId>
-                <version>${httpclientVersion}</version>
-            </dependency>
             
             <!-- Test dependencies -->
             <dependency>

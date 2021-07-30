@@ -28,7 +28,7 @@ public class PatientEventHandler {
 		if (event.getOperation() == DatabaseOperation.CREATE || event.getOperation() == DatabaseOperation.UPDATE
 		        || event.getOperation() == DatabaseOperation.READ) {
 			
-			processor.process(event.getNewState().get("uuid").toString());
+			processor.process(Integer.valueOf(event.getPrimaryKeyId().toString()));
 		} else {
 			log.debug("Ignoring event for deleted patient -> " + event);
 		}

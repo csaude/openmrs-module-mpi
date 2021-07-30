@@ -26,13 +26,13 @@ public class DatabaseEventConsumer implements Consumer<DatabaseEvent> {
 		
 		try {
 			switch (event.getTableName()) {
-				case "person":
+				//case "person":
 				case "patient":
 					patientHandler.handle(event);
 			}
 		}
 		catch (Exception e) {
-			throw new APIException("An error occurred while processing database event -> " + event);
+			throw new APIException("An error occurred while processing database event: " + event, e);
 		}
 		
 	}

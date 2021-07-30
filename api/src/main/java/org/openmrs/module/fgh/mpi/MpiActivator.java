@@ -10,10 +10,12 @@
 package org.openmrs.module.fgh.mpi;
 
 import org.openmrs.module.BaseModuleActivator;
+import org.openmrs.module.DaemonToken;
+import org.openmrs.module.DaemonTokenAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MpiActivator extends BaseModuleActivator {
+public class MpiActivator extends BaseModuleActivator implements DaemonTokenAware {
 	
 	private static final Logger log = LoggerFactory.getLogger(MpiActivator.class);
 	
@@ -31,6 +33,11 @@ public class MpiActivator extends BaseModuleActivator {
 	@Override
 	public void stopped() {
 		log.info("MPI module stopped");
+	}
+	
+	@Override
+	public void setDaemonToken(DaemonToken daemonToken) {
+		DaemonTokenHolder.setToken(daemonToken);
 	}
 	
 }
