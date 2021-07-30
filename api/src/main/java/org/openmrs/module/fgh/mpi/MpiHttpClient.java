@@ -31,7 +31,7 @@ public class MpiHttpClient {
 	
 	public void submitPatient(String patientData) throws Exception {
 		if (log.isDebugEnabled()) {
-			log.debug("In MPI Http Client");
+			log.debug("Received request to submit patient to MPI");
 		}
 		
 		AdministrationService adminService = Context.getAdministrationService();
