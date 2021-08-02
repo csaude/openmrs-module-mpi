@@ -17,13 +17,17 @@ public class PersonEventHandler extends BaseEventHandler {
 	private static final Logger log = LoggerFactory.getLogger(PersonEventHandler.class);
 	
 	@Override
-	public Patient getPatient(DatabaseEvent event) throws Exception {
+	public Patient getPatient(DatabaseEvent event) {
 		if (log.isDebugEnabled()) {
 			log.debug("Handling person event -> " + event);
 		}
 		
 		if (event.getOperation() == DatabaseOperation.UPDATE || event.getOperation() == DatabaseOperation.READ) {
 			Integer personId = Integer.valueOf(event.getPrimaryKeyId().toString());
+			if (log.isDebugEnabled()) {
+				log.debug("Person Id: " + personId);
+			}
+			
 			Patient patient = Context.getPatientService().getPatient(personId);
 			if (patient != null) {
 				return patient;

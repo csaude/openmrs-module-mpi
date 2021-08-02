@@ -44,6 +44,7 @@ public class MpiHttpClient {
 		AdministrationService adminService = Context.getAdministrationService();
 		
 		synchronized (this) {
+			//Add global property listener to rebuild the SSL context when the GP values change
 			if (sslContext == null) {
 				log.info("Setting up SSL context using configured client certificate");
 				
@@ -63,7 +64,6 @@ public class MpiHttpClient {
 					throw new APIException(GP_KEYSTORE_TYPE + " global property value is not set");
 				}
 				
-				log.info("Setting up SSL context");
 				log.info("Keystore path: " + keyStorePath);
 				log.info("Keystore Type: " + keyStoreType);
 				

@@ -24,6 +24,10 @@ public class DatabaseEventConsumer implements Consumer<DatabaseEvent> {
 	@Qualifier("personEventHandler")
 	private BaseEventHandler personHandler;
 	
+	@Autowired
+	@Qualifier("associationEventHandler")
+	private BaseEventHandler associationHandler;
+	
 	@Override
 	public void accept(DatabaseEvent event) {
 		log.info("Received database event -> " + event);
@@ -32,8 +36,15 @@ public class DatabaseEventConsumer implements Consumer<DatabaseEvent> {
 			switch (event.getTableName()) {
 				case "person":
 					personHandler.handle(event);
+					break;
 				case "patient":
 					patientHandler.handle(event);
+					break;
+				case "person_name":
+				case "person_address":
+				case "patient_identifier":
+					associationHandler.handle(event);
+					break;
 			}
 		}
 		catch (Exception e) {

@@ -6,16 +6,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.lang3.StringUtils;
 import org.openmrs.Patient;
-import org.openmrs.PatientIdentifier;
-import org.openmrs.PersonName;
 import org.openmrs.api.APIException;
-import org.openmrs.api.context.Context;
-import org.openmrs.api.context.Daemon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -124,6 +118,8 @@ public class MpiIntegrationProcessor {
 		//TODO Add person attributes, user a GP to list attribute types to include
 		
 		mpiHttpClient.submitPatient(mapper.writeValueAsString(fhirRes));
+		
+		//TODO Add the MPI id to list of the patient's identifiers
 	}
 	
 }

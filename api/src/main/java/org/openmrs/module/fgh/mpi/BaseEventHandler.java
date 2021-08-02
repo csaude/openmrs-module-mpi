@@ -61,6 +61,6 @@ public abstract class BaseEventHandler {
 	 * @return the Patient object
 	 * @throws Exception
 	 */
-	public abstract Patient getPatient(DatabaseEvent event) throws Exception;
+	public abstract Patient getPatient(DatabaseEvent event);
 	
 }
