@@ -38,6 +38,10 @@ public class MpiIntegrationProcessor {
 	
 	public final static String FIELD_BIRTHDATE = "birthDate";
 	
+	public final static String FIELD_DECEASED = "deceasedBoolean";
+	
+	public final static String FIELD_DECEASED_DATE = "deceasedDateTime";
+	
 	public final static String FIELD_SYSTEM = "system";
 	
 	public final static String FIELD_VALUE = "value";
@@ -48,13 +52,23 @@ public class MpiIntegrationProcessor {
 	
 	public final static String FIELD_GIVEN = "given";
 	
+	public final static String FIELD_ADDRESS = "address";
+	
 	public final static String FIELD_USE = "use";
+	
+	public final static String FIELD_LINE = "line";
+	
+	public final static String FIELD_CITY = "city";
 	
 	public final static String USE_OFFICIAL = "official";
 	
 	public final static String SYSTEM_SOURCE_ID = "http://openclientregistry.org/fhir/sourceid";
 	
-	public final static DateFormat DATE_FORMATTER = new SimpleDateFormat("yyyy-MM-dd");
+	public final static String SYSTEM_PREFIX = "urn:uuid:";
+	
+	public final static DateFormat BIRTH_DATE_FORMATTER = new SimpleDateFormat("yyyy-MM-dd");
+	
+	public final static DateFormat DEATH_DATE_FORMATTER = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
 	
 	@Autowired
 	private MpiHttpClient mpiHttpClient;
@@ -67,12 +81,19 @@ public class MpiIntegrationProcessor {
 		Map<String, Object> fhirRes = new HashMap();
 		fhirRes.put(FIELD_RESOURCE_TYPE, "Patient");
 		
-		//TODO Add all identifiers
-		List<Map<String, Object>> identifiers = new ArrayList(patient.getActiveIdentifiers().size());
-		Map<String, Object> identifier = new HashMap();
-		identifier.put(FIELD_SYSTEM, SYSTEM_SOURCE_ID);
-		identifier.put(FIELD_VALUE, patient.getUuid());
-		identifiers.add(identifier);
+		List<Map<String, Object>> identifiers = new ArrayList(patient.getActiveIdentifiers().size() + 1);
+		Map<String, Object> identifierRes = new HashMap();
+		identifierRes.put(FIELD_SYSTEM, SYSTEM_SOURCE_ID);
+		identifierRes.put(FIELD_VALUE, patient.getUuid());
+		identifiers.add(identifierRes);
+		
+		patient.getActiveIdentifiers().forEach(id -> {
+			Map<String, Object> idResource = new HashMap();
+			idResource.put(FIELD_SYSTEM, SYSTEM_PREFIX + id.getIdentifierType().getUuid());
+			idResource.put(FIELD_VALUE, id.getIdentifier());
+			identifiers.add(idResource);
+		});
+		
 		fhirRes.put(FIELD_IDENTIFIER, identifiers);
 		fhirRes.put(FIELD_ACTIVE, !patient.getVoided());
 		
@@ -110,12 +131,28 @@ public class MpiIntegrationProcessor {
 		}
 		
 		if (patient.getBirthdate() != null) {
-			fhirRes.put(FIELD_BIRTHDATE, DATE_FORMATTER.format(patient.getBirthdate()));
+			fhirRes.put(FIELD_BIRTHDATE, BIRTH_DATE_FORMATTER.format(patient.getBirthdate()));
 		}
 		
-		//TODO add death info and addresses
+		if (patient.getDead()) {
+			if (patient.getDeathDate() == null) {
+				fhirRes.put(FIELD_DECEASED, patient.getDead());
+			} else {
+				fhirRes.put(FIELD_DECEASED_DATE, DEATH_DATE_FORMATTER.format(patient.getDeathDate()));
+			}
+		}
 		
-		//TODO Add person attributes, user a GP to list attribute types to include
+		List<Map<String, Object>> addresses = new ArrayList(patient.getAddresses().size() + 1);
+		patient.getAddresses().stream().filter(address -> !address.getVoided()).forEach(address -> {
+			Map<String, Object> addressResource = new HashMap();
+			addressResource.put(FIELD_LINE, address.getAddress1());
+			addressResource.put(FIELD_CITY, address.getCityVillage());
+			addresses.add(addressResource);
+		});
+		
+		fhirRes.put(FIELD_ADDRESS, addresses);
+		
+		//TODO Add person attributes, add GPs to map attribute types to FHIR fields
 		
 		mpiHttpClient.submitPatient(mapper.writeValueAsString(fhirRes));
 		

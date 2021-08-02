@@ -46,8 +46,6 @@ public abstract class BaseEventHandler {
 			
 		}, DaemonTokenHolder.getToken());
 		
-		//TODO Skip event if the patient is currently in the ignore list or if it's a person/patient delete
-		
 		if (throwableRef.get() != null) {
 			throw new Exception("Error", throwableRef.get());
 		}
