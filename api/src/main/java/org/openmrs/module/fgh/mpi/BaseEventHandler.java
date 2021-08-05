@@ -3,6 +3,7 @@ package org.openmrs.module.fgh.mpi;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.openmrs.Patient;
+import org.openmrs.api.context.Context;
 import org.openmrs.api.context.Daemon;
 import org.openmrs.module.debezium.DatabaseEvent;
 import org.slf4j.Logger;
@@ -35,6 +36,9 @@ public abstract class BaseEventHandler {
 					log.info("No patient found");
 					return;
 				}
+				
+				//Always reload the entity to pick up any DB changes that are no in the hibernate cache
+				Context.refreshEntity(patientRef.get());
 				
 				log.info("Found patient: " + patientRef.get());
 				

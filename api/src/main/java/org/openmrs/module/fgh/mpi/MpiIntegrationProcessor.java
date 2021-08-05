@@ -128,6 +128,8 @@ public class MpiIntegrationProcessor {
 		
 		if (gender != null) {
 			fhirRes.put(FIELD_GENDER, gender);
+		} else {
+			fhirRes.put(FIELD_GENDER, null);
 		}
 		
 		if (patient.getBirthdate() != null) {
@@ -140,6 +142,9 @@ public class MpiIntegrationProcessor {
 			} else {
 				fhirRes.put(FIELD_DECEASED_DATE, DEATH_DATE_FORMATTER.format(patient.getDeathDate()));
 			}
+		} else {
+			fhirRes.put(FIELD_DECEASED, patient.getDead());
+			fhirRes.put(FIELD_DECEASED_DATE, null);
 		}
 		
 		List<Map<String, Object>> addresses = new ArrayList(patient.getAddresses().size() + 1);
