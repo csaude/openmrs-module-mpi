@@ -3,13 +3,15 @@ package org.openmrs.module.fgh.mpi;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
-import org.openmrs.Patient;
 import org.openmrs.api.APIException;
+import org.openmrs.api.AdministrationService;
+import org.openmrs.api.context.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,92 +68,143 @@ public class MpiIntegrationProcessor {
 	
 	public final static String SYSTEM_PREFIX = "urn:uuid:";
 	
-	public final static DateFormat BIRTH_DATE_FORMATTER = new SimpleDateFormat("yyyy-MM-dd");
+	public final static DateFormat DATETIME_FORMATTER = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
 	
-	public final static DateFormat DEATH_DATE_FORMATTER = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
+	public final static DateFormat MYSQL_DATETIME_FORMATTER = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	
+	public final static String ID_PLACEHOLDER = "{PATIENT_ID}";
+	
+	public final static String PATIENT_QUERY = "SELECT voided FROM patient WHERE patient_id = " + ID_PLACEHOLDER;
+	
+	public final static String PERSON_QUERY = "SELECT gender, birthdate, dead, death_date, uuid FROM person WHERE "
+	        + "person_id = " + ID_PLACEHOLDER;
+	
+	public final static String ID_QUERY = "SELECT i.identifier, t.uuid FROM patient_identifier i, "
+	        + "patient_identifier_type t WHERE i.identifier_type = t.patient_identifier_type_id AND i.patient_id " + "= "
+	        + ID_PLACEHOLDER + " AND i.voided = 0";
+	
+	public final static String NAME_QUERY = "SELECT prefix, given_name, middle_name, family_name FROM person_name WHERE "
+	        + "person_id = " + ID_PLACEHOLDER + " AND voided = 0";
+	
+	public final static String ADDRESS_QUERY = "SELECT address1, city_village FROM person_address WHERE person_id = "
+	        + ID_PLACEHOLDER + " AND voided = 0";
 	
 	@Autowired
 	private MpiHttpClient mpiHttpClient;
 	
 	private ObjectMapper mapper = new ObjectMapper();
 	
-	public void process(Patient patient) throws Exception {
-		log.info("Processing patient -> " + patient);
+	public void process(Integer patientId) throws Exception {
+		log.info("Processing patient with id -> " + patientId);
 		
 		Map<String, Object> fhirRes = new HashMap();
 		fhirRes.put(FIELD_RESOURCE_TYPE, "Patient");
 		
-		List<Map<String, Object>> identifiers = new ArrayList(patient.getActiveIdentifiers().size() + 1);
-		Map<String, Object> identifierRes = new HashMap();
-		identifierRes.put(FIELD_SYSTEM, SYSTEM_SOURCE_ID);
-		identifierRes.put(FIELD_VALUE, patient.getUuid());
-		identifiers.add(identifierRes);
+		String id = patientId.toString();
+		AdministrationService adminService = Context.getAdministrationService();
+		List<List<Object>> patient = adminService.executeSQL(PATIENT_QUERY.replace(ID_PLACEHOLDER, id), true);
+		if (patient.isEmpty()) {
+			log.info("No patient found with id: " + patientId);
+			return;
+		}
 		
-		patient.getActiveIdentifiers().forEach(id -> {
+		fhirRes.put(FIELD_ACTIVE, !Boolean.valueOf(patient.get(0).get(0).toString()));
+		
+		List<List<Object>> person = adminService.executeSQL(PERSON_QUERY.replace(ID_PLACEHOLDER, id), true);
+		if (person.isEmpty()) {
+			log.info("No person found with id: " + patientId);
+			return;
+		}
+		
+		String fhirGender = null;
+		String gender = person.get(0).get(0) != null ? person.get(0).get(0).toString() : null;
+		if ("M".equalsIgnoreCase(gender)) {
+			fhirGender = "male";
+		} else if ("F".equalsIgnoreCase(gender)) {
+			fhirGender = "female";
+		} else if ("O".equalsIgnoreCase(gender)) {
+			fhirGender = "other";
+		} else if (gender != null) {
+			throw new APIException("Don't know how to represent in fhir gender value: " + gender);
+		}
+		
+		fhirRes.put(FIELD_GENDER, fhirGender);
+		
+		String birthDate = person.get(0).get(1) != null ? person.get(0).get(1).toString() : null;
+		fhirRes.put(FIELD_BIRTHDATE, birthDate);
+		
+		String dead = person.get(0).get(2).toString();
+		if (Boolean.valueOf(dead)) {
+			String deathDateStr = person.get(0).get(3) != null ? person.get(0).get(3).toString() : null;
+			if (StringUtils.isBlank(deathDateStr)) {
+				fhirRes.put(FIELD_DECEASED, dead);
+			} else {
+				Date deathDate = MYSQL_DATETIME_FORMATTER.parse(deathDateStr);
+				fhirRes.put(FIELD_DECEASED_DATE, DATETIME_FORMATTER.format(deathDate));
+			}
+		} else {
+			fhirRes.put(FIELD_DECEASED, Boolean.valueOf(dead));
+			fhirRes.put(FIELD_DECEASED_DATE, null);
+		}
+		
+		List<List<Object>> idRows = adminService.executeSQL(ID_QUERY.replace(ID_PLACEHOLDER, id), true);
+		List<Map<String, Object>> identifiers = new ArrayList(idRows.size() + 1);
+		Map<String, Object> sourceIdRes = new HashMap();
+		sourceIdRes.put(FIELD_SYSTEM, SYSTEM_SOURCE_ID);
+		sourceIdRes.put(FIELD_VALUE, person.get(0).get(4));
+		identifiers.add(sourceIdRes);
+		
+		idRows.stream().forEach(idRow -> {
 			Map<String, Object> idResource = new HashMap();
-			idResource.put(FIELD_SYSTEM, SYSTEM_PREFIX + id.getIdentifierType().getUuid());
-			idResource.put(FIELD_VALUE, id.getIdentifier());
+			idResource.put(FIELD_SYSTEM, SYSTEM_PREFIX + idRow.get(1));
+			idResource.put(FIELD_VALUE, idRow.get(0));
 			identifiers.add(idResource);
 		});
 		
 		fhirRes.put(FIELD_IDENTIFIER, identifiers);
-		fhirRes.put(FIELD_ACTIVE, !patient.getVoided());
 		
-		List<Map<String, Object>> names = new ArrayList(patient.getNames().size());
-		patient.getNames().stream().filter(name -> !name.getVoided()).forEach(name -> {
+		List<List<Object>> nameRows = adminService.executeSQL(NAME_QUERY.replace(ID_PLACEHOLDER, id), true);
+		List<Map<String, Object>> names = new ArrayList(nameRows.size());
+		
+		nameRows.stream().forEach(nameRow -> {
 			Map<String, Object> nameRes = new HashMap();
-			if (StringUtils.isNotBlank(name.getPrefix())) {
-				nameRes.put(FIELD_PREFIX, name.getPrefix());
+			String prefix = nameRow.get(0) != null ? nameRow.get(0).toString() : null;
+			if (StringUtils.isNotBlank(prefix)) {
+				nameRes.put(FIELD_PREFIX, prefix);
 			}
-			nameRes.put(FIELD_FAMILY, name.getFamilyName());
+			
 			List<String> givenNames = new ArrayList(2);
-			givenNames.add(name.getGivenName());
-			if (StringUtils.isNotBlank(name.getMiddleName())) {
-				givenNames.add(name.getMiddleName());
+			String givenName = nameRow.get(1) != null ? nameRow.get(1).toString() : null;
+			if (StringUtils.isNotBlank(givenName)) {
+				givenNames.add(givenName);
 			}
+			
+			String middleName = nameRow.get(2) != null ? nameRow.get(2).toString() : null;
+			if (StringUtils.isNotBlank(middleName)) {
+				givenNames.add(middleName);
+			}
+			
 			nameRes.put(FIELD_GIVEN, givenNames);
+			
+			String familyName = nameRow.get(3) != null ? nameRow.get(3).toString() : null;
+			if (StringUtils.isNotBlank(familyName)) {
+				nameRes.put(FIELD_FAMILY, familyName);
+			}
+			
 			nameRes.put(FIELD_USE, USE_OFFICIAL);
+			
 			names.add(nameRes);
 		});
 		
 		fhirRes.put(FIELD_NAME, names);
-		String gender = null;
-		if ("M".equalsIgnoreCase(patient.getGender())) {
-			gender = "male";
-		} else if ("F".equalsIgnoreCase(patient.getGender())) {
-			gender = "female";
-		} else if ("O".equalsIgnoreCase(patient.getGender())) {
-			gender = "other";
-		} else if (patient.getGender() != null) {
-			throw new APIException("Don't know how to represent in fhir the gender: " + patient.getGender());
-		}
 		
-		if (gender != null) {
-			fhirRes.put(FIELD_GENDER, gender);
-		} else {
-			fhirRes.put(FIELD_GENDER, null);
-		}
-		
-		if (patient.getBirthdate() != null) {
-			fhirRes.put(FIELD_BIRTHDATE, BIRTH_DATE_FORMATTER.format(patient.getBirthdate()));
-		}
-		
-		if (patient.getDead()) {
-			if (patient.getDeathDate() == null) {
-				fhirRes.put(FIELD_DECEASED, patient.getDead());
-			} else {
-				fhirRes.put(FIELD_DECEASED_DATE, DEATH_DATE_FORMATTER.format(patient.getDeathDate()));
-			}
-		} else {
-			fhirRes.put(FIELD_DECEASED, patient.getDead());
-			fhirRes.put(FIELD_DECEASED_DATE, null);
-		}
-		
-		List<Map<String, Object>> addresses = new ArrayList(patient.getAddresses().size() + 1);
-		patient.getAddresses().stream().filter(address -> !address.getVoided()).forEach(address -> {
+		List<List<Object>> addressRows = adminService.executeSQL(ADDRESS_QUERY.replace(ID_PLACEHOLDER, id), true);
+		List<Map<String, Object>> addresses = new ArrayList(addressRows.size());
+		addressRows.stream().forEach(addressRow -> {
 			Map<String, Object> addressResource = new HashMap();
-			addressResource.put(FIELD_LINE, address.getAddress1());
-			addressResource.put(FIELD_CITY, address.getCityVillage());
+			addressResource.put(FIELD_LINE, addressRow.get(0));
+			addressResource.put(FIELD_CITY, addressRow.get(1));
+			
 			addresses.add(addressResource);
 		});
 		

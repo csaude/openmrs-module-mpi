@@ -1,7 +1,5 @@
 package org.openmrs.module.fgh.mpi;
 
-import org.openmrs.Patient;
-import org.openmrs.api.context.Context;
 import org.openmrs.module.debezium.DatabaseEvent;
 import org.openmrs.module.debezium.DatabaseOperation;
 import org.slf4j.Logger;
@@ -18,7 +16,7 @@ public class associationEventHandler extends BaseEventHandler {
 	private static final Logger log = LoggerFactory.getLogger(associationEventHandler.class);
 	
 	@Override
-	public Patient getPatient(DatabaseEvent event) {
+	public Integer getPatientId(DatabaseEvent event) {
 		final String tableName = event.getTableName();
 		if (log.isDebugEnabled()) {
 			log.debug("Handling " + tableName + " event -> " + event);
@@ -36,15 +34,6 @@ public class associationEventHandler extends BaseEventHandler {
 			log.debug("Patient Id: " + patientId);
 		}
 		
-		Patient patient = Context.getPatientService().getPatient(Integer.valueOf(patientId.toString()));
-		if (patient != null) {
-			return patient;
-		}
-		
-		if ((log.isDebugEnabled())) {
-			log.debug("Ignoring event with no associated patient record -> " + event);
-		}
-		
-		return null;
+		return Integer.valueOf(patientId.toString());
 	}
 }

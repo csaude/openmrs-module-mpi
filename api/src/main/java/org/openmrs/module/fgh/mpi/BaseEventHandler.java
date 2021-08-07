@@ -1,9 +1,8 @@
 package org.openmrs.module.fgh.mpi;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.openmrs.Patient;
-import org.openmrs.api.context.Context;
 import org.openmrs.api.context.Daemon;
 import org.openmrs.module.debezium.DatabaseEvent;
 import org.slf4j.Logger;
@@ -25,24 +24,21 @@ public abstract class BaseEventHandler {
 	public void handle(DatabaseEvent event) throws Exception {
 		
 		final AtomicReference<Throwable> throwableRef = new AtomicReference();
-		final AtomicReference<Patient> patientRef = new AtomicReference();
+		final AtomicInteger patientIdRef = new AtomicInteger();
 		
 		Daemon.runInDaemonThreadAndWait(() -> {
 			try {
-				log.info("Looking up patient associated to the event");
+				log.info("Looking up patient Id associated to the event");
 				
-				patientRef.set(getPatient(event));
-				if (patientRef.get() == null) {
-					log.info("No patient found");
+				patientIdRef.set(getPatientId(event));
+				if (patientIdRef.get() < 1) {
+					log.info("No patient id found");
 					return;
 				}
 				
-				//Always reload the entity to pick up any DB changes that are no in the hibernate cache
-				Context.refreshEntity(patientRef.get());
+				log.info("Found patient id: " + patientIdRef.get());
 				
-				log.info("Found patient: " + patientRef.get());
-				
-				processor.process(patientRef.get());
+				processor.process(patientIdRef.get());
 			}
 			catch (Throwable t) {
 				throwableRef.set(t);
@@ -57,12 +53,12 @@ public abstract class BaseEventHandler {
 	}
 	
 	/**
-	 * Retrieve the patient record from the specified event instance
+	 * Retrieve the patient id from the specified event instance
 	 * 
 	 * @param event DatabaseEvent object
-	 * @return the Patient object
+	 * @return the Patient Id
 	 * @throws Exception
 	 */
-	public abstract Patient getPatient(DatabaseEvent event);
+	public abstract Integer getPatientId(DatabaseEvent event);
 	
 }
