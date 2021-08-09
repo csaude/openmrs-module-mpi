@@ -17,12 +17,8 @@ public class DatabaseEventConsumer implements Consumer<DatabaseEvent> {
 	private static final Logger log = LoggerFactory.getLogger(DatabaseEventConsumer.class);
 	
 	@Autowired
-	@Qualifier("patientEventHandler")
+	@Qualifier("patientAndPersonEventHandler")
 	private BaseEventHandler patientHandler;
-	
-	@Autowired
-	@Qualifier("personEventHandler")
-	private BaseEventHandler personHandler;
 	
 	@Autowired
 	@Qualifier("associationEventHandler")
@@ -35,8 +31,6 @@ public class DatabaseEventConsumer implements Consumer<DatabaseEvent> {
 		try {
 			switch (event.getTableName()) {
 				case "person":
-					personHandler.handle(event);
-					break;
 				case "patient":
 					patientHandler.handle(event);
 					break;

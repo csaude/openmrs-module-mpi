@@ -6,17 +6,17 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
- * Handler for patient table events
+ * Handler for patient and person table events
  */
-@Component("patientEventHandler")
-public class PatientEventHandler extends BaseEventHandler {
+@Component("patientAndPersonEventHandler")
+public class PatientAndPersonEventHandler extends BaseEventHandler {
 	
-	private static final Logger log = LoggerFactory.getLogger(PatientEventHandler.class);
+	private static final Logger log = LoggerFactory.getLogger(PatientAndPersonEventHandler.class);
 	
 	@Override
 	public Integer getPatientId(DatabaseEvent event) {
 		if (log.isDebugEnabled()) {
-			log.debug("Handling patient event -> " + event);
+			log.debug("Handling " + event.getTableName() + " event -> " + event);
 		}
 		
 		Integer patientId = Integer.valueOf(event.getPrimaryKeyId().toString());

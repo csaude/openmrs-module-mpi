@@ -30,6 +30,8 @@ public class MpiIntegrationProcessor {
 	
 	public final static String FIELD_RESOURCE_TYPE = "resourceType";
 	
+	public final static String FIELD_ID = "id";
+	
 	public final static String FIELD_IDENTIFIER = "identifier";
 	
 	public final static String FIELD_ACTIVE = "active";
@@ -79,14 +81,14 @@ public class MpiIntegrationProcessor {
 	public final static String PERSON_QUERY = "SELECT gender, birthdate, dead, death_date, uuid FROM person WHERE "
 	        + "person_id = " + ID_PLACEHOLDER;
 	
-	public final static String ID_QUERY = "SELECT i.identifier, t.uuid FROM patient_identifier i, "
+	public final static String ID_QUERY = "SELECT i.identifier, t.uuid, i.uuid FROM patient_identifier i, "
 	        + "patient_identifier_type t WHERE i.identifier_type = t.patient_identifier_type_id AND i.patient_id " + "= "
 	        + ID_PLACEHOLDER + " AND i.voided = 0";
 	
-	public final static String NAME_QUERY = "SELECT prefix, given_name, middle_name, family_name FROM person_name WHERE "
+	public final static String NAME_QUERY = "SELECT prefix, given_name, middle_name, family_name, uuid FROM person_name WHERE "
 	        + "person_id = " + ID_PLACEHOLDER + " AND voided = 0";
 	
-	public final static String ADDRESS_QUERY = "SELECT address1, city_village FROM person_address WHERE person_id = "
+	public final static String ADDRESS_QUERY = "SELECT address1, city_village, uuid FROM person_address WHERE person_id = "
 	        + ID_PLACEHOLDER + " AND voided = 0";
 	
 	@Autowired
@@ -97,9 +99,6 @@ public class MpiIntegrationProcessor {
 	public void process(Integer patientId) throws Exception {
 		log.info("Processing patient with id -> " + patientId);
 		
-		Map<String, Object> fhirRes = new HashMap();
-		fhirRes.put(FIELD_RESOURCE_TYPE, "Patient");
-		
 		String id = patientId.toString();
 		AdministrationService adminService = Context.getAdministrationService();
 		List<List<Object>> patient = adminService.executeSQL(PATIENT_QUERY.replace(ID_PLACEHOLDER, id), true);
@@ -107,6 +106,9 @@ public class MpiIntegrationProcessor {
 			log.info("No patient found with id: " + patientId);
 			return;
 		}
+		
+		Map<String, Object> fhirRes = new HashMap();
+		fhirRes.put(FIELD_RESOURCE_TYPE, "Patient");
 		
 		fhirRes.put(FIELD_ACTIVE, !Boolean.valueOf(patient.get(0).get(0).toString()));
 		
@@ -156,6 +158,7 @@ public class MpiIntegrationProcessor {
 		
 		idRows.stream().forEach(idRow -> {
 			Map<String, Object> idResource = new HashMap();
+			idResource.put(FIELD_ID, idRow.get(2));
 			idResource.put(FIELD_SYSTEM, SYSTEM_PREFIX + idRow.get(1));
 			idResource.put(FIELD_VALUE, idRow.get(0));
 			identifiers.add(idResource);
@@ -168,28 +171,15 @@ public class MpiIntegrationProcessor {
 		
 		nameRows.stream().forEach(nameRow -> {
 			Map<String, Object> nameRes = new HashMap();
-			String prefix = nameRow.get(0) != null ? nameRow.get(0).toString() : null;
-			if (StringUtils.isNotBlank(prefix)) {
-				nameRes.put(FIELD_PREFIX, prefix);
-			}
+			nameRes.put(FIELD_ID, nameRow.get(4));
+			nameRes.put(FIELD_PREFIX, nameRow.get(0));
 			
-			List<String> givenNames = new ArrayList(2);
-			String givenName = nameRow.get(1) != null ? nameRow.get(1).toString() : null;
-			if (StringUtils.isNotBlank(givenName)) {
-				givenNames.add(givenName);
-			}
-			
-			String middleName = nameRow.get(2) != null ? nameRow.get(2).toString() : null;
-			if (StringUtils.isNotBlank(middleName)) {
-				givenNames.add(middleName);
-			}
+			List<Object> givenNames = new ArrayList(2);
+			givenNames.add(nameRow.get(1));
+			givenNames.add(nameRow.get(2));
 			
 			nameRes.put(FIELD_GIVEN, givenNames);
-			
-			String familyName = nameRow.get(3) != null ? nameRow.get(3).toString() : null;
-			if (StringUtils.isNotBlank(familyName)) {
-				nameRes.put(FIELD_FAMILY, familyName);
-			}
+			nameRes.put(FIELD_FAMILY, nameRow.get(3));
 			
 			nameRes.put(FIELD_USE, USE_OFFICIAL);
 			
@@ -202,6 +192,7 @@ public class MpiIntegrationProcessor {
 		List<Map<String, Object>> addresses = new ArrayList(addressRows.size());
 		addressRows.stream().forEach(addressRow -> {
 			Map<String, Object> addressResource = new HashMap();
+			addressResource.put(FIELD_ID, addressRow.get(2));
 			addressResource.put(FIELD_LINE, addressRow.get(0));
 			addressResource.put(FIELD_CITY, addressRow.get(1));
 			

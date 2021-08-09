@@ -18,7 +18,7 @@ public class DatabaseEventConsumerTest {
 	private MpiIntegrationProcessor mockProcessor;
 	
 	@Mock
-	private PatientEventHandler mockPatientHandler;
+	private PatientAndPersonEventHandler mockHandler;
 	
 	private DatabaseEventConsumer consumer;
 	
@@ -26,7 +26,7 @@ public class DatabaseEventConsumerTest {
 	public void setup() {
 		MockitoAnnotations.initMocks(this);
 		consumer = new DatabaseEventConsumer();
-		setInternalState(consumer, "patientHandler", mockPatientHandler);
+		setInternalState(consumer, "patientHandler", mockHandler);
 		setInternalState(consumer, "processor", mockProcessor);
 	}
 	
