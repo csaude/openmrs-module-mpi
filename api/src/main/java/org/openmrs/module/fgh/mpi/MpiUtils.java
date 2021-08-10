@@ -13,6 +13,7 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.openmrs.api.APIException;
 import org.openmrs.api.AdministrationService;
+import org.openmrs.api.PersonService;
 import org.openmrs.api.context.Context;
 
 /**
@@ -56,7 +57,21 @@ public class MpiUtils {
 	
 	public final static String FIELD_CITY = "city";
 	
+	public final static String FIELD_PERIOD = "period";
+	
+	public final static String FIELD_START = "start";
+	
+	public final static String FIELD_END = "end";
+	
+	public final static String FIELD_TELECOM = "telecom";
+	
+	public final static String HOME = "home";
+	
+	public final static String MOBILE = "mobile";
+	
 	public final static String USE_OFFICIAL = "official";
+	
+	public final static String PHONE = "phone";
 	
 	public final static String SYSTEM_SOURCE_ID = "http://openclientregistry.org/fhir/sourceid";
 	
@@ -66,6 +81,8 @@ public class MpiUtils {
 	
 	public final static DateFormat MYSQL_DATETIME_FORMATTER = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	
+	public final static String ATTR_TYPE_ID_PLACEHOLDER = "{ATTR_TYPE_ID}";
+	
 	public final static String ID_QUERY = "SELECT i.identifier, t.uuid, i.uuid FROM patient_identifier i, "
 	        + "patient_identifier_type t WHERE i.identifier_type = t.patient_identifier_type_id AND i.patient_id " + "= "
 	        + ID_PLACEHOLDER + " AND i.voided = 0";
@@ -73,11 +90,14 @@ public class MpiUtils {
 	public final static String NAME_QUERY = "SELECT prefix, given_name, middle_name, family_name, uuid FROM person_name WHERE "
 	        + "person_id = " + ID_PLACEHOLDER + " AND voided = 0";
 	
-	public final static String ADDRESS_QUERY = "SELECT address1, city_village, uuid FROM person_address WHERE person_id = "
+	public final static String ADDRESS_QUERY = "SELECT address1, city_village, uuid, start_date, end_date FROM person_address WHERE person_id = "
 	        + ID_PLACEHOLDER + " AND voided = 0";
 	
+	public final static String ATTRIBUTE_QUERY = "SELECT value, uuid FROM person_attribute WHERE person_id = "
+	        + ID_PLACEHOLDER + " AND person_attribute_type_id = " + ATTR_TYPE_ID_PLACEHOLDER + " AND voided = 0";
+	
 	public static Map<String, Object> buildPatientResource(String id, List<List<Object>> patient, List<List<Object>> person)
-	    throws Exception {
+	        throws Exception {
 		Map<String, Object> fhirRes = new HashMap();
 		fhirRes.put(FIELD_RESOURCE_TYPE, "Patient");
 		
@@ -156,18 +176,63 @@ public class MpiUtils {
 		
 		List<List<Object>> addressRows = adminService.executeSQL(ADDRESS_QUERY.replace(ID_PLACEHOLDER, id), true);
 		List<Map<String, Object>> addresses = new ArrayList(addressRows.size());
-		addressRows.stream().forEach(addressRow -> {
+		for (List<Object> addressRow : addressRows) {
 			Map<String, Object> addressResource = new HashMap();
 			addressResource.put(FIELD_ID, addressRow.get(2));
 			addressResource.put(FIELD_LINE, addressRow.get(0));
 			addressResource.put(FIELD_CITY, addressRow.get(1));
+			Map<String, Object> period = new HashMap();
+			String startDate = null;
+			if (addressRow.get(3) != null && StringUtils.isNotBlank(addressRow.get(3).toString())) {
+				startDate = DATETIME_FORMATTER.format(MYSQL_DATETIME_FORMATTER.parse(addressRow.get(3).toString()));
+			}
+			
+			String endDate = null;
+			if (addressRow.get(4) != null && StringUtils.isNotBlank(addressRow.get(4).toString())) {
+				endDate = DATETIME_FORMATTER.format(MYSQL_DATETIME_FORMATTER.parse(addressRow.get(4).toString()));
+			}
+			
+			period.put(FIELD_START, startDate);
+			period.put(FIELD_END, endDate);
+			addressResource.put(FIELD_PERIOD, period);
 			
 			addresses.add(addressResource);
-		});
+		}
 		
 		fhirRes.put(FIELD_ADDRESS, addresses);
 		
-		//TODO Add person attributes, add GPs to map attribute types to FHIR fields
+		PersonService personService = Context.getPersonService();
+		String attTypeUuid = adminService.getGlobalProperty(MpiConstants.GP_PHONE_MOBILE);
+		String attTypeId = personService.getPersonAttributeTypeByUuid(attTypeUuid).getId().toString();
+		String phoneQuery = ATTRIBUTE_QUERY.replace(ID_PLACEHOLDER, id).replace(ATTR_TYPE_ID_PLACEHOLDER, attTypeId);
+		List<List<Object>> phoneRows = adminService.executeSQL(phoneQuery, true);
+		Map<String, Object> phoneResource = null;
+		if (!phoneRows.isEmpty()) {
+			phoneResource = new HashMap();
+			phoneResource.put(FIELD_ID, phoneRows.get(0).get(1));
+			phoneResource.put(FIELD_SYSTEM, PHONE);
+			phoneResource.put(FIELD_VALUE, phoneRows.get(0).get(0));
+			phoneResource.put(FIELD_USE, MOBILE);
+		}
+		
+		List<Map<String, Object>> phones = new ArrayList(2);
+		phones.add(phoneResource);
+		
+		attTypeUuid = adminService.getGlobalProperty(MpiConstants.GP_PHONE_HOME);
+		attTypeId = personService.getPersonAttributeTypeByUuid(attTypeUuid).getId().toString();
+		phoneQuery = ATTRIBUTE_QUERY.replace(ID_PLACEHOLDER, id).replace(ATTR_TYPE_ID_PLACEHOLDER, attTypeId);
+		phoneRows = adminService.executeSQL(phoneQuery, true);
+		phoneResource = null;
+		if (!phoneRows.isEmpty()) {
+			phoneResource = new HashMap();
+			phoneResource.put(FIELD_ID, phoneRows.get(0).get(1));
+			phoneResource.put(FIELD_SYSTEM, PHONE);
+			phoneResource.put(FIELD_VALUE, phoneRows.get(0).get(0));
+			phoneResource.put(FIELD_USE, HOME);
+		}
+		
+		phones.add(phoneResource);
+		fhirRes.put(FIELD_TELECOM, phones);
 		
 		return fhirRes;
 	}

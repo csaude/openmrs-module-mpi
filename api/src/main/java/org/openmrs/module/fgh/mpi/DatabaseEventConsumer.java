@@ -37,6 +37,7 @@ public class DatabaseEventConsumer implements Consumer<DatabaseEvent> {
 				case "person_name":
 				case "person_address":
 				case "patient_identifier":
+				case "person_attribute":
 					associationHandler.handle(event);
 					break;
 			}

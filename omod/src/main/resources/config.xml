@@ -46,6 +46,20 @@
             The type for the keystore containing the client certificate to use to authenticate with OpenCR
         </description>
     </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.person.attribute.type.mobile.phone</property>
+        <description>
+            Specifies the uuid of the person attribute type for mobile phone number
+        </description>
+        <defaultValue>e2e3fd64-1d5f-11e0-b929-000c29ad1d07</defaultValue>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.person.attribute.type.home.phone</property>
+        <description>
+            Specifies the uuid of the person attribute type for home phone number
+        </description>
+        <defaultValue>e6c97a9d-a77b-401f-b06e-81900e21ed1d</defaultValue>
+    </globalProperty>
 
 </module>
 

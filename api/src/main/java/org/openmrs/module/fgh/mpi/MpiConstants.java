@@ -12,4 +12,8 @@ public class MpiConstants {
 	
 	public final static String GP_KEYSTORE_TYPE = MODULE_ID + ".keystore.type";
 	
+	public final static String GP_PHONE_MOBILE = MODULE_ID + ".person.attribute.type.mobile.phone";
+	
+	public final static String GP_PHONE_HOME = MODULE_ID + ".person.attribute.type.home.phone";
+	
 }
