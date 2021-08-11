@@ -73,7 +73,7 @@ public class MpiUtils {
 	
 	public final static String MOBILE = "mobile";
 	
-	public final static String USE_OFFICIAL = "official";
+	public final static String USE_USUAL = "usual";
 	
 	public final static String PHONE = "phone";
 	
@@ -89,13 +89,14 @@ public class MpiUtils {
 	
 	public final static String ID_QUERY = "SELECT i.identifier, t.uuid, i.uuid FROM patient_identifier i, "
 	        + "patient_identifier_type t WHERE i.identifier_type = t.patient_identifier_type_id AND i.patient_id " + "= "
-	        + ID_PLACEHOLDER + " AND i.voided = 0";
+	        + ID_PLACEHOLDER + " AND i.voided = 0 ORDER BY preferred DESC";
 	
-	public final static String NAME_QUERY = "SELECT prefix, given_name, middle_name, family_name, uuid FROM person_name WHERE "
-	        + "person_id = " + ID_PLACEHOLDER + " AND voided = 0";
+	public final static String NAME_QUERY = "SELECT prefix, given_name, middle_name, family_name, uuid FROM person_name "
+	        + "WHERE " + "person_id = " + ID_PLACEHOLDER + " AND voided = 0 ORDER BY preferred DESC";
 	
-	public final static String ADDRESS_QUERY = "SELECT address1, address2, address3, address5, address6, county_district, state_province, country, start_date, end_date, uuid FROM person_address WHERE person_id = "
-	        + ID_PLACEHOLDER + " AND voided = 0";
+	public final static String ADDRESS_QUERY = "SELECT address1, address2, address3, address5, address6, "
+	        + "county_district, state_province, country, start_date, end_date, uuid FROM person_address WHERE "
+	        + "person_id = " + ID_PLACEHOLDER + " AND voided = 0 ORDER BY preferred DESC";
 	
 	public final static String ATTRIBUTE_QUERY = "SELECT value, uuid FROM person_attribute WHERE person_id = "
 	        + ID_PLACEHOLDER + " AND person_attribute_type_id = " + ATTR_TYPE_ID_PLACEHOLDER + " AND voided = 0";
@@ -159,7 +160,8 @@ public class MpiUtils {
 		List<List<Object>> nameRows = adminService.executeSQL(NAME_QUERY.replace(ID_PLACEHOLDER, id), true);
 		List<Map<String, Object>> names = new ArrayList(nameRows.size());
 		
-		nameRows.stream().forEach(nameRow -> {
+		boolean foundPreferred = false;
+		for (List<Object> nameRow : nameRows) {
 			Map<String, Object> nameRes = new HashMap();
 			nameRes.put(FIELD_ID, nameRow.get(4));
 			nameRes.put(FIELD_PREFIX, nameRow.get(0));
@@ -171,10 +173,13 @@ public class MpiUtils {
 			nameRes.put(FIELD_GIVEN, givenNames);
 			nameRes.put(FIELD_FAMILY, nameRow.get(3));
 			
-			nameRes.put(FIELD_USE, USE_OFFICIAL);
+			nameRes.put(FIELD_USE, !foundPreferred ? USE_USUAL : null);
+			if (!foundPreferred) {
+				foundPreferred = true;
+			}
 			
 			names.add(nameRes);
-		});
+		}
 		
 		fhirRes.put(FIELD_NAME, names);
 		
