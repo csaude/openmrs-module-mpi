@@ -197,7 +197,7 @@ public class MpiUtils {
 			Map<String, Object> period = new HashMap();
 			String startDate = null;
 			if (addressRow.get(8) != null && StringUtils.isNotBlank(addressRow.get(8).toString())) {
-				startDate = DATETIME_FORMATTER.format(MYSQL_DATETIME_FORMATTER.parse(addressRow.get(9).toString()));
+				startDate = DATETIME_FORMATTER.format(MYSQL_DATETIME_FORMATTER.parse(addressRow.get(8).toString()));
 			}
 			
 			String endDate = null;
