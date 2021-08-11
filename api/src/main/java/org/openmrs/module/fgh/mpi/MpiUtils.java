@@ -73,7 +73,7 @@ public class MpiUtils {
 	
 	public final static String MOBILE = "mobile";
 	
-	public final static String USE_USUAL = "usual";
+	public final static String USE_OFFICIAL = "official";
 	
 	public final static String PHONE = "phone";
 	
@@ -117,6 +117,8 @@ public class MpiUtils {
 			fhirGender = "female";
 		} else if ("O".equalsIgnoreCase(gender)) {
 			fhirGender = "other";
+		} else if (StringUtils.isBlank(gender)) {
+			fhirGender = "unknown";
 		} else if (gender != null) {
 			throw new APIException("Don't know how to represent in fhir gender value: " + gender);
 		}
@@ -172,8 +174,9 @@ public class MpiUtils {
 			
 			nameRes.put(FIELD_GIVEN, givenNames);
 			nameRes.put(FIELD_FAMILY, nameRow.get(3));
+			//TODO Add family name suffix and degree as suffix fields
 			
-			nameRes.put(FIELD_USE, !foundPreferred ? USE_USUAL : null);
+			nameRes.put(FIELD_USE, !foundPreferred ? USE_OFFICIAL : null);
 			if (!foundPreferred) {
 				foundPreferred = true;
 			}
