@@ -55,7 +55,11 @@ public class MpiUtils {
 	
 	public final static String FIELD_LINE = "line";
 	
-	public final static String FIELD_CITY = "city";
+	public final static String FIELD_DISTRICT = "district";
+	
+	public final static String FIELD_STATE = "state";
+	
+	public final static String FIELD_COUNTRY = "country";
 	
 	public final static String FIELD_PERIOD = "period";
 	
@@ -90,14 +94,14 @@ public class MpiUtils {
 	public final static String NAME_QUERY = "SELECT prefix, given_name, middle_name, family_name, uuid FROM person_name WHERE "
 	        + "person_id = " + ID_PLACEHOLDER + " AND voided = 0";
 	
-	public final static String ADDRESS_QUERY = "SELECT address1, city_village, uuid, start_date, end_date FROM person_address WHERE person_id = "
+	public final static String ADDRESS_QUERY = "SELECT address1, address2, address3, address5, address6, county_district, state_province, country, start_date, end_date, uuid FROM person_address WHERE person_id = "
 	        + ID_PLACEHOLDER + " AND voided = 0";
 	
 	public final static String ATTRIBUTE_QUERY = "SELECT value, uuid FROM person_attribute WHERE person_id = "
 	        + ID_PLACEHOLDER + " AND person_attribute_type_id = " + ATTR_TYPE_ID_PLACEHOLDER + " AND voided = 0";
 	
 	public static Map<String, Object> buildPatientResource(String id, List<List<Object>> patient, List<List<Object>> person)
-	        throws Exception {
+	    throws Exception {
 		Map<String, Object> fhirRes = new HashMap();
 		fhirRes.put(FIELD_RESOURCE_TYPE, "Patient");
 		
@@ -178,18 +182,27 @@ public class MpiUtils {
 		List<Map<String, Object>> addresses = new ArrayList(addressRows.size());
 		for (List<Object> addressRow : addressRows) {
 			Map<String, Object> addressResource = new HashMap();
-			addressResource.put(FIELD_ID, addressRow.get(2));
-			addressResource.put(FIELD_LINE, addressRow.get(0));
-			addressResource.put(FIELD_CITY, addressRow.get(1));
+			addressResource.put(FIELD_ID, addressRow.get(10));
+			List<Object> lineRes = new ArrayList(5);
+			lineRes.add(addressRow.get(0));//address1
+			lineRes.add(addressRow.get(1));//address2
+			lineRes.add(addressRow.get(2));//address3
+			lineRes.add(addressRow.get(3));//address5
+			lineRes.add(addressRow.get(4));//address6
+			addressResource.put(FIELD_LINE, lineRes);
+			addressResource.put(FIELD_DISTRICT, addressRow.get(5));
+			addressResource.put(FIELD_STATE, addressRow.get(6));
+			addressResource.put(FIELD_COUNTRY, addressRow.get(7));
+			
 			Map<String, Object> period = new HashMap();
 			String startDate = null;
-			if (addressRow.get(3) != null && StringUtils.isNotBlank(addressRow.get(3).toString())) {
-				startDate = DATETIME_FORMATTER.format(MYSQL_DATETIME_FORMATTER.parse(addressRow.get(3).toString()));
+			if (addressRow.get(8) != null && StringUtils.isNotBlank(addressRow.get(8).toString())) {
+				startDate = DATETIME_FORMATTER.format(MYSQL_DATETIME_FORMATTER.parse(addressRow.get(9).toString()));
 			}
 			
 			String endDate = null;
-			if (addressRow.get(4) != null && StringUtils.isNotBlank(addressRow.get(4).toString())) {
-				endDate = DATETIME_FORMATTER.format(MYSQL_DATETIME_FORMATTER.parse(addressRow.get(4).toString()));
+			if (addressRow.get(9) != null && StringUtils.isNotBlank(addressRow.get(9).toString())) {
+				endDate = DATETIME_FORMATTER.format(MYSQL_DATETIME_FORMATTER.parse(addressRow.get(9).toString()));
 			}
 			
 			period.put(FIELD_START, startDate);
