@@ -11,9 +11,9 @@ import org.springframework.stereotype.Component;
  * person_address
  */
 @Component("associationEventHandler")
-public class associationEventHandler extends BaseEventHandler {
+public class AssociationEventHandler extends BaseEventHandler {
 	
-	private static final Logger log = LoggerFactory.getLogger(associationEventHandler.class);
+	private static final Logger log = LoggerFactory.getLogger(AssociationEventHandler.class);
 	
 	@Override
 	public Integer getPatientId(DatabaseEvent event) {

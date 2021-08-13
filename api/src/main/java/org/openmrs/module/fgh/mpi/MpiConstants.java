@@ -16,4 +16,6 @@ public class MpiConstants {
 	
 	public final static String GP_PHONE_HOME = MODULE_ID + ".person.attribute.type.home.phone";
 	
+	public final static String GP_HAPI_FHIR_BASE_URL = MODULE_ID + ".hapi.fhir.base.url";
+	
 }

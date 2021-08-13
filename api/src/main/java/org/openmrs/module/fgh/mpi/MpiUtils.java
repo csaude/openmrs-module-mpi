@@ -11,15 +11,24 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.hl7.fhir.r4.model.Bundle;
+import org.hl7.fhir.r4.model.Patient;
 import org.openmrs.api.APIException;
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.PersonService;
 import org.openmrs.api.context.Context;
 
+import ca.uhn.fhir.context.FhirContext;
+import ca.uhn.fhir.rest.client.api.IGenericClient;
+import ca.uhn.fhir.rest.gclient.ICriterion;
+
 /**
  * Contains utility methods
  */
 public class MpiUtils {
+	
+	private final static ObjectMapper MAPPER = new ObjectMapper();
 	
 	public final static String FIELD_RESOURCE_TYPE = "resourceType";
 	
@@ -269,6 +278,34 @@ public class MpiUtils {
 		fhirRes.put(FIELD_TELECOM, phones);
 		
 		return fhirRes;
+	}
+	
+	/**
+	 * Fetches the patient resource from the MPI
+	 * 
+	 * @param patientUuid the uuid of the patient
+	 * @return a map of the patient resource
+	 */
+	public static Map<String, Object> getPatientFromMpi(String patientUuid) throws Exception {
+		FhirContext ctx = FhirContext.forR4();
+		//TODO cache the hapi fhir url
+		//TODO possibly query OpenCR after https://github.com/intrahealth/client-registry/issues/65 is resolved
+		String hapiFhirUrl = Context.getAdministrationService().getGlobalProperty(MpiConstants.GP_HAPI_FHIR_BASE_URL);
+		IGenericClient client = ctx.newRestfulGenericClient(hapiFhirUrl + "/fhir");
+		ICriterion<?> icrit = Patient.IDENTIFIER.exactly().systemAndValues(SYSTEM_SOURCE_ID, patientUuid);
+		Bundle bundle = client.search().forResource(Patient.class).where(icrit).returnBundle(Bundle.class).encodedJson()
+		        .execute();
+		if (bundle.isEmpty() || bundle.getEntry().isEmpty()) {
+			return null;
+		}
+		
+		if (bundle.getEntry().size() > 1) {
+			throw new APIException("Found multiple patients with the same OpenMRS uuid in the MPI");
+		}
+		
+		String json = ctx.newJsonParser().encodeResourceToString(bundle.getEntry().get(0).getResource());
+		
+		return MAPPER.readValue(json, Map.class);
 	}
 	
 }

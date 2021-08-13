@@ -46,6 +46,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <debeziumVersion>1.0.0-SNAPSHOT</debeziumVersion>
         <httpclientVersion>4.5.13</httpclientVersion>
+        <hapiFhirVersion>5.4.2</hapiFhirVersion>
+        <jacksonVersion>2.12.4</jacksonVersion>
     </properties>
 
     <dependencyManagement>
@@ -61,6 +63,26 @@
                 <artifactId>debezium-api</artifactId>
                 <scope>provided</scope>
                 <version>${debeziumVersion}</version>
+            </dependency>
+            <dependency>
+                <groupId>ca.uhn.hapi.fhir</groupId>
+                <artifactId>hapi-fhir-client</artifactId>
+                <version>${hapiFhirVersion}</version>
+            </dependency>
+            <dependency>
+                <groupId>ca.uhn.hapi.fhir</groupId>
+                <artifactId>hapi-fhir-structures-r4</artifactId>
+                <version>${hapiFhirVersion}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jacksonVersion}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>${jacksonVersion}</version>
             </dependency>
             
             <!-- Test dependencies -->
