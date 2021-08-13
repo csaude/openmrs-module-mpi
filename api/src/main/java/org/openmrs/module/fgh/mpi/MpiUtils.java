@@ -101,8 +101,21 @@ public class MpiUtils {
 	public final static String ATTRIBUTE_QUERY = "SELECT value, uuid FROM person_attribute WHERE person_id = "
 	        + ID_PLACEHOLDER + " AND person_attribute_type_id = " + ATTR_TYPE_ID_PLACEHOLDER + " AND voided = 0";
 	
-	public static Map<String, Object> buildPatientResource(String id, List<List<Object>> patient, List<List<Object>> person)
+	/**
+	 * Builds a map of fields and values with patient details that can be serialized as a fhir json
+	 * message. This method looks up the up to date patient details from the DB bypassing any hibernate
+	 * caches which might be outdated since DB sync is operating outside of the OpenMRS API.
+	 * 
+	 * @param id the patient id
+	 * @param patient a list of column values from the patient table
+	 * @param person a list of column values from the person table
+	 * @return field and value map of the patient details
+	 * @throws Exception
+	 */
+	public static Map<String, Object> buildPatientResource(String id, List<List<Object>> patient, List<List<Object>> person,
+	                                                       Map<String, Object> mpiPatient)
 	    throws Exception {
+		
 		Map<String, Object> fhirRes = new HashMap();
 		fhirRes.put(FIELD_RESOURCE_TYPE, "Patient");
 		
@@ -192,11 +205,11 @@ public class MpiUtils {
 			Map<String, Object> addressResource = new HashMap();
 			addressResource.put(FIELD_ID, addressRow.get(10));
 			List<Object> lineRes = new ArrayList(5);
-			lineRes.add(addressRow.get(0));//address1
 			lineRes.add(addressRow.get(1));//address2
-			lineRes.add(addressRow.get(2));//address3
-			lineRes.add(addressRow.get(3));//address5
 			lineRes.add(addressRow.get(4));//address6
+			lineRes.add(addressRow.get(3));//address5
+			lineRes.add(addressRow.get(2));//address3
+			lineRes.add(addressRow.get(0));//address1
 			addressResource.put(FIELD_LINE, lineRes);
 			addressResource.put(FIELD_DISTRICT, addressRow.get(5));
 			addressResource.put(FIELD_STATE, addressRow.get(6));

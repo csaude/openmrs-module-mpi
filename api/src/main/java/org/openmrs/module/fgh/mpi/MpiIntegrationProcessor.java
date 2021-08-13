@@ -38,8 +38,8 @@ public class MpiIntegrationProcessor {
 		
 		String id = patientId.toString();
 		AdministrationService adminService = Context.getAdministrationService();
-		List<List<Object>> patient = adminService.executeSQL(PATIENT_QUERY.replace(ID_PLACEHOLDER, id), true);
-		if (patient.isEmpty()) {
+		List<List<Object>> patientDetails = adminService.executeSQL(PATIENT_QUERY.replace(ID_PLACEHOLDER, id), true);
+		if (patientDetails.isEmpty()) {
 			log.info("No patient found with id: " + patientId);
 			return;
 		}
@@ -50,10 +50,43 @@ public class MpiIntegrationProcessor {
 			return;
 		}
 		
-		Map<String, Object> resource = MpiUtils.buildPatientResource(id, patient, person);
-		mpiHttpClient.submitPatient(mapper.writeValueAsString(resource));
+		Map<String, Object> mpiPatient = null;
+		//TODO Look up patient's MPI id from the mapping table
+		String mpiId = null;
+		if (mpiId != null) {
+			mpiPatient = mpiHttpClient.getPatient(mpiId);
+		}
 		
-		//TODO Add the MPI id to list of the patient's identifiers
+		Map<String, Object> resource = MpiUtils.buildPatientResource(id, patientDetails, person, mpiPatient);
+		List<Map<String, Map<String, String>>> mpiIdsResponse = mpiHttpClient
+		        .submitPatient(mapper.writeValueAsString(resource));
+		
+		//For a newly registered patient in the MPI, add the MPI ids to list of the patient's identifiers
+		if (mpiPatient == null) {
+			String newMpiId = extractId(mpiIdsResponse.get(0));
+			log.info("Determining the MPI id of the newly created patient MPI record");
+			
+			Map<String, Object> newMpiPatient = mpiHttpClient.getPatient(newMpiId);
+			//Golden record has no details like identifier on it, so if this is one, fetch the other actual record
+			if (newMpiPatient.get("identifier") == null) {
+				log.info("Found golden record for MPI id " + newMpiId + ", looking up the actual MPI record");
+				
+				newMpiId = extractId(mpiIdsResponse.get(1));
+				newMpiPatient = mpiHttpClient.getPatient(newMpiId);
+			}
+			
+			log.info("New MPI patient record id: " + newMpiId);
+		}
+	}
+	
+	/**
+	 * Extracts the mpi id from the specified id response payload
+	 *
+	 * @param mpiIdResponse
+	 * @return an array of the ids, the mpi id at index 0 and the global id at index 1
+	 */
+	private String extractId(Map<String, Map<String, String>> mpiIdResponse) {
+		return mpiIdResponse.get("response").get("location").split("/")[1];
 	}
 	
 }

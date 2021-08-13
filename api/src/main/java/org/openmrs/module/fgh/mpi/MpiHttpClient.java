@@ -52,7 +52,7 @@ public class MpiHttpClient {
 		return submitRequest("/fhir/Patient/" + mpiUuid, null, Map.class);
 	}
 	
-	public List<Map<String, Object>> submitPatient(String patientData) throws Exception {
+	public List<Map<String, Map<String, String>>> submitPatient(String patientData) throws Exception {
 		if (log.isDebugEnabled()) {
 			log.debug("Received request to submit patient to MPI -> " + patientData);
 		}
