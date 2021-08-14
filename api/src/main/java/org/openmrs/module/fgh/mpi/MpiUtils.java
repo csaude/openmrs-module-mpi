@@ -107,8 +107,8 @@ public class MpiUtils {
 	        + "county_district, state_province, country, start_date, end_date, uuid FROM person_address WHERE "
 	        + "person_id = " + ID_PLACEHOLDER + " AND voided = 0 ORDER BY preferred DESC";
 	
-	public final static String ATTRIBUTE_QUERY = "SELECT value, uuid FROM person_attribute WHERE person_id = "
-	        + ID_PLACEHOLDER + " AND person_attribute_type_id = " + ATTR_TYPE_ID_PLACEHOLDER + " AND voided = 0";
+	public final static String ATTR_QUERY = "SELECT value, uuid FROM person_attribute WHERE person_id = " + ID_PLACEHOLDER
+	        + " AND person_attribute_type_id = " + ATTR_TYPE_ID_PLACEHOLDER + " AND voided = 0";
 	
 	/**
 	 * Builds a map of fields and values with patient details that can be serialized as a fhir json
@@ -118,6 +118,7 @@ public class MpiUtils {
 	 * @param id the patient id
 	 * @param patient a list of column values from the patient table
 	 * @param person a list of column values from the person table
+	 * @param mpiPatient a map of patient fields and values from the MPI
 	 * @return field and value map of the patient details
 	 * @throws Exception
 	 */
@@ -163,7 +164,27 @@ public class MpiUtils {
 			fhirRes.put(FIELD_DECEASED_DATE, null);
 		}
 		
-		List<List<Object>> idRows = adminService.executeSQL(ID_QUERY.replace(ID_PLACEHOLDER, id), true);
+		fhirRes.put(FIELD_IDENTIFIER, getIds(id, person, mpiPatient, adminService));
+		fhirRes.put(FIELD_NAME, getNames(id, mpiPatient, adminService));
+		fhirRes.put(FIELD_ADDRESS, getAddresses(id, mpiPatient, adminService));
+		fhirRes.put(FIELD_TELECOM, getPhones(id, adminService));
+		
+		return fhirRes;
+	}
+	
+	/**
+	 * Generates and returns the patient identifier list
+	 * 
+	 * @param patientId id the patient id
+	 * @param person a list of column values from the person table
+	 * @param mpiPatient a map of patient fields and values from the MPI
+	 * @param as {@link AdministrationService} object
+	 * @return
+	 */
+	private static List<Map<String, Object>> getIds(String patientId, List<List<Object>> person,
+	        Map<String, Object> mpiPatient, AdministrationService as) {
+		
+		List<List<Object>> idRows = as.executeSQL(ID_QUERY.replace(ID_PLACEHOLDER, patientId), true);
 		int idListLength = idRows.size() + 1;
 		if (mpiPatient != null && mpiPatient.get(FIELD_IDENTIFIER) != null) {
 			idListLength = ((List) mpiPatient.get(FIELD_IDENTIFIER)).size();
@@ -190,9 +211,21 @@ public class MpiUtils {
 			identifiers.add(null);
 		}
 		
-		fhirRes.put(FIELD_IDENTIFIER, identifiers);
+		return identifiers;
+	}
+	
+	/**
+	 * Generates and returns the patient name list
+	 *
+	 * @param patientId id the patient id
+	 * @param mpiPatient a map of patient fields and values from the MPI
+	 * @param as {@link AdministrationService} object
+	 * @return
+	 */
+	private static List<Map<String, Object>> getNames(String patientId, Map<String, Object> mpiPatient,
+	        AdministrationService as) {
 		
-		List<List<Object>> nameRows = adminService.executeSQL(NAME_QUERY.replace(ID_PLACEHOLDER, id), true);
+		List<List<Object>> nameRows = as.executeSQL(NAME_QUERY.replace(ID_PLACEHOLDER, patientId), true);
 		int nameListLength = nameRows.size();
 		if (mpiPatient != null && mpiPatient.get(FIELD_NAME) != null) {
 			nameListLength = ((List) mpiPatient.get(FIELD_NAME)).size();
@@ -225,9 +258,21 @@ public class MpiUtils {
 			names.add(null);
 		}
 		
-		fhirRes.put(FIELD_NAME, names);
+		return names;
+	}
+	
+	/**
+	 * Generates and returns the patient address list
+	 *
+	 * @param patientId id the patient id
+	 * @param mpiPatient a map of patient fields and values from the MPI
+	 * @param as {@link AdministrationService} object
+	 * @return
+	 */
+	private static List<Map<String, Object>> getAddresses(String patientId, Map<String, Object> mpiPatient,
+	        AdministrationService as) throws Exception {
 		
-		List<List<Object>> addressRows = adminService.executeSQL(ADDRESS_QUERY.replace(ID_PLACEHOLDER, id), true);
+		List<List<Object>> addressRows = as.executeSQL(ADDRESS_QUERY.replace(ID_PLACEHOLDER, patientId), true);
 		int addressListLength = addressRows.size();
 		if (mpiPatient != null && mpiPatient.get(FIELD_ADDRESS) != null) {
 			addressListLength = ((List) mpiPatient.get(FIELD_ADDRESS)).size();
@@ -270,13 +315,22 @@ public class MpiUtils {
 			addresses.add(null);
 		}
 		
-		fhirRes.put(FIELD_ADDRESS, addresses);
-		
+		return addresses;
+	}
+	
+	/**
+	 * Generates and returns the patient phone number list
+	 *
+	 * @param patientId id the patient id
+	 * @param as {@link AdministrationService} object
+	 * @return
+	 */
+	private static List<Map<String, Object>> getPhones(String patientId, AdministrationService as) {
 		PersonService personService = Context.getPersonService();
-		String attTypeUuid = adminService.getGlobalProperty(MpiConstants.GP_PHONE_MOBILE);
+		String attTypeUuid = as.getGlobalProperty(MpiConstants.GP_PHONE_MOBILE);
 		String attTypeId = personService.getPersonAttributeTypeByUuid(attTypeUuid).getId().toString();
-		String phoneQuery = ATTRIBUTE_QUERY.replace(ID_PLACEHOLDER, id).replace(ATTR_TYPE_ID_PLACEHOLDER, attTypeId);
-		List<List<Object>> phoneRows = adminService.executeSQL(phoneQuery, true);
+		String phoneQuery = ATTR_QUERY.replace(ID_PLACEHOLDER, patientId).replace(ATTR_TYPE_ID_PLACEHOLDER, attTypeId);
+		List<List<Object>> phoneRows = as.executeSQL(phoneQuery, true);
 		Map<String, Object> phoneResource = null;
 		if (!phoneRows.isEmpty()) {
 			phoneResource = new HashMap();
@@ -289,10 +343,10 @@ public class MpiUtils {
 		List<Map<String, Object>> phones = new ArrayList(2);
 		phones.add(phoneResource);
 		
-		attTypeUuid = adminService.getGlobalProperty(MpiConstants.GP_PHONE_HOME);
+		attTypeUuid = as.getGlobalProperty(MpiConstants.GP_PHONE_HOME);
 		attTypeId = personService.getPersonAttributeTypeByUuid(attTypeUuid).getId().toString();
-		phoneQuery = ATTRIBUTE_QUERY.replace(ID_PLACEHOLDER, id).replace(ATTR_TYPE_ID_PLACEHOLDER, attTypeId);
-		phoneRows = adminService.executeSQL(phoneQuery, true);
+		phoneQuery = ATTR_QUERY.replace(ID_PLACEHOLDER, patientId).replace(ATTR_TYPE_ID_PLACEHOLDER, attTypeId);
+		phoneRows = as.executeSQL(phoneQuery, true);
 		phoneResource = null;
 		if (!phoneRows.isEmpty()) {
 			phoneResource = new HashMap();
@@ -303,9 +357,8 @@ public class MpiUtils {
 		}
 		
 		phones.add(phoneResource);
-		fhirRes.put(FIELD_TELECOM, phones);
 		
-		return fhirRes;
+		return phones;
 	}
 	
 	/**
