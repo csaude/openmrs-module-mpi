@@ -95,7 +95,7 @@ public class MpiUtils {
 		fhirRes.put(MpiConstants.FIELD_IDENTIFIER, getIds(id, person, mpiPatient, adminService));
 		fhirRes.put(MpiConstants.FIELD_NAME, getNames(id, mpiPatient, adminService));
 		fhirRes.put(MpiConstants.FIELD_ADDRESS, getAddresses(id, mpiPatient, adminService));
-		fhirRes.put(MpiConstants.FIELD_TELECOM, getPhones(id, adminService));
+		fhirRes.put(MpiConstants.FIELD_TELECOM, getPhones(id, mpiPatient, adminService));
 		
 		return fhirRes;
 	}
@@ -251,10 +251,12 @@ public class MpiUtils {
 	 * Generates and returns the patient phone number list
 	 *
 	 * @param patientId id the patient id
+	 * @param mpiPatient a map of patient fields and values from the MPI
 	 * @param as {@link AdministrationService} object
 	 * @return
 	 */
-	private static List<Map<String, Object>> getPhones(String patientId, AdministrationService as) {
+	private static List<Map<String, Object>> getPhones(String patientId, Map<String, Object> mpiPatient,
+	                                                   AdministrationService as) {
 		PersonService personService = Context.getPersonService();
 		String attTypeUuid = as.getGlobalProperty(MpiConstants.GP_PHONE_MOBILE);
 		String attTypeId = personService.getPersonAttributeTypeByUuid(attTypeUuid).getId().toString();
@@ -269,7 +271,11 @@ public class MpiUtils {
 			phoneResource.put(MpiConstants.FIELD_USE, MpiConstants.MOBILE);
 		}
 		
-		List<Map<String, Object>> phones = new ArrayList(2);
+		int phoneListLength = 2;
+		if (mpiPatient != null && mpiPatient.get(MpiConstants.FIELD_TELECOM) != null) {
+			phoneListLength = ((List) mpiPatient.get(MpiConstants.FIELD_TELECOM)).size();
+		}
+		List<Map<String, Object>> phones = new ArrayList(phoneListLength);
 		phones.add(phoneResource);
 		
 		attTypeUuid = as.getGlobalProperty(MpiConstants.GP_PHONE_HOME);
@@ -286,6 +292,10 @@ public class MpiUtils {
 		}
 		
 		phones.add(phoneResource);
+		
+		while (phones.size() < phoneListLength) {
+			phones.add(null);
+		}
 		
 		return phones;
 	}
