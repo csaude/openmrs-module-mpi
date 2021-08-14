@@ -50,7 +50,7 @@ public class MpiIntegrationProcessor {
 			return;
 		}
 		
-		Map<String, Object> mpiPatient = MpiUtils.getPatientFromMpi(person.get(4).toString());
+		Map<String, Object> mpiPatient = mpiHttpClient.getPatient(person.get(4).toString());
 		String mpiId = null;
 		if (mpiPatient != null) {
 			mpiId = mpiPatient.get("id").toString();

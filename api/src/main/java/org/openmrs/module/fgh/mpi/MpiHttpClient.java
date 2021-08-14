@@ -19,6 +19,8 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 
 import org.apache.commons.lang3.StringUtils;
+import org.hl7.fhir.r4.model.Bundle;
+import org.hl7.fhir.r4.model.Patient;
 import org.openmrs.api.APIException;
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.context.Context;
@@ -27,6 +29,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import ca.uhn.fhir.context.FhirContext;
+import ca.uhn.fhir.rest.client.api.IGenericClient;
+import ca.uhn.fhir.rest.gclient.ICriterion;
 
 /**
  * Http client that posts patient data to the MPI
@@ -44,12 +50,22 @@ public class MpiHttpClient {
 	
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 	
-	public Map<String, Object> getPatient(String mpiUuid) throws Exception {
+	/**
+	 * Looks up the patient with the specified OpenMRS uuid from the MPI
+	 * 
+	 * @param patientUuid the patient's OpenMRS uuid
+	 * @return map representation of the patient fhir resource
+	 * @throws Exception
+	 */
+	public Map<String, Object> getPatient(String patientUuid) throws Exception {
 		if (log.isDebugEnabled()) {
-			log.debug("Received request to fetch patient from MPI with identifier -> " + mpiUuid);
+			log.debug("Received request to fetch patient from MPI with OpenMRS uuid -> " + patientUuid);
 		}
 		
-		return submitRequest("/fhir/Patient/" + mpiUuid, null, Map.class);
+		//TODO possibly query OpenCR after https://github.com/intrahealth/client-registry/issues/65 is resolved
+		//return submitRequest("/fhir/Patient/" + mpiUuid, null, Map.class);
+		
+		return getPatientFromHapiFhir(patientUuid);
 	}
 	
 	public List<Map<String, Map<String, String>>> submitPatient(String patientData) throws Exception {
@@ -151,6 +167,33 @@ public class MpiHttpClient {
 			}
 		}
 		
+	}
+	
+	/**
+	 * Fetches the patient resource from the hapi fhir server
+	 *
+	 * @param patientUuid the uuid of the patient
+	 * @return a map of the patient resource
+	 */
+	private Map<String, Object> getPatientFromHapiFhir(String patientUuid) throws Exception {
+		FhirContext ctx = FhirContext.forR4();
+		//TODO cache the hapi fhir url
+		String hapiFhirUrl = Context.getAdministrationService().getGlobalProperty(MpiConstants.GP_HAPI_FHIR_BASE_URL);
+		IGenericClient client = ctx.newRestfulGenericClient(hapiFhirUrl + "/fhir");
+		ICriterion<?> icrit = Patient.IDENTIFIER.exactly().systemAndValues(MpiConstants.SYSTEM_SOURCE_ID, patientUuid);
+		Bundle bundle = client.search().forResource(Patient.class).where(icrit).returnBundle(Bundle.class).encodedJson()
+		        .execute();
+		if (bundle.isEmpty() || bundle.getEntry().isEmpty()) {
+			return null;
+		}
+		
+		if (bundle.getEntry().size() > 1) {
+			throw new APIException("Found multiple patients with the same OpenMRS uuid in the MPI");
+		}
+		
+		String json = ctx.newJsonParser().encodeResourceToString(bundle.getEntry().get(0).getResource());
+		
+		return MAPPER.readValue(json, Map.class);
 	}
 	
 }
