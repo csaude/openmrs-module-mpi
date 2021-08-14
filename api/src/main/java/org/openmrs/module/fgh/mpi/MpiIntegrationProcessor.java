@@ -56,7 +56,7 @@ public class MpiIntegrationProcessor {
 			mpiId = mpiPatient.get("id").toString();
 		}
 		
-		Map<String, Object> resource = MpiUtils.buildPatientResource(id, patientDetails, person, mpiPatient);
+		Map<String, Object> resource = MpiUtils.buildFhirPatient(id, patientDetails, person, mpiPatient);
 		List<Map<String, Map<String, String>>> mpiIdsResponse = mpiHttpClient
 		        .submitPatient(mapper.writeValueAsString(resource));
 		

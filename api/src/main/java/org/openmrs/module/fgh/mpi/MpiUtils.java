@@ -1,9 +1,9 @@
 package org.openmrs.module.fgh.mpi;
 
+import static org.openmrs.module.fgh.mpi.MpiConstants.DATETIME_FORMATTER;
+import static org.openmrs.module.fgh.mpi.MpiConstants.MYSQL_DATETIME_FORMATTER;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.ID_PLACEHOLDER;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -29,70 +29,6 @@ import ca.uhn.fhir.rest.gclient.ICriterion;
 public class MpiUtils {
 	
 	private final static ObjectMapper MAPPER = new ObjectMapper();
-	
-	public final static String FIELD_RESOURCE_TYPE = "resourceType";
-	
-	public final static String FIELD_ID = "id";
-	
-	public final static String FIELD_IDENTIFIER = "identifier";
-	
-	public final static String FIELD_ACTIVE = "active";
-	
-	public final static String FIELD_NAME = "name";
-	
-	public final static String FIELD_GENDER = "gender";
-	
-	public final static String FIELD_BIRTHDATE = "birthDate";
-	
-	public final static String FIELD_DECEASED = "deceasedBoolean";
-	
-	public final static String FIELD_DECEASED_DATE = "deceasedDateTime";
-	
-	public final static String FIELD_SYSTEM = "system";
-	
-	public final static String FIELD_VALUE = "value";
-	
-	public final static String FIELD_PREFIX = "prefix";
-	
-	public final static String FIELD_FAMILY = "family";
-	
-	public final static String FIELD_GIVEN = "given";
-	
-	public final static String FIELD_ADDRESS = "address";
-	
-	public final static String FIELD_USE = "use";
-	
-	public final static String FIELD_LINE = "line";
-	
-	public final static String FIELD_DISTRICT = "district";
-	
-	public final static String FIELD_STATE = "state";
-	
-	public final static String FIELD_COUNTRY = "country";
-	
-	public final static String FIELD_PERIOD = "period";
-	
-	public final static String FIELD_START = "start";
-	
-	public final static String FIELD_END = "end";
-	
-	public final static String FIELD_TELECOM = "telecom";
-	
-	public final static String HOME = "home";
-	
-	public final static String MOBILE = "mobile";
-	
-	public final static String USE_OFFICIAL = "official";
-	
-	public final static String PHONE = "phone";
-	
-	public final static String SYSTEM_SOURCE_ID = "http://openclientregistry.org/fhir/sourceid";
-	
-	public final static String SYSTEM_PREFIX = "urn:uuid:";
-	
-	public final static DateFormat DATETIME_FORMATTER = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
-	
-	public final static DateFormat MYSQL_DATETIME_FORMATTER = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	
 	public final static String ATTR_TYPE_ID_PLACEHOLDER = "{ATTR_TYPE_ID}";
 	
@@ -122,13 +58,13 @@ public class MpiUtils {
 	 * @return field and value map of the patient details
 	 * @throws Exception
 	 */
-	public static Map<String, Object> buildPatientResource(String id, List<List<Object>> patient, List<List<Object>> person,
+	public static Map<String, Object> buildFhirPatient(String id, List<List<Object>> patient, List<List<Object>> person,
 	        Map<String, Object> mpiPatient) throws Exception {
 		
 		Map<String, Object> fhirRes = new HashMap();
-		fhirRes.put(FIELD_RESOURCE_TYPE, "Patient");
+		fhirRes.put(MpiConstants.FIELD_RESOURCE_TYPE, "Patient");
 		
-		fhirRes.put(FIELD_ACTIVE, !Boolean.valueOf(patient.get(0).get(0).toString()));
+		fhirRes.put(MpiConstants.FIELD_ACTIVE, !Boolean.valueOf(patient.get(0).get(0).toString()));
 		
 		AdministrationService adminService = Context.getAdministrationService();
 		String fhirGender = null;
@@ -145,29 +81,29 @@ public class MpiUtils {
 			throw new APIException("Don't know how to represent in fhir gender value: " + gender);
 		}
 		
-		fhirRes.put(FIELD_GENDER, fhirGender);
+		fhirRes.put(MpiConstants.FIELD_GENDER, fhirGender);
 		
 		String birthDate = person.get(0).get(1) != null ? person.get(0).get(1).toString() : null;
-		fhirRes.put(FIELD_BIRTHDATE, birthDate);
+		fhirRes.put(MpiConstants.FIELD_BIRTHDATE, birthDate);
 		
 		String dead = person.get(0).get(2).toString();
 		if (Boolean.valueOf(dead)) {
 			String deathDateStr = person.get(0).get(3) != null ? person.get(0).get(3).toString() : null;
 			if (StringUtils.isBlank(deathDateStr)) {
-				fhirRes.put(FIELD_DECEASED, dead);
+				fhirRes.put(MpiConstants.FIELD_DECEASED, dead);
 			} else {
 				Date deathDate = MYSQL_DATETIME_FORMATTER.parse(deathDateStr);
-				fhirRes.put(FIELD_DECEASED_DATE, DATETIME_FORMATTER.format(deathDate));
+				fhirRes.put(MpiConstants.FIELD_DECEASED_DATE, DATETIME_FORMATTER.format(deathDate));
 			}
 		} else {
-			fhirRes.put(FIELD_DECEASED, Boolean.valueOf(dead));
-			fhirRes.put(FIELD_DECEASED_DATE, null);
+			fhirRes.put(MpiConstants.FIELD_DECEASED, Boolean.valueOf(dead));
+			fhirRes.put(MpiConstants.FIELD_DECEASED_DATE, null);
 		}
 		
-		fhirRes.put(FIELD_IDENTIFIER, getIds(id, person, mpiPatient, adminService));
-		fhirRes.put(FIELD_NAME, getNames(id, mpiPatient, adminService));
-		fhirRes.put(FIELD_ADDRESS, getAddresses(id, mpiPatient, adminService));
-		fhirRes.put(FIELD_TELECOM, getPhones(id, adminService));
+		fhirRes.put(MpiConstants.FIELD_IDENTIFIER, getIds(id, person, mpiPatient, adminService));
+		fhirRes.put(MpiConstants.FIELD_NAME, getNames(id, mpiPatient, adminService));
+		fhirRes.put(MpiConstants.FIELD_ADDRESS, getAddresses(id, mpiPatient, adminService));
+		fhirRes.put(MpiConstants.FIELD_TELECOM, getPhones(id, adminService));
 		
 		return fhirRes;
 	}
@@ -186,21 +122,21 @@ public class MpiUtils {
 		
 		List<List<Object>> idRows = as.executeSQL(ID_QUERY.replace(ID_PLACEHOLDER, patientId), true);
 		int idListLength = idRows.size() + 1;
-		if (mpiPatient != null && mpiPatient.get(FIELD_IDENTIFIER) != null) {
-			idListLength = ((List) mpiPatient.get(FIELD_IDENTIFIER)).size();
+		if (mpiPatient != null && mpiPatient.get(MpiConstants.FIELD_IDENTIFIER) != null) {
+			idListLength = ((List) mpiPatient.get(MpiConstants.FIELD_IDENTIFIER)).size();
 		}
 		
 		List<Map<String, Object>> identifiers = new ArrayList(idListLength);
 		Map<String, Object> sourceIdRes = new HashMap();
-		sourceIdRes.put(FIELD_SYSTEM, SYSTEM_SOURCE_ID);
-		sourceIdRes.put(FIELD_VALUE, person.get(0).get(4));
+		sourceIdRes.put(MpiConstants.FIELD_SYSTEM, MpiConstants.SYSTEM_SOURCE_ID);
+		sourceIdRes.put(MpiConstants.FIELD_VALUE, person.get(0).get(4));
 		identifiers.add(sourceIdRes);
 		
 		idRows.stream().forEach(idRow -> {
 			Map<String, Object> idResource = new HashMap();
-			idResource.put(FIELD_ID, idRow.get(2));
-			idResource.put(FIELD_SYSTEM, SYSTEM_PREFIX + idRow.get(1));
-			idResource.put(FIELD_VALUE, idRow.get(0));
+			idResource.put(MpiConstants.FIELD_ID, idRow.get(2));
+			idResource.put(MpiConstants.FIELD_SYSTEM, MpiConstants.SYSTEM_PREFIX + idRow.get(1));
+			idResource.put(MpiConstants.FIELD_VALUE, idRow.get(0));
 			identifiers.add(idResource);
 		});
 		
@@ -227,26 +163,26 @@ public class MpiUtils {
 		
 		List<List<Object>> nameRows = as.executeSQL(NAME_QUERY.replace(ID_PLACEHOLDER, patientId), true);
 		int nameListLength = nameRows.size();
-		if (mpiPatient != null && mpiPatient.get(FIELD_NAME) != null) {
-			nameListLength = ((List) mpiPatient.get(FIELD_NAME)).size();
+		if (mpiPatient != null && mpiPatient.get(MpiConstants.FIELD_NAME) != null) {
+			nameListLength = ((List) mpiPatient.get(MpiConstants.FIELD_NAME)).size();
 		}
 		
 		List<Map<String, Object>> names = new ArrayList(nameListLength);
 		boolean foundPreferred = false;
 		for (List<Object> nameRow : nameRows) {
 			Map<String, Object> nameRes = new HashMap();
-			nameRes.put(FIELD_ID, nameRow.get(4));
-			nameRes.put(FIELD_PREFIX, nameRow.get(0));
+			nameRes.put(MpiConstants.FIELD_ID, nameRow.get(4));
+			nameRes.put(MpiConstants.FIELD_PREFIX, nameRow.get(0));
 			
 			List<Object> givenNames = new ArrayList(2);
 			givenNames.add(nameRow.get(1));
 			givenNames.add(nameRow.get(2));
 			
-			nameRes.put(FIELD_GIVEN, givenNames);
-			nameRes.put(FIELD_FAMILY, nameRow.get(3));
+			nameRes.put(MpiConstants.FIELD_GIVEN, givenNames);
+			nameRes.put(MpiConstants.FIELD_FAMILY, nameRow.get(3));
 			//TODO Add family name suffix and degree as suffix fields
 			
-			nameRes.put(FIELD_USE, !foundPreferred ? USE_OFFICIAL : null);
+			nameRes.put(MpiConstants.FIELD_USE, !foundPreferred ? MpiConstants.USE_OFFICIAL : null);
 			if (!foundPreferred) {
 				foundPreferred = true;
 			}
@@ -274,24 +210,24 @@ public class MpiUtils {
 		
 		List<List<Object>> addressRows = as.executeSQL(ADDRESS_QUERY.replace(ID_PLACEHOLDER, patientId), true);
 		int addressListLength = addressRows.size();
-		if (mpiPatient != null && mpiPatient.get(FIELD_ADDRESS) != null) {
-			addressListLength = ((List) mpiPatient.get(FIELD_ADDRESS)).size();
+		if (mpiPatient != null && mpiPatient.get(MpiConstants.FIELD_ADDRESS) != null) {
+			addressListLength = ((List) mpiPatient.get(MpiConstants.FIELD_ADDRESS)).size();
 		}
 		
 		List<Map<String, Object>> addresses = new ArrayList(addressListLength);
 		for (List<Object> addressRow : addressRows) {
 			Map<String, Object> addressResource = new HashMap();
-			addressResource.put(FIELD_ID, addressRow.get(10));
+			addressResource.put(MpiConstants.FIELD_ID, addressRow.get(10));
 			List<Object> lineRes = new ArrayList(5);
 			lineRes.add(addressRow.get(1));//address2
 			lineRes.add(addressRow.get(4));//address6
 			lineRes.add(addressRow.get(3));//address5
 			lineRes.add(addressRow.get(2));//address3
 			lineRes.add(addressRow.get(0));//address1
-			addressResource.put(FIELD_LINE, lineRes);
-			addressResource.put(FIELD_DISTRICT, addressRow.get(5));
-			addressResource.put(FIELD_STATE, addressRow.get(6));
-			addressResource.put(FIELD_COUNTRY, addressRow.get(7));
+			addressResource.put(MpiConstants.FIELD_LINE, lineRes);
+			addressResource.put(MpiConstants.FIELD_DISTRICT, addressRow.get(5));
+			addressResource.put(MpiConstants.FIELD_STATE, addressRow.get(6));
+			addressResource.put(MpiConstants.FIELD_COUNTRY, addressRow.get(7));
 			
 			Map<String, Object> period = new HashMap();
 			String startDate = null;
@@ -304,9 +240,9 @@ public class MpiUtils {
 				endDate = DATETIME_FORMATTER.format(MYSQL_DATETIME_FORMATTER.parse(addressRow.get(9).toString()));
 			}
 			
-			period.put(FIELD_START, startDate);
-			period.put(FIELD_END, endDate);
-			addressResource.put(FIELD_PERIOD, period);
+			period.put(MpiConstants.FIELD_START, startDate);
+			period.put(MpiConstants.FIELD_END, endDate);
+			addressResource.put(MpiConstants.FIELD_PERIOD, period);
 			
 			addresses.add(addressResource);
 		}
@@ -334,10 +270,10 @@ public class MpiUtils {
 		Map<String, Object> phoneResource = null;
 		if (!phoneRows.isEmpty()) {
 			phoneResource = new HashMap();
-			phoneResource.put(FIELD_ID, phoneRows.get(0).get(1));
-			phoneResource.put(FIELD_SYSTEM, PHONE);
-			phoneResource.put(FIELD_VALUE, phoneRows.get(0).get(0));
-			phoneResource.put(FIELD_USE, MOBILE);
+			phoneResource.put(MpiConstants.FIELD_ID, phoneRows.get(0).get(1));
+			phoneResource.put(MpiConstants.FIELD_SYSTEM, MpiConstants.PHONE);
+			phoneResource.put(MpiConstants.FIELD_VALUE, phoneRows.get(0).get(0));
+			phoneResource.put(MpiConstants.FIELD_USE, MpiConstants.MOBILE);
 		}
 		
 		List<Map<String, Object>> phones = new ArrayList(2);
@@ -350,10 +286,10 @@ public class MpiUtils {
 		phoneResource = null;
 		if (!phoneRows.isEmpty()) {
 			phoneResource = new HashMap();
-			phoneResource.put(FIELD_ID, phoneRows.get(0).get(1));
-			phoneResource.put(FIELD_SYSTEM, PHONE);
-			phoneResource.put(FIELD_VALUE, phoneRows.get(0).get(0));
-			phoneResource.put(FIELD_USE, HOME);
+			phoneResource.put(MpiConstants.FIELD_ID, phoneRows.get(0).get(1));
+			phoneResource.put(MpiConstants.FIELD_SYSTEM, MpiConstants.PHONE);
+			phoneResource.put(MpiConstants.FIELD_VALUE, phoneRows.get(0).get(0));
+			phoneResource.put(MpiConstants.FIELD_USE, MpiConstants.HOME);
 		}
 		
 		phones.add(phoneResource);
@@ -373,7 +309,7 @@ public class MpiUtils {
 		//TODO possibly query OpenCR after https://github.com/intrahealth/client-registry/issues/65 is resolved
 		String hapiFhirUrl = Context.getAdministrationService().getGlobalProperty(MpiConstants.GP_HAPI_FHIR_BASE_URL);
 		IGenericClient client = ctx.newRestfulGenericClient(hapiFhirUrl + "/fhir");
-		ICriterion<?> icrit = Patient.IDENTIFIER.exactly().systemAndValues(SYSTEM_SOURCE_ID, patientUuid);
+		ICriterion<?> icrit = Patient.IDENTIFIER.exactly().systemAndValues(MpiConstants.SYSTEM_SOURCE_ID, patientUuid);
 		Bundle bundle = client.search().forResource(Patient.class).where(icrit).returnBundle(Bundle.class).encodedJson()
 		        .execute();
 		if (bundle.isEmpty() || bundle.getEntry().isEmpty()) {
