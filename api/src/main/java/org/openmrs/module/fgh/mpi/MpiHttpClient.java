@@ -42,7 +42,7 @@ public class MpiHttpClient {
 	
 	private String serverBaseUrl;
 	
-	private ObjectMapper mapper = new ObjectMapper();
+	private static final ObjectMapper MAPPER = new ObjectMapper();
 	
 	public Map<String, Object> getPatient(String mpiUuid) throws Exception {
 		if (log.isDebugEnabled()) {
@@ -54,7 +54,7 @@ public class MpiHttpClient {
 	
 	public List<Map<String, Map<String, String>>> submitPatient(String patientData) throws Exception {
 		if (log.isDebugEnabled()) {
-			log.debug("Received request to submit patient to MPI -> " + patientData);
+			log.debug("Received request to submit patient to MPI");
 		}
 		
 		return submitRequest("/fhir/Patient", patientData, List.class);
@@ -96,12 +96,7 @@ public class MpiHttpClient {
 				throw new APIException("Unexpected response " + error + " from MPI");
 			}
 			
-			T response = mapper.readValue((InputStream) connection.getContent(), responseType);
-			if (log.isDebugEnabled()) {
-				log.debug("Response: " + response);
-			}
-			
-			return response;
+			return MAPPER.readValue((InputStream) connection.getContent(), responseType);
 		}
 		finally {
 			if (connection != null) {

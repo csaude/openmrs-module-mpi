@@ -122,8 +122,7 @@ public class MpiUtils {
 	 * @throws Exception
 	 */
 	public static Map<String, Object> buildPatientResource(String id, List<List<Object>> patient, List<List<Object>> person,
-	                                                       Map<String, Object> mpiPatient)
-	    throws Exception {
+	        Map<String, Object> mpiPatient) throws Exception {
 		
 		Map<String, Object> fhirRes = new HashMap();
 		fhirRes.put(FIELD_RESOURCE_TYPE, "Patient");
@@ -165,7 +164,12 @@ public class MpiUtils {
 		}
 		
 		List<List<Object>> idRows = adminService.executeSQL(ID_QUERY.replace(ID_PLACEHOLDER, id), true);
-		List<Map<String, Object>> identifiers = new ArrayList(idRows.size() + 1);
+		int idListLength = idRows.size() + 1;
+		if (mpiPatient != null && mpiPatient.get(FIELD_IDENTIFIER) != null) {
+			idListLength = ((List) mpiPatient.get(FIELD_IDENTIFIER)).size();
+		}
+		
+		List<Map<String, Object>> identifiers = new ArrayList(idListLength);
 		Map<String, Object> sourceIdRes = new HashMap();
 		sourceIdRes.put(FIELD_SYSTEM, SYSTEM_SOURCE_ID);
 		sourceIdRes.put(FIELD_VALUE, person.get(0).get(4));
@@ -179,11 +183,22 @@ public class MpiUtils {
 			identifiers.add(idResource);
 		});
 		
+		//We need to overwrite all ids at all indices for an existing patient otherwise OpenCR(hapi fhir) will write 
+		//each identifier data by matching indices of our list with the existing list which will be problematic if our
+		//list and existing list are of different length
+		while (identifiers.size() < idListLength) {
+			identifiers.add(null);
+		}
+		
 		fhirRes.put(FIELD_IDENTIFIER, identifiers);
 		
 		List<List<Object>> nameRows = adminService.executeSQL(NAME_QUERY.replace(ID_PLACEHOLDER, id), true);
-		List<Map<String, Object>> names = new ArrayList(nameRows.size());
+		int nameListLength = nameRows.size();
+		if (mpiPatient != null && mpiPatient.get(FIELD_NAME) != null) {
+			nameListLength = ((List) mpiPatient.get(FIELD_NAME)).size();
+		}
 		
+		List<Map<String, Object>> names = new ArrayList(nameListLength);
 		boolean foundPreferred = false;
 		for (List<Object> nameRow : nameRows) {
 			Map<String, Object> nameRes = new HashMap();
@@ -206,10 +221,19 @@ public class MpiUtils {
 			names.add(nameRes);
 		}
 		
+		while (names.size() < nameListLength) {
+			names.add(null);
+		}
+		
 		fhirRes.put(FIELD_NAME, names);
 		
 		List<List<Object>> addressRows = adminService.executeSQL(ADDRESS_QUERY.replace(ID_PLACEHOLDER, id), true);
-		List<Map<String, Object>> addresses = new ArrayList(addressRows.size());
+		int addressListLength = addressRows.size();
+		if (mpiPatient != null && mpiPatient.get(FIELD_ADDRESS) != null) {
+			addressListLength = ((List) mpiPatient.get(FIELD_ADDRESS)).size();
+		}
+		
+		List<Map<String, Object>> addresses = new ArrayList(addressListLength);
 		for (List<Object> addressRow : addressRows) {
 			Map<String, Object> addressResource = new HashMap();
 			addressResource.put(FIELD_ID, addressRow.get(10));
@@ -240,6 +264,10 @@ public class MpiUtils {
 			addressResource.put(FIELD_PERIOD, period);
 			
 			addresses.add(addressResource);
+		}
+		
+		while (addresses.size() < addressListLength) {
+			addresses.add(null);
 		}
 		
 		fhirRes.put(FIELD_ADDRESS, addresses);

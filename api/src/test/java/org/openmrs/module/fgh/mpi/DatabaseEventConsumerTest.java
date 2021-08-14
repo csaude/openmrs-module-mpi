@@ -15,9 +15,6 @@ import org.openmrs.module.debezium.DatabaseOperation;
 public class DatabaseEventConsumerTest {
 	
 	@Mock
-	private MpiIntegrationProcessor mockProcessor;
-	
-	@Mock
 	private PatientAndPersonEventHandler mockHandler;
 	
 	private DatabaseEventConsumer consumer;
@@ -27,7 +24,6 @@ public class DatabaseEventConsumerTest {
 		MockitoAnnotations.initMocks(this);
 		consumer = new DatabaseEventConsumer();
 		setInternalState(consumer, "patientHandler", mockHandler);
-		setInternalState(consumer, "processor", mockProcessor);
 	}
 	
 	@Test
