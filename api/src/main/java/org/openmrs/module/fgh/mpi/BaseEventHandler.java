@@ -38,7 +38,7 @@ public abstract class BaseEventHandler {
 				
 				log.info("Found patient id: " + patientIdRef.get());
 				
-				processor.process(patientIdRef.get());
+				processor.process(patientIdRef.get(), event);
 			}
 			catch (Throwable t) {
 				throwableRef.set(t);

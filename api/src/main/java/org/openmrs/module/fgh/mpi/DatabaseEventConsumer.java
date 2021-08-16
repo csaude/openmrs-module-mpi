@@ -41,6 +41,8 @@ public class DatabaseEventConsumer implements Consumer<DatabaseEvent> {
 					associationHandler.handle(event);
 					break;
 			}
+			
+			log.info("Done processing database event -> " + event);
 		}
 		catch (Exception e) {
 			throw new APIException("An error occurred while processing database event: " + event, e);

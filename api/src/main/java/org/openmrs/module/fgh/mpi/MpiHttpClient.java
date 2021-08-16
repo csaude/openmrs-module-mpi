@@ -68,7 +68,14 @@ public class MpiHttpClient {
 		return getPatientFromHapiFhir(patientUuid);
 	}
 	
-	public List<Map<String, Map<String, String>>> submitPatient(String patientData) throws Exception {
+	/**
+	 * Submit the specified patient data to the MPI
+	 * 
+	 * @param patientData the patient fhir json payload
+	 * @return a map representation of the created patient's MPI uuids
+	 * @throws Exception
+	 */
+	public List<Map<String, Object>> submitPatient(String patientData) throws Exception {
 		if (log.isDebugEnabled()) {
 			log.debug("Received request to submit patient to MPI");
 		}
@@ -76,6 +83,16 @@ public class MpiHttpClient {
 		return submitRequest("/fhir/Patient", patientData, List.class);
 	}
 	
+	/**
+	 * Submits a request to the MPI
+	 * 
+	 * @param urlPath request path to submit to
+	 * @param data the data to post if any
+	 * @param responseType the type of response to return
+	 * @param <T>
+	 * @return the response from the MPI
+	 * @throws Exception
+	 */
 	private <T> T submitRequest(String urlPath, String data, Class<T> responseType) throws Exception {
 		initIfNecessary();
 		HttpsURLConnection connection = (HttpsURLConnection) new URL(serverBaseUrl + urlPath).openConnection();

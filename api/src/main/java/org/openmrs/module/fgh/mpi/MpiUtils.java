@@ -49,18 +49,18 @@ public class MpiUtils {
 	 * @return field and value map of the patient details
 	 * @throws Exception
 	 */
-	public static Map<String, Object> buildFhirPatient(String id, List<List<Object>> patient, List<List<Object>> person,
+	public static Map<String, Object> buildFhirPatient(String id, List<Object> patient, List<Object> person,
 	                                                   Map<String, Object> mpiPatient)
 	    throws Exception {
 		
 		Map<String, Object> fhirRes = new HashMap();
 		fhirRes.put(MpiConstants.FIELD_RESOURCE_TYPE, "Patient");
 		
-		fhirRes.put(MpiConstants.FIELD_ACTIVE, !Boolean.valueOf(patient.get(0).get(0).toString()));
+		fhirRes.put(MpiConstants.FIELD_ACTIVE, !Boolean.valueOf(patient.get(0).toString()));
 		
 		AdministrationService adminService = Context.getAdministrationService();
 		String fhirGender = null;
-		String gender = person.get(0).get(0) != null ? person.get(0).get(0).toString() : null;
+		String gender = person.get(0) != null ? person.get(0).toString() : null;
 		if ("M".equalsIgnoreCase(gender)) {
 			fhirGender = "male";
 		} else if ("F".equalsIgnoreCase(gender)) {
@@ -75,12 +75,12 @@ public class MpiUtils {
 		
 		fhirRes.put(MpiConstants.FIELD_GENDER, fhirGender);
 		
-		String birthDate = person.get(0).get(1) != null ? person.get(0).get(1).toString() : null;
+		String birthDate = person.get(1) != null ? person.get(1).toString() : null;
 		fhirRes.put(MpiConstants.FIELD_BIRTHDATE, birthDate);
 		
-		String dead = person.get(0).get(2).toString();
+		String dead = person.get(2).toString();
 		if (Boolean.valueOf(dead)) {
-			String deathDateStr = person.get(0).get(3) != null ? person.get(0).get(3).toString() : null;
+			String deathDateStr = person.get(3) != null ? person.get(3).toString() : null;
 			if (StringUtils.isBlank(deathDateStr)) {
 				fhirRes.put(MpiConstants.FIELD_DECEASED, dead);
 			} else {
@@ -109,8 +109,8 @@ public class MpiUtils {
 	 * @param as {@link AdministrationService} object
 	 * @return
 	 */
-	private static List<Map<String, Object>> getIds(String patientId, List<List<Object>> person,
-	                                                Map<String, Object> mpiPatient, AdministrationService as) {
+	private static List<Map<String, Object>> getIds(String patientId, List<Object> person, Map<String, Object> mpiPatient,
+	                                                AdministrationService as) {
 		
 		List<List<Object>> idRows = as.executeSQL(ID_QUERY.replace(ID_PLACEHOLDER, patientId), true);
 		int idListLength = idRows.size() + 1;
@@ -121,7 +121,7 @@ public class MpiUtils {
 		List<Map<String, Object>> identifiers = new ArrayList(idListLength);
 		Map<String, Object> sourceIdRes = new HashMap();
 		sourceIdRes.put(MpiConstants.FIELD_SYSTEM, MpiConstants.SYSTEM_SOURCE_ID);
-		sourceIdRes.put(MpiConstants.FIELD_VALUE, person.get(0).get(4));
+		sourceIdRes.put(MpiConstants.FIELD_VALUE, person.get(4));
 		identifiers.add(sourceIdRes);
 		
 		idRows.stream().forEach(idRow -> {
