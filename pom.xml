@@ -46,9 +46,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <debeziumVersion>1.0.0-SNAPSHOT</debeziumVersion>
         <httpclientVersion>4.5.13</httpclientVersion>
-        <hapiFhirVersion>5.4.2</hapiFhirVersion>
-        <jacksonVersion>2.12.4</jacksonVersion>
-        <slf4jVersion>1.7.30</slf4jVersion>
     </properties>
 
     <dependencyManagement>
@@ -60,51 +57,10 @@
                 <scope>provided</scope>
             </dependency>
             <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-api</artifactId>
-                <version>${slf4jVersion}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-log4j12</artifactId>
-                <version>${slf4jVersion}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>log4j</groupId>
-                        <artifactId>log4j</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
                 <groupId>org.openmrs.module</groupId>
                 <artifactId>debezium-api</artifactId>
                 <scope>provided</scope>
                 <version>${debeziumVersion}</version>
-            </dependency>
-            <dependency>
-                <groupId>ca.uhn.hapi.fhir</groupId>
-                <artifactId>hapi-fhir-client</artifactId>
-                <version>${hapiFhirVersion}</version>
-            </dependency>
-            <dependency>
-                <groupId>ca.uhn.hapi.fhir</groupId>
-                <artifactId>hapi-fhir-structures-r4</artifactId>
-                <version>${hapiFhirVersion}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>${jacksonVersion}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-core</artifactId>
-                <version>${jacksonVersion}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-annotations</artifactId>
-                <version>${jacksonVersion}</version>
             </dependency>
             
             <!-- Test dependencies -->

@@ -4,6 +4,10 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PASS;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PATH;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_TYPE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_BASE_URL;
+import static org.openmrs.module.fgh.mpi.MpiConstants.REQ_PARAM_SOURCE_ID;
+import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_PARAM;
+import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_VALUE_REF;
+import static org.openmrs.module.fgh.mpi.MpiConstants.SYSTEM_SOURCE_ID;
 
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -19,8 +23,6 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 
 import org.apache.commons.lang3.StringUtils;
-import org.hl7.fhir.r4.model.Bundle;
-import org.hl7.fhir.r4.model.Patient;
 import org.openmrs.api.APIException;
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.context.Context;
@@ -29,10 +31,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import ca.uhn.fhir.context.FhirContext;
-import ca.uhn.fhir.rest.client.api.IGenericClient;
-import ca.uhn.fhir.rest.gclient.ICriterion;
 
 /**
  * Http client that posts patient data to the MPI
@@ -48,6 +46,8 @@ public class MpiHttpClient {
 	
 	private String serverBaseUrl;
 	
+	private static final String SUBPATH_PATIENT = "/fhir/Patient";
+	
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 	
 	/**
@@ -59,13 +59,27 @@ public class MpiHttpClient {
 	 */
 	public Map<String, Object> getPatient(String patientUuid) throws Exception {
 		if (log.isDebugEnabled()) {
-			log.debug("Received request to fetch patient from MPI with OpenMRS uuid -> " + patientUuid);
+			log.debug("Received request to fetch patient from MPI with OpenMRS uuid: " + patientUuid);
 		}
 		
-		//TODO possibly query OpenCR after https://github.com/intrahealth/client-registry/issues/65 is resolved
-		//return submitRequest("/fhir/Patient/" + mpiUuid, null, Map.class);
+		if (log.isDebugEnabled()) {
+			log.debug("Searching for patient from MPI with OpenMRS uuid: " + patientUuid);
+		}
 		
-		return getPatientFromHapiFhir(patientUuid);
+		String query = REQ_PARAM_SOURCE_ID + "=" + SYSTEM_SOURCE_ID + "|" + patientUuid;
+		Map<String, Object> pixResponse = submitRequest("$ihe-pix?" + query, null, Map.class);
+		List<Map<String, Object>> ids = (List<Map<String, Object>>) pixResponse.get(RESPONSE_FIELD_PARAM);
+		if (ids.isEmpty()) {
+			return null;
+		}
+		
+		if (log.isDebugEnabled()) {
+			log.debug("Fetching actual patient record from MPI");
+		}
+		
+		String[] patientUrlParts = ids.get(0).get(RESPONSE_FIELD_VALUE_REF).toString().split("/");
+		
+		return submitRequest(patientUrlParts[patientUrlParts.length - 1], null, Map.class);
 	}
 	
 	/**
@@ -80,22 +94,27 @@ public class MpiHttpClient {
 			log.debug("Received request to submit patient to MPI");
 		}
 		
-		return submitRequest("/fhir/Patient", patientData, List.class);
+		return submitRequest(null, patientData, List.class);
 	}
 	
 	/**
 	 * Submits a request to the MPI
 	 * 
-	 * @param urlPath request path to submit to
+	 * @param pathEnding the string to append to the URL
 	 * @param data the data to post if any
 	 * @param responseType the type of response to return
 	 * @param <T>
 	 * @return the response from the MPI
 	 * @throws Exception
 	 */
-	private <T> T submitRequest(String urlPath, String data, Class<T> responseType) throws Exception {
+	private <T> T submitRequest(String pathEnding, String data, Class<T> responseType) throws Exception {
 		initIfNecessary();
-		HttpsURLConnection connection = (HttpsURLConnection) new URL(serverBaseUrl + urlPath).openConnection();
+		String url = serverBaseUrl + SUBPATH_PATIENT;
+		if (pathEnding != null) {
+			url += ("/" + pathEnding);
+		}
+		
+		HttpsURLConnection connection = (HttpsURLConnection) new URL(url).openConnection();
 		
 		try {
 			connection.setSSLSocketFactory(sslContext.getSocketFactory());
@@ -184,33 +203,6 @@ public class MpiHttpClient {
 			}
 		}
 		
-	}
-	
-	/**
-	 * Fetches the patient resource from the hapi fhir server
-	 *
-	 * @param patientUuid the uuid of the patient
-	 * @return a map of the patient resource
-	 */
-	private Map<String, Object> getPatientFromHapiFhir(String patientUuid) throws Exception {
-		FhirContext ctx = FhirContext.forR4();
-		//TODO cache the hapi fhir url
-		String hapiFhirUrl = Context.getAdministrationService().getGlobalProperty(MpiConstants.GP_HAPI_FHIR_BASE_URL);
-		IGenericClient client = ctx.newRestfulGenericClient(hapiFhirUrl + "/fhir");
-		ICriterion<?> icrit = Patient.IDENTIFIER.exactly().systemAndValues(MpiConstants.SYSTEM_SOURCE_ID, patientUuid);
-		Bundle bundle = client.search().forResource(Patient.class).where(icrit).returnBundle(Bundle.class).encodedJson()
-		        .execute();
-		if (bundle.isEmpty() || bundle.getEntry().isEmpty()) {
-			return null;
-		}
-		
-		if (bundle.getEntry().size() > 1) {
-			throw new APIException("Found multiple patients with the same OpenMRS uuid in the MPI");
-		}
-		
-		String json = ctx.newJsonParser().encodeResourceToString(bundle.getEntry().get(0).getResource());
-		
-		return MAPPER.readValue(json, Map.class);
 	}
 	
 }

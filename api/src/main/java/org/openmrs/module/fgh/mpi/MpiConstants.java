@@ -19,8 +19,6 @@ public class MpiConstants {
 	
 	public final static String GP_PHONE_HOME = MODULE_ID + ".person.attribute.type.home.phone";
 	
-	public final static String GP_HAPI_FHIR_BASE_URL = MODULE_ID + ".hapi.fhir.base.url";
-	
 	public final static String FIELD_RESOURCE_TYPE = "resourceType";
 	
 	public final static String FIELD_ID = "id";
@@ -84,5 +82,11 @@ public class MpiConstants {
 	public final static DateFormat DATETIME_FORMATTER = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
 	
 	public final static DateFormat MYSQL_DATETIME_FORMATTER = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	
+	public final static String REQ_PARAM_SOURCE_ID = "sourceIdentifier";
+	
+	public final static String RESPONSE_FIELD_PARAM = "parameter";
+	
+	public final static String RESPONSE_FIELD_VALUE_REF = "valueReference";
 	
 }

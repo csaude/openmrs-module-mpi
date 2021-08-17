@@ -50,8 +50,7 @@ public class MpiUtils {
 	 * @throws Exception
 	 */
 	public static Map<String, Object> buildFhirPatient(String id, List<Object> patient, List<Object> person,
-	                                                   Map<String, Object> mpiPatient)
-	    throws Exception {
+	        Map<String, Object> mpiPatient) throws Exception {
 		
 		Map<String, Object> fhirRes = new HashMap();
 		fhirRes.put(MpiConstants.FIELD_RESOURCE_TYPE, "Patient");
@@ -110,7 +109,7 @@ public class MpiUtils {
 	 * @return
 	 */
 	private static List<Map<String, Object>> getIds(String patientId, List<Object> person, Map<String, Object> mpiPatient,
-	                                                AdministrationService as) {
+	        AdministrationService as) {
 		
 		List<List<Object>> idRows = as.executeSQL(ID_QUERY.replace(ID_PLACEHOLDER, patientId), true);
 		int idListLength = idRows.size() + 1;
@@ -151,7 +150,7 @@ public class MpiUtils {
 	 * @return
 	 */
 	private static List<Map<String, Object>> getNames(String patientId, Map<String, Object> mpiPatient,
-	                                                  AdministrationService as) {
+	        AdministrationService as) {
 		
 		List<List<Object>> nameRows = as.executeSQL(NAME_QUERY.replace(ID_PLACEHOLDER, patientId), true);
 		int nameListLength = nameRows.size();
@@ -198,8 +197,7 @@ public class MpiUtils {
 	 * @return
 	 */
 	private static List<Map<String, Object>> getAddresses(String patientId, Map<String, Object> mpiPatient,
-	                                                      AdministrationService as)
-	    throws Exception {
+	        AdministrationService as) throws Exception {
 		
 		List<List<Object>> addressRows = as.executeSQL(ADDRESS_QUERY.replace(ID_PLACEHOLDER, patientId), true);
 		int addressListLength = addressRows.size();
@@ -256,7 +254,7 @@ public class MpiUtils {
 	 * @return
 	 */
 	private static List<Map<String, Object>> getPhones(String patientId, Map<String, Object> mpiPatient,
-	                                                   AdministrationService as) {
+	        AdministrationService as) {
 		PersonService personService = Context.getPersonService();
 		String attTypeUuid = as.getGlobalProperty(MpiConstants.GP_PHONE_MOBILE);
 		String attTypeId = personService.getPersonAttributeTypeByUuid(attTypeUuid).getId().toString();

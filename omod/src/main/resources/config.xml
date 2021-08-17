@@ -60,12 +60,6 @@
         </description>
         <defaultValue>e6c97a9d-a77b-401f-b06e-81900e21ed1d</defaultValue>
     </globalProperty>
-    <globalProperty>
-        <property>${project.parent.artifactId}.hapi.fhir.base.url</property>
-        <description>
-            The base URL of the HAPI FHIR server used by the MPI e.g. https://localhost:8080
-        </description>
-    </globalProperty>
 
 </module>
 
