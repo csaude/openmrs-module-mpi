@@ -116,8 +116,14 @@ public class MpiIntegrationProcessor {
 				fhirResource = mpiPatient;
 				fhirResource.put(FIELD_ACTIVE, false);
 			} else {
+				List<Object> patientDetails = patient.get(0);
+				if (mpiPatient == null && Boolean.valueOf(patientDetails.get(0).toString())) {
+					log.info("No need to submit voided patient record to the MPI");
+					return;
+				}
+				
 				//TODO May be we should not build a new resource and instead update the mpiPatient if one exists
-				fhirResource = MpiUtils.buildFhirPatient(id, patient.get(0), person.get(0), mpiPatient);
+				fhirResource = MpiUtils.buildFhirPatient(id, patientDetails, person.get(0), mpiPatient);
 			}
 		}
 		
