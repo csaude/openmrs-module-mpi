@@ -15,11 +15,15 @@ import org.openmrs.api.APIException;
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.PersonService;
 import org.openmrs.api.context.Context;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Contains utility methods
  */
 public class MpiUtils {
+	
+	private static final Logger log = LoggerFactory.getLogger(MpiUtils.class);
 	
 	public final static String ATTR_TYPE_ID_PLACEHOLDER = "{ATTR_TYPE_ID}";
 	

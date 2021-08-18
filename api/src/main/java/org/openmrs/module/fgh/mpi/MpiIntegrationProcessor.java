@@ -31,7 +31,7 @@ public class MpiIntegrationProcessor {
 	
 	public final static String PATIENT_QUERY = "SELECT voided FROM patient WHERE patient_id = " + ID_PLACEHOLDER;
 	
-	public final static String PERSON_QUERY = "SELECT gender, birthdate, dead, death_date, uuid FROM person WHERE "
+	public final static String PERSON_QUERY = "SELECT gender, birthdate, dead, death_date, uuid, voided FROM person WHERE "
 	        + "person_id = " + ID_PLACEHOLDER;
 	
 	@Autowired
@@ -117,13 +117,20 @@ public class MpiIntegrationProcessor {
 				fhirResource.put(FIELD_ACTIVE, false);
 			} else {
 				List<Object> patientDetails = patient.get(0);
-				if (mpiPatient == null && Boolean.valueOf(patientDetails.get(0).toString())) {
-					log.info("No need to submit voided patient record to the MPI");
-					return;
+				List<Object> personDetails = person.get(0);
+				if (mpiPatient == null) {
+					if (Boolean.valueOf(patientDetails.get(0).toString())
+					        || Boolean.valueOf(personDetails.get(5).toString())) {
+						
+						//This should effectively skip placeholder patient and person rows
+						log.info("Not submitting the patient to the MPI because the person or patient is voided");
+						return;
+					}
 				}
 				
 				//TODO May be we should not build a new resource and instead update the mpiPatient if one exists
-				fhirResource = MpiUtils.buildFhirPatient(id, patientDetails, person.get(0), mpiPatient);
+				//And we will need to be aware of placeholder rows
+				fhirResource = MpiUtils.buildFhirPatient(id, patientDetails, personDetails, mpiPatient);
 			}
 		}
 		
