@@ -11,7 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-@Component(DebeziumConstants.EB_EVENT_CONSUMER_BEAN_NAME)
+@Component(DebeziumConstants.DB_EVENT_LISTENER_BEAN_NAME)
 public class DatabaseEventConsumer implements Consumer<DatabaseEvent> {
 	
 	private static final Logger log = LoggerFactory.getLogger(DatabaseEventConsumer.class);
