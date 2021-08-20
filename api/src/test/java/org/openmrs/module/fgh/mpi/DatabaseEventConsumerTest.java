@@ -31,7 +31,7 @@ public class DatabaseEventConsumerTest {
 		DatabaseEvent event = new DatabaseEvent(1, "patient", DatabaseOperation.CREATE, Snapshot.FALSE, null,
 		        Collections.singletonMap("uuid", "uuid-1"));
 		
-		consumer.accept(event);
+		//consumer.onEvent(event);
 	}
 	
 }

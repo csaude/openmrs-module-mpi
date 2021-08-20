@@ -9,13 +9,13 @@
  */
 package org.openmrs.module.fgh.mpi;
 
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.PatternLayout;
 import org.openmrs.module.BaseModuleActivator;
-import org.openmrs.module.DaemonToken;
-import org.openmrs.module.DaemonTokenAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MpiActivator extends BaseModuleActivator implements DaemonTokenAware {
+public class MpiActivator extends BaseModuleActivator {
 	
 	private static final Logger log = LoggerFactory.getLogger(MpiActivator.class);
 	
@@ -25,6 +25,12 @@ public class MpiActivator extends BaseModuleActivator implements DaemonTokenAwar
 	@Override
 	public void started() {
 		log.info("MPI module started");
+		
+		org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
+		ConsoleAppender consoleAppender = (ConsoleAppender) rootLogger.getAppender("CONSOLE");
+		PatternLayout patternLayout = new PatternLayout("%-5p %t - %C{1}.%M(%L) |%d{ISO8601}| %m%n");
+		consoleAppender.setLayout(patternLayout);
+		consoleAppender.activateOptions();
 	}
 	
 	/**
@@ -33,11 +39,6 @@ public class MpiActivator extends BaseModuleActivator implements DaemonTokenAwar
 	@Override
 	public void stopped() {
 		log.info("MPI module stopped");
-	}
-	
-	@Override
-	public void setDaemonToken(DaemonToken daemonToken) {
-		DaemonTokenHolder.setToken(daemonToken);
 	}
 	
 }

@@ -7,6 +7,11 @@ public class MpiConstants {
 	
 	public final static String MODULE_ID = "mpi";
 	
+	public final static int DEFAULT_THREAD_COUNT = 50;
+	
+	public final static String[] WATCHED_TABLES = new String[] { "person", "patient", "person_name", "person_address",
+	        "patient_identifier", "person_attribute" };
+	
 	public final static String GP_MPI_BASE_URL = MODULE_ID + ".server.base.url";
 	
 	public final static String GP_KEYSTORE_PATH = MODULE_ID + ".keystore.path";
