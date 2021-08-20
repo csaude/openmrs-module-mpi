@@ -22,9 +22,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component(DebeziumConstants.DB_EVENT_LISTENER_BEAN_NAME)
-public class DatabaseEventConsumer implements DatabaseEventListener {
+public class MpiDatabaseEventListener implements DatabaseEventListener {
 	
-	private static final Logger log = LoggerFactory.getLogger(DatabaseEventConsumer.class);
+	private static final Logger log = LoggerFactory.getLogger(MpiDatabaseEventListener.class);
 	
 	@Autowired
 	@Qualifier("patientAndPersonEventHandler")

@@ -12,18 +12,18 @@ import org.openmrs.module.debezium.DatabaseEvent;
 import org.openmrs.module.debezium.DatabaseEvent.Snapshot;
 import org.openmrs.module.debezium.DatabaseOperation;
 
-public class DatabaseEventConsumerTest {
+public class MpiDatabaseEventListenerTest {
 	
 	@Mock
 	private PatientAndPersonEventHandler mockHandler;
 	
-	private DatabaseEventConsumer consumer;
+	private MpiDatabaseEventListener listener;
 	
 	@Before
 	public void setup() {
 		MockitoAnnotations.initMocks(this);
-		consumer = new DatabaseEventConsumer();
-		setInternalState(consumer, "patientHandler", mockHandler);
+		listener = new MpiDatabaseEventListener();
+		setInternalState(listener, "patientHandler", mockHandler);
 	}
 	
 	@Test
