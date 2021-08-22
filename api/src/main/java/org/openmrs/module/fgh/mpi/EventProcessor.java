@@ -10,7 +10,7 @@ public interface EventProcessor {
 	/**
 	 * called to process an event
 	 * 
-	 * @param event {@link DatabaseEvent} obkect
+	 * @param event {@link DatabaseEvent} object
 	 */
 	void process(DatabaseEvent event);
 	

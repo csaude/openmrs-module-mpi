@@ -24,8 +24,7 @@ public class ProcessorUtils {
 	 * @throws Throwable
 	 */
 	public static void processEvent(DatabaseEvent event, PatientAndPersonEventHandler patientHandler,
-	                                AssociationEventHandler associationHandler)
-	    throws Throwable {
+	        AssociationEventHandler associationHandler) throws Throwable {
 		
 		try {
 			final Long start = System.currentTimeMillis();
