@@ -16,8 +16,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 /**
  * An instance of this class takes a patient uuid, loads the patient record, generates the fhir json
  * payload and calls the http client to post the patient to the MPI.
@@ -37,8 +35,6 @@ public class MpiIntegrationProcessor {
 	@Autowired
 	private MpiHttpClient mpiHttpClient;
 	
-	private ObjectMapper mapper = new ObjectMapper();
-	
 	/**
 	 * Adds or updates the patient with the specified patient id in the MPI
 	 * 
@@ -46,12 +42,12 @@ public class MpiIntegrationProcessor {
 	 * @param e DatabaseEvent object
 	 * @throws Exception
 	 */
-	public void process(Integer patientId, DatabaseEvent e) throws Exception {
+	public Map<String, Object> process(Integer patientId, DatabaseEvent e) throws Exception {
 		log.info("Processing patient with id: " + patientId);
 		
 		if ("person".equalsIgnoreCase(e.getTableName()) && e.getOperation() == CREATE) {
 			log.info("Ignoring person insert event");
-			return;
+			return null;
 		}
 		
 		String id = patientId.toString();
@@ -65,7 +61,7 @@ public class MpiIntegrationProcessor {
 			person = adminService.executeSQL(PERSON_QUERY.replace(ID_PLACEHOLDER, id), true);
 			if (person.isEmpty()) {
 				log.info("Ignoring event because no person was found with id: " + id);
-				return;
+				return null;
 			} else {
 				patientUud = person.get(0).get(4).toString();
 			}
@@ -92,13 +88,13 @@ public class MpiIntegrationProcessor {
 				        + (isPatientDeletedEvent ? "patient" : "person"));
 			}
 			
-			return;
+			return null;
 		}
 		
-		Map<String, Object> fhirResource;
 		if (isPatientDeletedEvent || isPersonDeletedEvent) {
-			fhirResource = mpiPatient;
+			Map<String, Object> fhirResource = mpiPatient;
 			fhirResource.put(FIELD_ACTIVE, false);
+			return fhirResource;
 		} else {
 			List<List<Object>> patient = adminService.executeSQL(PATIENT_QUERY.replace(ID_PLACEHOLDER, id), true);
 			if (patient.isEmpty()) {
@@ -110,11 +106,12 @@ public class MpiIntegrationProcessor {
 						log.info("Ignoring event because the record in the MPI is already marked as inactive");
 					}
 					
-					return;
+					return null;
 				}
 				
-				fhirResource = mpiPatient;
+				Map<String, Object> fhirResource = mpiPatient;
 				fhirResource.put(FIELD_ACTIVE, false);
+				return fhirResource;
 			} else {
 				List<Object> patientDetails = patient.get(0);
 				List<Object> personDetails = person.get(0);
@@ -124,23 +121,16 @@ public class MpiIntegrationProcessor {
 						
 						//This should effectively skip placeholder patient and person rows
 						log.info("Not submitting the patient to the MPI because the person or patient is voided");
-						return;
+						
+						return null;
 					}
 				}
 				
 				//TODO May be we should not build a new resource and instead update the mpiPatient if one exists
 				//And we will need to be aware of placeholder rows
-				fhirResource = MpiUtils.buildFhirPatient(id, patientDetails, personDetails, mpiPatient);
+				return MpiUtils.buildFhirPatient(id, patientDetails, personDetails, mpiPatient);
 			}
 		}
-		
-		List<Map<String, Object>> mpiIdsResp = mpiHttpClient.submitPatient(mapper.writeValueAsString(fhirResource));
-		
-		if (log.isDebugEnabled()) {
-			log.debug("Response from MPI submission: " + mpiIdsResp);
-		}
-		
-		log.info("Successfully " + (mpiPatient == null ? "created" : "updated") + " the patient record in the MPI");
 	}
 	
 }

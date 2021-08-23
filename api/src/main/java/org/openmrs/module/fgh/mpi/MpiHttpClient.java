@@ -58,9 +58,7 @@ public class MpiHttpClient {
 	 * @throws Exception
 	 */
 	public Map<String, Object> getPatient(String patientUuid) throws Exception {
-		if (log.isDebugEnabled()) {
-			log.debug("Received request to fetch patient from MPI with OpenMRS uuid: " + patientUuid);
-		}
+		log.info("Looking up patient record from MPI with OpenMRS uuid: " + patientUuid);
 		
 		if (log.isDebugEnabled()) {
 			log.debug("Searching for patient from MPI with OpenMRS uuid: " + patientUuid);
@@ -86,15 +84,18 @@ public class MpiHttpClient {
 	 * Submit the specified patient data to the MPI
 	 * 
 	 * @param patientData the patient fhir json payload
-	 * @return a map representation of the created patient's MPI uuids
 	 * @throws Exception
 	 */
-	public List<Map<String, Object>> submitPatient(String patientData) throws Exception {
+	public void submitPatient(String patientData) throws Exception {
+		log.info("Submitting patient record to the MPI");
+		
+		List<Map<String, Object>> mpiIdsResp = submitRequest(null, patientData, List.class);
+		
 		if (log.isDebugEnabled()) {
-			log.debug("Received request to submit patient to MPI");
+			log.debug("MPI patient submission response: " + mpiIdsResp);
 		}
 		
-		return submitRequest(null, patientData, List.class);
+		log.info("Successfully submitted the patient record to the MPI");
 	}
 	
 	/**

@@ -24,17 +24,20 @@ public class MpiDatabaseEventListener implements DatabaseEventListener {
 	@Autowired
 	private AssociationEventHandler associationHandler;
 	
+	@Autowired
+	private MpiHttpClient mpiHttpClient;
+	
 	private boolean snapshotOnly;
 	
-	private EventProcessor eventProcessor;
+	private BaseEventProcessor eventProcessor;
 	
 	@Override
 	public void init(boolean snapshotOnly) {
 		this.snapshotOnly = snapshotOnly;
 		if (snapshotOnly) {
-			eventProcessor = new SnapshotEventProcessor(patientHandler);
+			eventProcessor = new SnapshotEventProcessor(patientHandler, mpiHttpClient);
 		} else {
-			eventProcessor = new IncrementalEventProcessor(patientHandler, associationHandler);
+			eventProcessor = new IncrementalEventProcessor(patientHandler, associationHandler, mpiHttpClient);
 		}
 	}
 	

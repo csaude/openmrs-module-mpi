@@ -1,6 +1,6 @@
 package org.openmrs.module.fgh.mpi;
 
-import static java.lang.System.currentTimeMillis;
+import java.util.Map;
 
 import org.openmrs.api.context.Context;
 import org.openmrs.module.debezium.DatabaseEvent;
@@ -16,19 +16,22 @@ public class ProcessorUtils {
 	private static final Logger log = LoggerFactory.getLogger(ProcessorUtils.class);
 	
 	/**
-	 * Processes the specified event
-	 * 
+	 * Creates a fhir patient resource
+	 *
 	 * @param event the {@link DatabaseEvent} object to process
 	 * @param patientHandler {@link PatientAndPersonEventHandler} instance
-	 * @param associationHandler {@link AssociationEventHandler} instance
+	 * @param assocHandler {@link AssociationEventHandler} instance
 	 * @throws Throwable
 	 */
-	public static void processEvent(DatabaseEvent event, PatientAndPersonEventHandler patientHandler,
-	        AssociationEventHandler associationHandler) throws Throwable {
+	public static Map<String, Object> createFhirResource(DatabaseEvent event, PatientAndPersonEventHandler patientHandler,
+	        AssociationEventHandler assocHandler) throws Throwable {
+		
+		Map<String, Object> resource = null;
 		
 		try {
-			final Long start = System.currentTimeMillis();
-			log.info("Processing database event -> " + event);
+			if (log.isDebugEnabled()) {
+				log.debug("Start: create fhir resource");
+			}
 			
 			Context.openSession();
 			Context.addProxyPrivilege(PrivilegeConstants.SQL_LEVEL_ACCESS);
@@ -37,25 +40,21 @@ public class ProcessorUtils {
 			switch (event.getTableName()) {
 				case "person":
 				case "patient":
-					patientHandler.handle(event);
+					resource = patientHandler.handle(event);
 					break;
 				case "person_name":
 				case "person_address":
 				case "patient_identifier":
 				case "person_attribute":
-					associationHandler.handle(event);
+					resource = assocHandler.handle(event);
 					break;
 			}
 			
-			log.info("Successfully processed database event -> " + event);
-			
 			if (log.isDebugEnabled()) {
-				log.debug("Duration: " + (currentTimeMillis() - start) + "ms");
+				log.debug("End: create fhir resource");
 			}
-		}
-		catch (Throwable e) {
-			log.error("An error occurred while processing event -> " + event, e);
-			throw e;
+			
+			return resource;
 		}
 		finally {
 			try {

@@ -19,32 +19,30 @@ import org.slf4j.LoggerFactory;
 /**
  * Processes snapshot events in parallel
  */
-public class SnapshotEventProcessor implements EventProcessor {
+public class SnapshotEventProcessor extends BaseEventProcessor {
 	
 	private static final Logger log = LoggerFactory.getLogger(SnapshotEventProcessor.class);
-	
-	private PatientAndPersonEventHandler patientHandler;
 	
 	//TODO make this configurable
 	private final ExecutorService executor = Executors.newFixedThreadPool(DEFAULT_THREAD_COUNT);
 	
 	private final List<CompletableFuture<Void>> futures = synchronizedList(new ArrayList(DEFAULT_THREAD_COUNT));
 	
-	private static Long start;
-	
 	private AtomicInteger successCount = new AtomicInteger();
 	
 	private AtomicInteger failureCount = new AtomicInteger();
 	
-	public SnapshotEventProcessor(PatientAndPersonEventHandler patientHandler) {
-		this.patientHandler = patientHandler;
-		log.info("Snapshot started at: " + new Date());
+	private static Long start;
+	
+	public SnapshotEventProcessor(PatientAndPersonEventHandler patientHandler, MpiHttpClient mpiHttpClient) {
+		super(patientHandler, mpiHttpClient);
 	}
 	
 	@Override
 	public void process(DatabaseEvent event) {
 		if (start == null) {
 			start = currentTimeMillis();
+			log.info("Patient full sync started at: " + new Date());
 		}
 		
 		boolean isLastPatient = event.getSnapshot() == DatabaseEvent.Snapshot.LAST;
@@ -53,7 +51,7 @@ public class SnapshotEventProcessor implements EventProcessor {
 			
 			try {
 				Thread.currentThread().setName(event.getTableName() + "-" + event.getPrimaryKeyId());
-				ProcessorUtils.processEvent(event, patientHandler, null);
+				ProcessorUtils.createFhirResource(event, patientHandler, null);
 				successCount.getAndIncrement();
 			}
 			catch (Throwable e) {
@@ -88,10 +86,10 @@ public class SnapshotEventProcessor implements EventProcessor {
 			
 			if (isLastPatient) {
 				log.info("============================= Statistics =============================");
-				log.info("Success Count    : " + successCount.get());
-				log.info("Failure Count    : " + failureCount.get());
-				log.info("Snapshot ended at: " + new Date());
-				log.info("Duration         : " + ((currentTimeMillis() - start) / 1000) + "s");
+				log.info("Success Count: " + successCount.get());
+				log.info("Failure Count: " + failureCount.get());
+				log.info("Ended at     : " + new Date());
+				log.info("Duration     : " + ((currentTimeMillis() - start) / 60000) + "min");
 				log.info("======================================================================");
 			}
 		}

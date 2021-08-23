@@ -1,5 +1,7 @@
 package org.openmrs.module.fgh.mpi;
 
+import java.util.Map;
+
 import org.openmrs.module.debezium.DatabaseEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,18 +19,18 @@ public abstract class BaseEventHandler {
 	@Qualifier("mpiIntegrationProcessor")
 	protected MpiIntegrationProcessor processor;
 	
-	public void handle(DatabaseEvent event) throws Exception {
+	public Map<String, Object> handle(DatabaseEvent event) throws Exception {
 		log.info("Looking up patient Id associated to the event");
 		
 		Integer patientId = getPatientId(event);
 		if (patientId == null) {
 			log.info("No patient id found");
-			return;
+			return null;
 		}
 		
 		log.info("Found patient id: " + patientId);
 		
-		processor.process(patientId, event);
+		return processor.process(patientId, event);
 	}
 	
 	/**
