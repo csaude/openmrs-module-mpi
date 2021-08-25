@@ -46,7 +46,9 @@ public class MpiHttpClient {
 	
 	private String serverBaseUrl;
 	
-	private static final String SUBPATH_PATIENT = "/fhir/Patient";
+	private static final String SUBPATH_FHIR = "fhir";
+	
+	private static final String SUBPATH_PATIENT = SUBPATH_FHIR + "/Patient";
 	
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 	
@@ -65,7 +67,7 @@ public class MpiHttpClient {
 		}
 		
 		String query = REQ_PARAM_SOURCE_ID + "=" + SYSTEM_SOURCE_ID + "|" + patientUuid;
-		Map<String, Object> pixResponse = submitRequest("$ihe-pix?" + query, null, Map.class);
+		Map<String, Object> pixResponse = submitRequest(SUBPATH_PATIENT + "/$ihe-pix?" + query, null, Map.class);
 		List<Map<String, Object>> ids = (List<Map<String, Object>>) pixResponse.get(RESPONSE_FIELD_PARAM);
 		if (ids.isEmpty()) {
 			return null;
@@ -77,11 +79,31 @@ public class MpiHttpClient {
 		
 		String[] patientUrlParts = ids.get(0).get(RESPONSE_FIELD_VALUE_REF).toString().split("/");
 		
-		return submitRequest(patientUrlParts[patientUrlParts.length - 1], null, Map.class);
+		return submitRequest(SUBPATH_PATIENT + "/" + patientUrlParts[patientUrlParts.length - 1], null, Map.class);
 	}
 	
 	/**
-	 * Submit the specified patient data to the MPI
+	 * Submits the specified bundle data to the MPI
+	 *
+	 * @param bundleData the bundle fhir json payload
+	 * @throws Exception
+	 */
+	public List<Object> submitBundle(String bundleData) throws Exception {
+		log.info("Submitting patient bundle to the MPI");
+		
+		List<Object> response = submitRequest(SUBPATH_FHIR, bundleData, List.class);
+		
+		if (log.isDebugEnabled()) {
+			log.debug("MPI patient bundle submission response: " + response);
+		}
+		
+		log.info("Successfully submitted the patient bundle to the MPI");
+		
+		return response;
+	}
+	
+	/**
+	 * Submits the specified patient data to the MPI
 	 * 
 	 * @param patientData the patient fhir json payload
 	 * @throws Exception
@@ -89,7 +111,7 @@ public class MpiHttpClient {
 	public void submitPatient(String patientData) throws Exception {
 		log.info("Submitting patient record to the MPI");
 		
-		List<Map<String, Object>> mpiIdsResp = submitRequest(null, patientData, List.class);
+		List<Map<String, Object>> mpiIdsResp = submitRequest(SUBPATH_PATIENT, patientData, List.class);
 		
 		if (log.isDebugEnabled()) {
 			log.debug("MPI patient submission response: " + mpiIdsResp);
@@ -101,20 +123,16 @@ public class MpiHttpClient {
 	/**
 	 * Submits a request to the MPI
 	 * 
-	 * @param pathEnding the string to append to the URL
+	 * @param requestPath the string to append to the URL
 	 * @param data the data to post if any
 	 * @param responseType the type of response to return
 	 * @param <T>
 	 * @return the response from the MPI
 	 * @throws Exception
 	 */
-	private <T> T submitRequest(String pathEnding, String data, Class<T> responseType) throws Exception {
+	private <T> T submitRequest(String requestPath, String data, Class<T> responseType) throws Exception {
 		initIfNecessary();
-		String url = serverBaseUrl + SUBPATH_PATIENT;
-		if (pathEnding != null) {
-			url += ("/" + pathEnding);
-		}
-		
+		String url = serverBaseUrl + "/" + requestPath;
 		HttpsURLConnection connection = (HttpsURLConnection) new URL(url).openConnection();
 		
 		try {

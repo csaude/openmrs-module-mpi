@@ -7,7 +7,7 @@ public class MpiConstants {
 	
 	public final static String MODULE_ID = "mpi";
 	
-	public final static int DEFAULT_THREAD_COUNT = 50;
+	public final static int DEFAULT_THREAD_COUNT = 100;
 	
 	public final static String[] WATCHED_TABLES = new String[] { "person", "patient", "person_name", "person_address",
 	        "patient_identifier", "person_attribute" };
@@ -71,6 +71,16 @@ public class MpiConstants {
 	public final static String FIELD_END = "end";
 	
 	public final static String FIELD_TELECOM = "telecom";
+	
+	public final static String FIELD_TYPE = "type";
+	
+	public final static String FIELD_ENTRY = "entry";
+	
+	public final static String FIELD_RESOURCE = "resource";
+	
+	public final static String BUNDLE = "Bundle";
+	
+	public final static String BATCH = "batch";
 	
 	public final static String HOME = "home";
 	

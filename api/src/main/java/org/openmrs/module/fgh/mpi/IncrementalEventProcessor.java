@@ -31,7 +31,7 @@ public class IncrementalEventProcessor extends BaseEventProcessor {
 		try {
 			log.info("Processing database event -> " + event);
 			
-			final Long start = System.currentTimeMillis();
+			final long start = System.currentTimeMillis();
 			
 			Map<String, Object> fhirPatient = ProcessorUtils.createFhirResource(event, patientHandler, assocHandler);
 			if (fhirPatient != null) {
