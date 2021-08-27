@@ -10,7 +10,6 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_VALUE_REF;
 import static org.openmrs.module.fgh.mpi.MpiConstants.SYSTEM_SOURCE_ID;
 
 import java.io.FileInputStream;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.security.KeyStore;
@@ -167,7 +166,7 @@ public class MpiHttpClient {
 				throw new APIException("Unexpected response " + error + " from MPI");
 			}
 			
-			return MAPPER.readValue((InputStream) connection.getContent(), responseType);
+			return MAPPER.readValue(connection.getInputStream(), responseType);
 		}
 		finally {
 			if (connection != null) {
