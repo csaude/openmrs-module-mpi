@@ -36,10 +36,12 @@ public class MpiIntegrationProcessor {
 	private MpiHttpClient mpiHttpClient;
 	
 	/**
-	 * Adds or updates the patient with the specified patient id in the MPI
+	 * Process the patient with the specified patient id in the MPI to generate the patient fhir
+	 * resource
 	 * 
 	 * @param patientId the patient id
 	 * @param e DatabaseEvent object
+	 * @return a map representation of the generated patient fhir resource
 	 * @throws Exception
 	 */
 	public Map<String, Object> process(Integer patientId, DatabaseEvent e) throws Exception {
