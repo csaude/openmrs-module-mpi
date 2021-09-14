@@ -41,6 +41,8 @@ public class MpiUtils {
 	public final static String ATTR_QUERY = "SELECT value, uuid FROM person_attribute WHERE person_id = " + ID_PLACEHOLDER
 	        + " AND person_attribute_type_id = " + ATTR_TYPE_ID_PLACEHOLDER + " AND voided = 0";
 	
+	private static String sourceIdUri;
+	
 	/**
 	 * Builds a map of fields and values with patient details that can be serialized as a fhir json
 	 * message. This method looks up the up to date patient details from the DB bypassing any hibernate
@@ -123,7 +125,7 @@ public class MpiUtils {
 		
 		List<Map<String, Object>> identifiers = new ArrayList(idListLength);
 		Map<String, Object> sourceIdRes = new HashMap();
-		sourceIdRes.put(MpiConstants.FIELD_SYSTEM, MpiConstants.SYSTEM_SOURCE_ID);
+		sourceIdRes.put(MpiConstants.FIELD_SYSTEM, getSourceIdUri());
 		sourceIdRes.put(MpiConstants.FIELD_VALUE, person.get(4));
 		identifiers.add(sourceIdRes);
 		
@@ -300,6 +302,24 @@ public class MpiUtils {
 		}
 		
 		return phones;
+	}
+	
+	/**
+	 * Gets the source id uri by reading the value of global property value
+	 * {@link MpiConstants#GP_SOURCE_ID_URI}
+	 * 
+	 * @return source id uri
+	 */
+	public static String getSourceIdUri() {
+		if (sourceIdUri == null) {
+			sourceIdUri = Context.getAdministrationService().getGlobalProperty(MpiConstants.GP_SOURCE_ID_URI);
+		}
+		
+		if (StringUtils.isBlank(sourceIdUri)) {
+			throw new APIException(MpiConstants.GP_SOURCE_ID_URI + " global property value is not set");
+		}
+		
+		return sourceIdUri;
 	}
 	
 }

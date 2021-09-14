@@ -7,7 +7,6 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_BASE_URL;
 import static org.openmrs.module.fgh.mpi.MpiConstants.REQ_PARAM_SOURCE_ID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_PARAM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_VALUE_REF;
-import static org.openmrs.module.fgh.mpi.MpiConstants.SYSTEM_SOURCE_ID;
 
 import java.io.FileInputStream;
 import java.io.OutputStream;
@@ -65,7 +64,7 @@ public class MpiHttpClient {
 			log.debug("Searching for patient from MPI with OpenMRS uuid: " + patientUuid);
 		}
 		
-		String query = REQ_PARAM_SOURCE_ID + "=" + SYSTEM_SOURCE_ID + "|" + patientUuid;
+		String query = REQ_PARAM_SOURCE_ID + "=" + MpiUtils.getSourceIdUri() + "|" + patientUuid;
 		Map<String, Object> pixResponse = submitRequest(SUBPATH_PATIENT + "/$ihe-pix?" + query, null, Map.class);
 		List<Map<String, Object>> ids = (List<Map<String, Object>>) pixResponse.get(RESPONSE_FIELD_PARAM);
 		if (ids.isEmpty()) {

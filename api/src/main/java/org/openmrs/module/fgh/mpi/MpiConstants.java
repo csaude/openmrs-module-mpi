@@ -24,6 +24,8 @@ public class MpiConstants {
 	
 	public final static String GP_PHONE_HOME = MODULE_ID + ".person.attribute.type.home.phone";
 	
+	public final static String GP_SOURCE_ID_URI = MODULE_ID + ".sourceId.uri";
+	
 	public final static String FIELD_RESOURCE_TYPE = "resourceType";
 	
 	public final static String FIELD_ID = "id";
@@ -89,8 +91,6 @@ public class MpiConstants {
 	public final static String USE_OFFICIAL = "official";
 	
 	public final static String PHONE = "phone";
-	
-	public final static String SYSTEM_SOURCE_ID = "http://openclientregistry.org/fhir/sourceid";
 	
 	public final static String SYSTEM_PREFIX = "urn:uuid:";
 	

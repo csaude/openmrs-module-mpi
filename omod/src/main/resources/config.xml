@@ -60,6 +60,12 @@
         </description>
         <defaultValue>e6c97a9d-a77b-401f-b06e-81900e21ed1d</defaultValue>
     </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.sourceId.uri</property>
+        <description>
+            Specifies the uri to use for the source id, the source id is the patient uuid
+        </description>
+    </globalProperty>
 
 </module>
 
