@@ -34,7 +34,7 @@ public class MpiActivator extends BaseModuleActivator {
 	@Override
 	public void started() {
 		log.info("MPI module started");
-		log.info("Registering MPI log appender");
+		log.info("Registering MPI log4j appender");
 		
 		org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
 		ConsoleAppender consoleAppender = (ConsoleAppender) rootLogger.getAppender("CONSOLE");
@@ -63,7 +63,7 @@ public class MpiActivator extends BaseModuleActivator {
 	@Override
 	public void stopped() {
 		log.info("MPI module stopped");
-		log.info("Removing MPI log appender");
+		log.info("Removing MPI log4j appender");
 		
 		org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
 		if (rootLogger.getAppender(MPI_APPENDER_NAME) != null) {
