@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
+import org.openmrs.PatientIdentifierType;
 import org.openmrs.api.APIException;
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.PersonService;
@@ -27,7 +28,7 @@ public class MpiUtils {
 	
 	public final static String ATTR_TYPE_ID_PLACEHOLDER = "{ATTR_TYPE_ID}";
 	
-	public final static String ID_QUERY = "SELECT i.identifier, t.uuid, i.uuid FROM patient_identifier i, "
+	public final static String ID_QUERY = "SELECT i.identifier, t.uuid, i.uuid, i.identifier_type FROM patient_identifier i, "
 	        + "patient_identifier_type t WHERE i.identifier_type = t.patient_identifier_type_id AND i.patient_id " + "= "
 	        + ID_PLACEHOLDER + " AND i.voided = 0 ORDER BY preferred DESC";
 	
@@ -42,6 +43,8 @@ public class MpiUtils {
 	        + " AND person_attribute_type_id = " + ATTR_TYPE_ID_PLACEHOLDER + " AND voided = 0";
 	
 	private static String sourceIdUri;
+	
+	private static Integer nationalIdTypeId;
 	
 	/**
 	 * Builds a map of fields and values with patient details that can be serialized as a fhir json
@@ -132,7 +135,12 @@ public class MpiUtils {
 		idRows.stream().forEach(idRow -> {
 			Map<String, Object> idResource = new HashMap();
 			idResource.put(MpiConstants.FIELD_ID, idRow.get(2));
-			idResource.put(MpiConstants.FIELD_SYSTEM, MpiConstants.SYSTEM_PREFIX + idRow.get(1));
+			String system = MpiConstants.SYSTEM_PREFIX + idRow.get(1);
+			if (getNationalIdTypeId().equals(idRow.get(3))) {
+				system = MpiConstants.NATIONAL_ID_URL;
+			}
+			
+			idResource.put(MpiConstants.FIELD_SYSTEM, system);
 			idResource.put(MpiConstants.FIELD_VALUE, idRow.get(0));
 			identifiers.add(idResource);
 		});
@@ -320,6 +328,30 @@ public class MpiUtils {
 		}
 		
 		return sourceIdUri;
+	}
+	
+	/**
+	 * Gets the id of the national patient identifier type configured via global property named
+	 * {@link MpiConstants#GP_SOURCE_ID_URI}
+	 *
+	 * @return source id uri
+	 */
+	private static Integer getNationalIdTypeId() {
+		if (nationalIdTypeId == null) {
+			String uuid = Context.getAdministrationService().getGlobalProperty(MpiConstants.GP_NATIONAL_ID_TYPE_UUID);
+			if (StringUtils.isBlank(uuid)) {
+				throw new APIException(MpiConstants.GP_NATIONAL_ID_TYPE_UUID + " global property value is not set");
+			}
+			
+			PatientIdentifierType idType = Context.getPatientService().getPatientIdentifierTypeByUuid(uuid);
+			if (idType == null) {
+				throw new APIException("No patient identifier type found with uuid: " + uuid);
+			}
+			
+			nationalIdTypeId = idType.getPatientIdentifierTypeId();
+		}
+		
+		return nationalIdTypeId;
 	}
 	
 }

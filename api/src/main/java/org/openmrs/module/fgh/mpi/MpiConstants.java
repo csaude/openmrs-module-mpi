@@ -26,6 +26,8 @@ public class MpiConstants {
 	
 	public final static String GP_SOURCE_ID_URI = MODULE_ID + ".sourceId.uri";
 	
+	public final static String GP_NATIONAL_ID_TYPE_UUID = MODULE_ID + ".nationalId.identifierType.uuid";
+	
 	public final static String FIELD_RESOURCE_TYPE = "resourceType";
 	
 	public final static String FIELD_ID = "id";
@@ -93,6 +95,8 @@ public class MpiConstants {
 	public final static String PHONE = "phone";
 	
 	public final static String SYSTEM_PREFIX = "urn:uuid:";
+	
+	public final static String NATIONAL_ID_URL = "http://clientregistry.org/nationalid";
 	
 	public final static DateFormat DATETIME_FORMATTER = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
 	
