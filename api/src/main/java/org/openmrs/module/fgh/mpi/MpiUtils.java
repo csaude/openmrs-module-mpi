@@ -1,15 +1,24 @@
 package org.openmrs.module.fgh.mpi;
 
 import static org.openmrs.module.fgh.mpi.MpiConstants.DATETIME_FORMATTER;
+import static org.openmrs.module.fgh.mpi.MpiConstants.MODULE_ID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.MYSQL_DATETIME_FORMATTER;
+import static org.openmrs.module.fgh.mpi.MpiConstants.PATIENT_ID_OFFSET_FILE;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.ID_PLACEHOLDER;
+import static org.openmrs.util.OpenmrsUtil.getApplicationDataDirectory;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.openmrs.PatientIdentifierType;
 import org.openmrs.api.APIException;
@@ -45,6 +54,8 @@ public class MpiUtils {
 	private static String sourceIdUri;
 	
 	private static Integer nationalIdTypeId;
+	
+	private static File patientIdOffsetFile;
 	
 	/**
 	 * Builds a map of fields and values with patient details that can be serialized as a fhir json
@@ -137,7 +148,7 @@ public class MpiUtils {
 			idResource.put(MpiConstants.FIELD_ID, idRow.get(2));
 			String system = MpiConstants.SYSTEM_PREFIX + idRow.get(1);
 			if (getNationalIdTypeId().equals(idRow.get(3))) {
-				system = MpiConstants.NATIONAL_ID_URL;
+				//system = MpiConstants.NATIONAL_ID_URL;
 			}
 			
 			idResource.put(MpiConstants.FIELD_SYSTEM, system);
@@ -338,9 +349,9 @@ public class MpiUtils {
 	 */
 	private static Integer getNationalIdTypeId() {
 		if (nationalIdTypeId == null) {
-			String uuid = Context.getAdministrationService().getGlobalProperty(MpiConstants.GP_NATIONAL_ID_TYPE_UUID);
+			String uuid = Context.getAdministrationService().getGlobalProperty(MpiConstants.GP_NID_ID_TYPE_UUID);
 			if (StringUtils.isBlank(uuid)) {
-				throw new APIException(MpiConstants.GP_NATIONAL_ID_TYPE_UUID + " global property value is not set");
+				throw new APIException(MpiConstants.GP_NID_ID_TYPE_UUID + " global property value is not set");
 			}
 			
 			PatientIdentifierType idType = Context.getPatientService().getPatientIdentifierTypeByUuid(uuid);
@@ -352,6 +363,90 @@ public class MpiUtils {
 		}
 		
 		return nationalIdTypeId;
+	}
+	
+	/**
+	 * Gets the file used to store the id of the patient that was last submitted to the MPI
+	 *
+	 * @return File object
+	 */
+	private static File getPatientIdOffsetFile() {
+		if (patientIdOffsetFile == null) {
+			Path path = Paths.get(getApplicationDataDirectory(), MODULE_ID, PATIENT_ID_OFFSET_FILE);
+			log.info("Patient Id off set file -> " + path);
+			patientIdOffsetFile = path.toFile();
+		}
+		
+		return patientIdOffsetFile;
+	}
+	
+	/**
+	 * Gets the patient id of the last submitted patient id
+	 *
+	 * @return patient id
+	 */
+	public static Integer getLastSubmittedPatientId() {
+		log.info("Loading the patient id of the patient that was last submitted to the MPI");
+		
+		try {
+			File file = getPatientIdOffsetFile();
+			String patientId = null;
+			if (file.exists()) {
+				patientId = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
+			}
+			
+			if (StringUtils.isBlank(patientId)) {
+				log.info("Not patient id found that was previously saved");
+				return null;
+			}
+			
+			log.info("Found id of the patient that was last submitted to the MPI: " + patientId);
+			
+			return Integer.valueOf(patientId);
+		}
+		catch (IOException e) {
+			throw new APIException("Failed to read the id of the patient that was last submitted to the MPI", e);
+		}
+	}
+	
+	/**
+	 * Gets the patient id of the last submitted patient id
+	 *
+	 * @return patient id
+	 */
+	public static void saveLastSubmittedPatientId(Integer patientId) {
+		log.info("Saving the id of the patient that was last submitted to the MPI as: " + patientId);
+		
+		try {
+			FileUtils.writeStringToFile(getPatientIdOffsetFile(), patientId.toString(), StandardCharsets.UTF_8);
+			
+			log.info("Successfully saved the id of the patient that was last submitted to the MPI as: " + patientId);
+		}
+		catch (IOException e) {
+			log.error("Failed to save the id of the patient that was last submitted to the MPI as: " + patientId, e);
+		}
+	}
+	
+	/**
+	 * Deletes the file used to store the id of the patient that was last submitted to the MPI
+	 */
+	public static void deletePatientIdOffsetFile() {
+		log.info("Deleting the patient id off set file");
+		
+		File file = getPatientIdOffsetFile();
+		if (!file.exists()) {
+			log.info("No patient id off set file found to delete");
+			return;
+		}
+		
+		try {
+			FileUtils.forceDelete(file);
+			
+			log.info("Successfully deleted the patient id off set file");
+		}
+		catch (IOException e) {
+			log.error("Failed to delete the patient id off set file", e);
+		}
 	}
 	
 }

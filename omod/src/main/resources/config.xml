@@ -67,9 +67,9 @@
         </description>
     </globalProperty>
     <globalProperty>
-        <property>${project.parent.artifactId}.nationalId.identifierType.uuid</property>
+        <property>${project.parent.artifactId}.nid.identifierType.uuid</property>
         <description>
-            Specifies the uuid of the patient identifier type for the national ID
+            Specifies the uuid of the patient identifier type for the NID
         </description>
     </globalProperty>
 

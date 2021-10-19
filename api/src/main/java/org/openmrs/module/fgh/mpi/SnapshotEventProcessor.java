@@ -27,18 +27,24 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 	
 	private static final Logger log = LoggerFactory.getLogger(SnapshotEventProcessor.class);
 	
-	//TODO make this configurable
-	private final ExecutorService executor = Executors.newFixedThreadPool(DEFAULT_THREAD_COUNT);
+	private ExecutorService executor;
 	
-	private final List<CompletableFuture<Map<String, Object>>> futures = synchronizedList(
-	    new ArrayList(DEFAULT_THREAD_COUNT));
+	private List<CompletableFuture<Map<String, Object>>> futures;
 	
-	private AtomicInteger successCount = new AtomicInteger();
+	private AtomicInteger successCount;
 	
-	private static Long start;
+	private Long start;
+	
+	private Integer lastSubmittedPatientId;
 	
 	public SnapshotEventProcessor(PatientAndPersonEventHandler patientHandler, MpiHttpClient mpiHttpClient) {
 		super(patientHandler, mpiHttpClient);
+		//TODO make the thread pool count and futures size configurable, they must be equal
+		executor = Executors.newFixedThreadPool(DEFAULT_THREAD_COUNT);
+		futures = synchronizedList(new ArrayList(DEFAULT_THREAD_COUNT));
+		successCount = new AtomicInteger();
+		start = null;
+		lastSubmittedPatientId = MpiUtils.getLastSubmittedPatientId();
 	}
 	
 	@Override
@@ -49,6 +55,18 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 		}
 		
 		boolean isLastPatient = event.getSnapshot() == DatabaseEvent.Snapshot.LAST;
+		Integer curPatientId = Integer.valueOf(event.getPrimaryKeyId().toString());
+		if (lastSubmittedPatientId != null && lastSubmittedPatientId >= curPatientId) {
+			if (log.isDebugEnabled()) {
+				log.debug("Skipping patient with id: " + curPatientId + " that they were already submitted to the MPI");
+			}
+			
+			if (isLastPatient) {
+				MpiUtils.deletePatientIdOffsetFile();
+			}
+			
+			return;
+		}
 		
 		futures.add(CompletableFuture.supplyAsync(() -> {
 			try {
@@ -58,7 +76,7 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 				
 				Map<String, Object> fhirPatient = ProcessorUtils.createFhirResource(event, patientHandler, null);
 				
-				log.info("Done processing database event -> " + event);
+				log.info("Done generating fhir patient for database event -> " + event);
 				
 				if (log.isDebugEnabled()) {
 					log.debug("Duration: " + (currentTimeMillis() - startSingle) + "ms");
@@ -117,6 +135,8 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 						}
 						
 						successCount.addAndGet(fhirPatients.size());
+						
+						MpiUtils.saveLastSubmittedPatientId(Integer.valueOf(event.getPrimaryKeyId().toString()));
 					} else {
 						//TODO Loop through all patients in the batch and check which records were problematic
 						throw new APIException((fhirPatients.size() - successPatientCount)
@@ -154,6 +174,8 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 				
 				log.info("Duration          : " + (duration / denominator) + units);
 				log.info("======================================================================");
+				
+				MpiUtils.deletePatientIdOffsetFile();
 			}
 		}
 	}
