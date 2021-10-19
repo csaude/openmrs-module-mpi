@@ -7,10 +7,12 @@ public class MpiConstants {
 	
 	public final static String MODULE_ID = "mpi";
 	
-	public final static int DEFAULT_THREAD_COUNT = 100;
+	public final static int DEFAULT_THREAD_COUNT = 1;
 	
 	public final static String[] WATCHED_TABLES = new String[] { "person", "patient", "person_name", "person_address",
 	        "patient_identifier", "person_attribute" };
+	
+	public final static String PATIENT_ID_OFFSET_FILE = ".patientIdOffset.txt";
 	
 	public final static String GP_MPI_BASE_URL = MODULE_ID + ".server.base.url";
 	
@@ -26,7 +28,7 @@ public class MpiConstants {
 	
 	public final static String GP_SOURCE_ID_URI = MODULE_ID + ".sourceId.uri";
 	
-	public final static String GP_NATIONAL_ID_TYPE_UUID = MODULE_ID + ".nationalId.identifierType.uuid";
+	public final static String GP_NID_ID_TYPE_UUID = MODULE_ID + ".nid.identifierType.uuid";
 	
 	public final static String FIELD_RESOURCE_TYPE = "resourceType";
 	
