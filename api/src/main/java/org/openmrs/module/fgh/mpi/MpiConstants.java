@@ -102,6 +102,8 @@ public class MpiConstants {
 	
 	public final static DateFormat MYSQL_DATETIME_FORMATTER = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	
+	public final static DateFormat MYSQL_DATETIME_FORMATTER_MILLS = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
+	
 	public final static String REQ_PARAM_SOURCE_ID = "sourceIdentifier";
 	
 	public final static String RESPONSE_FIELD_PARAM = "parameter";

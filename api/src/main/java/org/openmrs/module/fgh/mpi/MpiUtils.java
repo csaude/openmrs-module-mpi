@@ -2,6 +2,7 @@ package org.openmrs.module.fgh.mpi;
 
 import static org.openmrs.module.fgh.mpi.MpiConstants.DATETIME_FORMATTER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.MYSQL_DATETIME_FORMATTER;
+import static org.openmrs.module.fgh.mpi.MpiConstants.MYSQL_DATETIME_FORMATTER_MILLS;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.ID_PLACEHOLDER;
 
 import java.util.ArrayList;
@@ -92,7 +93,17 @@ public class MpiUtils {
 			if (StringUtils.isBlank(deathDateStr)) {
 				fhirRes.put(MpiConstants.FIELD_DECEASED, dead);
 			} else {
-				Date deathDate = MYSQL_DATETIME_FORMATTER.parse(deathDateStr);
+				Date deathDate;
+				try {
+					deathDate = MYSQL_DATETIME_FORMATTER.parse(deathDateStr);
+				}
+				catch (Exception e) {
+					if (log.isDebugEnabled()) {
+						log.debug("Failed to parse date '" + deathDateStr + "' for person with id: " + id);
+					}
+					
+					deathDate = MYSQL_DATETIME_FORMATTER_MILLS.parse(deathDateStr);
+				}
 				fhirRes.put(MpiConstants.FIELD_DECEASED_DATE, DATETIME_FORMATTER.format(deathDate));
 			}
 		} else {
