@@ -7,7 +7,7 @@ public class MpiConstants {
 	
 	public final static String MODULE_ID = "mpi";
 	
-	public final static int DEFAULT_THREAD_COUNT = 1;
+	public final static int DEFAULT_THREAD_COUNT = 100;
 	
 	public final static String[] WATCHED_TABLES = new String[] { "person", "patient", "person_name", "person_address",
 	        "patient_identifier", "person_attribute" };
@@ -27,8 +27,6 @@ public class MpiConstants {
 	public final static String GP_PHONE_HOME = MODULE_ID + ".person.attribute.type.home.phone";
 	
 	public final static String GP_SOURCE_ID_URI = MODULE_ID + ".sourceId.uri";
-	
-	public final static String GP_NID_ID_TYPE_UUID = MODULE_ID + ".nid.identifierType.uuid";
 	
 	public final static String FIELD_RESOURCE_TYPE = "resourceType";
 	
@@ -97,8 +95,6 @@ public class MpiConstants {
 	public final static String PHONE = "phone";
 	
 	public final static String SYSTEM_PREFIX = "urn:uuid:";
-	
-	public final static String NATIONAL_ID_URL = "http://clientregistry.org/nationalid";
 	
 	public final static DateFormat DATETIME_FORMATTER = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
 	

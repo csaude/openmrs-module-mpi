@@ -66,12 +66,6 @@
             Specifies the uri to use for the source id, the source id is the patient uuid
         </description>
     </globalProperty>
-    <globalProperty>
-        <property>${project.parent.artifactId}.nid.identifierType.uuid</property>
-        <description>
-            Specifies the uuid of the patient identifier type for the NID
-        </description>
-    </globalProperty>
 
 </module>
 
