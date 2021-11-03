@@ -94,7 +94,10 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 				futures.parallelStream().forEach(p -> {
 					if (p != null) {
 						try {
-							fhirPatients.add(Collections.singletonMap(MpiConstants.FIELD_RESOURCE, p.get()));
+							Map<String, Object> returnedPatient = p.get();
+							if (returnedPatient != null) {
+								fhirPatients.add(Collections.singletonMap(MpiConstants.FIELD_RESOURCE, returnedPatient));
+							}
 						}
 						catch (Exception e) {
 							throw new APIException("Failed to get patient resource from future", e);
