@@ -13,6 +13,11 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -21,12 +26,17 @@ import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.hibernate.SessionFactory;
+import org.hibernate.internal.SessionFactoryImpl;
 import org.openmrs.api.APIException;
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.PersonService;
 import org.openmrs.api.context.Context;
+import org.openmrs.api.db.DAOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.sql.DataSource;
 
 /**
  * Contains utility methods
@@ -76,6 +86,8 @@ public class MpiUtils {
 		fhirRes.put(MpiConstants.FIELD_ACTIVE, !Boolean.valueOf(patient.get(0).toString()));
 		
 		AdministrationService adminService = Context.getAdministrationService();
+		SessionFactory sf = Context.getRegisteredComponents(SessionFactory.class).get(0);
+		DataSource ds = ((SessionFactoryImpl) sf).getConnectionProvider().unwrap(DataSource.class);
 		String fhirGender = null;
 		String gender = person.get(0) != null ? person.get(0).toString() : null;
 		if ("M".equalsIgnoreCase(gender)) {
@@ -119,10 +131,10 @@ public class MpiUtils {
 			fhirRes.put(MpiConstants.FIELD_DECEASED_DATE, null);
 		}
 		
-		fhirRes.put(MpiConstants.FIELD_IDENTIFIER, getIds(id, person, mpiPatient, adminService));
-		fhirRes.put(MpiConstants.FIELD_NAME, getNames(id, mpiPatient, adminService));
-		fhirRes.put(MpiConstants.FIELD_ADDRESS, getAddresses(id, mpiPatient, adminService));
-		fhirRes.put(MpiConstants.FIELD_TELECOM, getPhones(id, mpiPatient, adminService));
+		fhirRes.put(MpiConstants.FIELD_IDENTIFIER, getIds(id, person, mpiPatient, ds));
+		fhirRes.put(MpiConstants.FIELD_NAME, getNames(id, mpiPatient, ds));
+		fhirRes.put(MpiConstants.FIELD_ADDRESS, getAddresses(id, mpiPatient, ds));
+		fhirRes.put(MpiConstants.FIELD_TELECOM, getPhones(id, mpiPatient, adminService, ds));
 		
 		return fhirRes;
 	}
@@ -133,13 +145,13 @@ public class MpiUtils {
 	 * @param patientId id the patient id
 	 * @param person a list of column values from the person table
 	 * @param mpiPatient a map of patient fields and values from the MPI
-	 * @param as {@link AdministrationService} object
+	 * @param ds {@link DataSource} object
 	 * @return
 	 */
 	private static List<Map<String, Object>> getIds(String patientId, List<Object> person, Map<String, Object> mpiPatient,
-	        AdministrationService as) {
+	        DataSource ds) {
 		
-		List<List<Object>> idRows = as.executeSQL(ID_QUERY.replace(ID_PLACEHOLDER, patientId), true);
+		List<List<Object>> idRows = executeQuery(ds, ID_QUERY.replace(ID_PLACEHOLDER, patientId));
 		int idListLength = idRows.size() + 1;
 		if (mpiPatient != null && mpiPatient.get(MpiConstants.FIELD_IDENTIFIER) != null) {
 			idListLength = ((List) mpiPatient.get(MpiConstants.FIELD_IDENTIFIER)).size();
@@ -175,13 +187,12 @@ public class MpiUtils {
 	 *
 	 * @param patientId id the patient id
 	 * @param mpiPatient a map of patient fields and values from the MPI
-	 * @param as {@link AdministrationService} object
+	 * @param ds {@link DataSource} object
 	 * @return
 	 */
-	private static List<Map<String, Object>> getNames(String patientId, Map<String, Object> mpiPatient,
-	        AdministrationService as) {
+	private static List<Map<String, Object>> getNames(String patientId, Map<String, Object> mpiPatient, DataSource ds) {
 		
-		List<List<Object>> nameRows = as.executeSQL(NAME_QUERY.replace(ID_PLACEHOLDER, patientId), true);
+		List<List<Object>> nameRows = executeQuery(ds, NAME_QUERY.replace(ID_PLACEHOLDER, patientId));
 		int nameListLength = nameRows.size();
 		if (mpiPatient != null && mpiPatient.get(MpiConstants.FIELD_NAME) != null) {
 			nameListLength = ((List) mpiPatient.get(MpiConstants.FIELD_NAME)).size();
@@ -222,13 +233,13 @@ public class MpiUtils {
 	 *
 	 * @param patientId id the patient id
 	 * @param mpiPatient a map of patient fields and values from the MPI
-	 * @param as {@link AdministrationService} object
+	 * @param ds {@link DataSource} object
 	 * @return
 	 */
-	private static List<Map<String, Object>> getAddresses(String patientId, Map<String, Object> mpiPatient,
-	        AdministrationService as) throws Exception {
+	private static List<Map<String, Object>> getAddresses(String patientId, Map<String, Object> mpiPatient, DataSource ds)
+	        throws Exception {
 		
-		List<List<Object>> addressRows = as.executeSQL(ADDRESS_QUERY.replace(ID_PLACEHOLDER, patientId), true);
+		List<List<Object>> addressRows = executeQuery(ds, ADDRESS_QUERY.replace(ID_PLACEHOLDER, patientId));
 		int addressListLength = addressRows.size();
 		if (mpiPatient != null && mpiPatient.get(MpiConstants.FIELD_ADDRESS) != null) {
 			addressListLength = ((List) mpiPatient.get(MpiConstants.FIELD_ADDRESS)).size();
@@ -280,15 +291,16 @@ public class MpiUtils {
 	 * @param patientId id the patient id
 	 * @param mpiPatient a map of patient fields and values from the MPI
 	 * @param as {@link AdministrationService} object
+	 * @param ds {@link DataSource} object
 	 * @return
 	 */
 	private static List<Map<String, Object>> getPhones(String patientId, Map<String, Object> mpiPatient,
-	        AdministrationService as) {
+	        AdministrationService as, DataSource ds) {
 		PersonService personService = Context.getPersonService();
 		String attTypeUuid = as.getGlobalProperty(MpiConstants.GP_PHONE_MOBILE);
 		String attTypeId = personService.getPersonAttributeTypeByUuid(attTypeUuid).getId().toString();
 		String phoneQuery = ATTR_QUERY.replace(ID_PLACEHOLDER, patientId).replace(ATTR_TYPE_ID_PLACEHOLDER, attTypeId);
-		List<List<Object>> phoneRows = as.executeSQL(phoneQuery, true);
+		List<List<Object>> phoneRows = executeQuery(ds, phoneQuery);
 		Map<String, Object> phoneResource = null;
 		if (!phoneRows.isEmpty()) {
 			phoneResource = new HashMap();
@@ -308,7 +320,7 @@ public class MpiUtils {
 		attTypeUuid = as.getGlobalProperty(MpiConstants.GP_PHONE_HOME);
 		attTypeId = personService.getPersonAttributeTypeByUuid(attTypeUuid).getId().toString();
 		phoneQuery = ATTR_QUERY.replace(ID_PLACEHOLDER, patientId).replace(ATTR_TYPE_ID_PLACEHOLDER, attTypeId);
-		phoneRows = as.executeSQL(phoneQuery, true);
+		phoneRows = executeQuery(ds, phoneQuery);
 		phoneResource = null;
 		if (!phoneRows.isEmpty()) {
 			phoneResource = new HashMap();
@@ -427,6 +439,38 @@ public class MpiUtils {
 		catch (IOException e) {
 			log.error("Failed to delete the patient id off set file", e);
 		}
+	}
+	
+	/**
+	 * Executes the specified query against the specified {@link DataSource}
+	 * 
+	 * @param ds {@link DataSource} object
+	 * @param query the query to execute
+	 * @return results
+	 * @throws SQLException
+	 */
+	public static List<List<Object>> executeQuery(DataSource ds, String query) {
+		List<List<Object>> results = new ArrayList();
+		
+		try (Connection conn = ds.getConnection(); PreparedStatement statement = conn.prepareStatement(query)) {
+			try (ResultSet resultSet = statement.executeQuery()) {
+				ResultSetMetaData rmd = resultSet.getMetaData();
+				int columnCount = rmd.getColumnCount();
+				
+				while (resultSet.next()) {
+					List<Object> rowObjects = new ArrayList<>();
+					for (int x = 1; x <= columnCount; x++) {
+						rowObjects.add(resultSet.getObject(x));
+					}
+					results.add(rowObjects);
+				}
+			}
+		}
+		catch (SQLException e) {
+			throw new DAOException(e);
+		}
+		
+		return results;
 	}
 	
 }
