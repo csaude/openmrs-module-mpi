@@ -88,7 +88,7 @@ public class MpiUtils {
 		AdministrationService adminService = Context.getAdministrationService();
 		SessionFactory sf = Context.getRegisteredComponents(SessionFactory.class).get(0);
 		DataSource ds = ((SessionFactoryImpl) sf).getConnectionProvider().unwrap(DataSource.class);
-		String fhirGender = null;
+		String fhirGender = "";
 		String gender = person.get(0) != null ? person.get(0).toString() : null;
 		if ("M".equalsIgnoreCase(gender)) {
 			fhirGender = "male";
@@ -104,7 +104,7 @@ public class MpiUtils {
 		
 		fhirRes.put(MpiConstants.FIELD_GENDER, fhirGender);
 		
-		String birthDate = person.get(1) != null ? person.get(1).toString() : null;
+		String birthDate = person.get(1) != null ? person.get(1).toString() : "";
 		fhirRes.put(MpiConstants.FIELD_BIRTHDATE, birthDate);
 		
 		String dead = person.get(2).toString();
