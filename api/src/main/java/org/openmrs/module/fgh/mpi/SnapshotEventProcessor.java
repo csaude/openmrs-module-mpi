@@ -4,12 +4,15 @@ import static java.lang.System.currentTimeMillis;
 import static java.util.Collections.synchronizedList;
 import static org.openmrs.module.fgh.mpi.MpiConstants.DEFAULT_THREAD_COUNT;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -162,20 +165,9 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 				log.info("Ended at          : " + new Date());
 				
 				long duration = currentTimeMillis() - start;
-				long denominator;
-				String units;
-				if (duration < 60000) {
-					denominator = 1000;
-					units = "sec";
-				} else if (duration < 3600000) {
-					denominator = 60000;
-					units = "min";
-				} else {
-					denominator = 3600000;
-					units = "hrs";
-				}
-				
-				log.info("Duration          : " + (duration / denominator) + units);
+				DateFormat df = new SimpleDateFormat("h 'hours', m 'minutes,' s 'seconds'");
+				df.setTimeZone(TimeZone.getTimeZone("GMT"));
+				log.info("Duration          : " + df.format(new Date(duration)));
 				log.info("======================================================================");
 				
 				MpiUtils.deletePatientIdOffsetFile();
