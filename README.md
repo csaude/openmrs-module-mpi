@@ -8,7 +8,8 @@ in OpenCR.
 
 ### Assumptions
 * You have a running instance of OpenCR
-* You have created a client certificate for this OpenMRS instance which will be required to communicate with OpenCR.
+* You have created a client certificate for the OpenMRS instance(Central) where the module will be deployed, the 
+  certificate will be required to communicate with OpenCR.
 
 ### Build and Install
 The MPI module depends on the [debezium module](https://github.com/FriendsInGlobalHealth/openmrs-module-debezium.git) 
@@ -19,15 +20,14 @@ git clone https://github.com/FriendsInGlobalHealth/openmrs-module-mpi.git
 cd openmrs-module-mpi
 mvn clean install
 ```
+Take the generated .omod file in the `omod/target` folder and install it in the central OpenMRS instance
 
 ### Configuration
 
-#### Setting global properties
+#### Global properties
 Navigate to the main admin settings page as mentioned below,
 * From the main menu, click **Administration**
 * Under the **Maintenance** section, click on **Settings**, click on the **Mpi** link in the left panel, and you
   should see a page like the screenshot below, please make sure to read the description of each property carefully.
 
 ![Module Settings](docs/settings_screenshot.png)
-
-#### Before Using The Module

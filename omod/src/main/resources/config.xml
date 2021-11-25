@@ -63,7 +63,8 @@
     <globalProperty>
         <property>${project.parent.artifactId}.sourceId.uri</property>
         <description>
-            Specifies the uri to use for the source id, the source id is the patient uuid
+            Specifies the URI to use for the source id, the source id is the patient's uuid, this value MUST match the
+            the URI of the internal ID set in the OpenCR config file i.e. for the systems.internalid.url field
         </description>
     </globalProperty>
 
