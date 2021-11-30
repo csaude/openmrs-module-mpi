@@ -9,6 +9,8 @@ public class MpiConstants {
 	
 	public final static int DEFAULT_THREAD_COUNT = 100;
 	
+	public final static String SOURCE_ID_URI = "http://openmrs.org/uuid";
+	
 	public final static String[] WATCHED_TABLES = new String[] { "person", "patient", "person_name", "person_address",
 	        "patient_identifier", "person_attribute" };
 	
@@ -25,8 +27,6 @@ public class MpiConstants {
 	public final static String GP_PHONE_MOBILE = MODULE_ID + ".person.attribute.type.mobile.phone";
 	
 	public final static String GP_PHONE_HOME = MODULE_ID + ".person.attribute.type.home.phone";
-	
-	public final static String GP_SOURCE_ID_URI = MODULE_ID + ".sourceId.uri";
 	
 	public final static String FIELD_RESOURCE_TYPE = "resourceType";
 	

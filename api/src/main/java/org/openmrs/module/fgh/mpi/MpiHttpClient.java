@@ -64,7 +64,7 @@ public class MpiHttpClient {
 			log.debug("Searching for patient from MPI with OpenMRS uuid: " + patientUuid);
 		}
 		
-		String query = REQ_PARAM_SOURCE_ID + "=" + MpiUtils.getSourceIdUri() + "|" + patientUuid;
+		String query = REQ_PARAM_SOURCE_ID + "=" + MpiConstants.SOURCE_ID_URI + "|" + patientUuid;
 		Map<String, Object> pixResponse = submitRequest(SUBPATH_PATIENT + "/$ihe-pix?" + query, null, Map.class);
 		List<Map<String, Object>> ids = (List<Map<String, Object>>) pixResponse.get(RESPONSE_FIELD_PARAM);
 		if (ids.isEmpty()) {

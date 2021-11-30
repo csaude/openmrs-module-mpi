@@ -159,7 +159,7 @@ public class MpiUtils {
 		
 		List<Map<String, Object>> identifiers = new ArrayList(idListLength);
 		Map<String, Object> sourceIdRes = new HashMap();
-		sourceIdRes.put(MpiConstants.FIELD_SYSTEM, getSourceIdUri());
+		sourceIdRes.put(MpiConstants.FIELD_SYSTEM, MpiConstants.SOURCE_ID_URI);
 		sourceIdRes.put(MpiConstants.FIELD_VALUE, person.get(4));
 		identifiers.add(sourceIdRes);
 		
@@ -337,24 +337,6 @@ public class MpiUtils {
 		}
 		
 		return phones;
-	}
-	
-	/**
-	 * Gets the source id uri by reading the value of global property value
-	 * {@link MpiConstants#GP_SOURCE_ID_URI}
-	 * 
-	 * @return source id uri
-	 */
-	public static String getSourceIdUri() {
-		if (sourceIdUri == null) {
-			sourceIdUri = Context.getAdministrationService().getGlobalProperty(MpiConstants.GP_SOURCE_ID_URI);
-		}
-		
-		if (StringUtils.isBlank(sourceIdUri)) {
-			throw new APIException(MpiConstants.GP_SOURCE_ID_URI + " global property value is not set");
-		}
-		
-		return sourceIdUri;
 	}
 	
 	/**
