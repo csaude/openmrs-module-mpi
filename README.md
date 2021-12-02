@@ -53,6 +53,18 @@ using for this integration, the steps below are based on [system admin documenta
   git https://github.com/FriendsInGlobalHealth/centralization-docker-setup
   cd centralization-docker-setup/opencr
   ```
+* Create a copy of the `docker-compose.prod.yml` file and name it docker-compose.yml
+* Edit the `db.env` file and be sure to change at least the passwords and any other values to match your requirements.
+* Edit the `application.yml` file and make sure that the spring datasource username and password match those defined in 
+  the `db.env` file, you can also tweak more field values to match your requirements.
+*  
+
+**IMPORTANT NOTES:** 
+- In your new docker-compose.yml file for the elastic search service, it's highly recommended to make sure that volume
+  mapped to the elastic data directory is backed up regularly at least once a day, more would even be better if your 
+  resources can allow.
+- Please remember to also regularly backup the MySQL database defined in `docker-compose.yml` which is used by the hapi 
+  fhir server to store all records pushed to OpenCR.   
 
 ### OpenCR Configuration
 
