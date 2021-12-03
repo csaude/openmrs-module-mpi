@@ -42,8 +42,8 @@ using for this integration, the steps below are based on [system admin documenta
 
 #### Update Config File
 Open the `config_production.json` and make the following changes,
-- Change the oauth secret, it is set via the `auth`.`secret` field, note that we are using dot notation to refer to
-  nested fields i.e. `secret` is a field of the root `auth` field.
+- Change the oauth secret, it is set via the `auth.secret` field, note that we are using dot notation to refer to a 
+  nested field i.e. `secret` is a field of the root `auth` field.
 - The configuration file has a `systems` field with existing entries where NID is one of them although the URI
   contains an incorrect UUID for the NID patient identifier type from your OpenMRS instance, so you need to set the
   correct UUID in its URI and **DO NOT** change its key name.
@@ -111,14 +111,14 @@ Navigate to the main admin settings page as mentioned below,
   value of the **Level**(log.level) global property and append `org.openmrs.module.debezium:info,org.openmrs.module.fgh.mpi:info`
   
 Note that the module captures its logs and those of the debezium module and writes them to a special log file located 
-in the OpenMRS application data directory at `/path-to-app-data-directory/mpi/logs/mpi.log`, this can be very useful when 
-debugging any issues that may arise with the module.
+in the OpenMRS application data directory at `/path-to-openmrs-app-data-directory/mpi/logs/mpi.log`, this can be very 
+useful when debugging any issues that may arise with the module.
 
 ### Initial Loading Of Existing Patients
 At the time of deploying the MPI integration for an implementation, it's very likely that there is already existing 
 patients in the OpenMRS central database that need to be loaded and pushed to OpenCR, to load these patients you need to 
-start the central OpenMRS instance by passing a JVM system property named `org.openmrs.module.debezium.snapshotOnly`.
-You typically set this system property via tomcat's `sevenv.sh` file as shown [here](https://github.com/FriendsInGlobalHealth/centralization-docker-setup/blob/main/openmrs-central/setenv.sh).
+start the central OpenMRS instance by passing a JVM property named `org.openmrs.module.debezium.snapshotOnly`. You 
+typically set this property via tomcat's `sevenv.sh` file as shown [here](https://github.com/FriendsInGlobalHealth/centralization-docker-setup/blob/main/openmrs-central/setenv.sh).
 **Note** that voided patient's are skipped during initial loading
 
 **IMPORTANT:**
