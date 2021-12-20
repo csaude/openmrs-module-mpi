@@ -1,9 +1,6 @@
 package org.openmrs.module.fgh.mpi;
 
-import static org.openmrs.module.fgh.mpi.MpiConstants.DATETIME_FORMATTER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.MODULE_ID;
-import static org.openmrs.module.fgh.mpi.MpiConstants.MYSQL_DATETIME_FORMATTER;
-import static org.openmrs.module.fgh.mpi.MpiConstants.MYSQL_DATETIME_FORMATTER_MILLS;
 import static org.openmrs.module.fgh.mpi.MpiConstants.PATIENT_ID_OFFSET_FILE;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.ID_PLACEHOLDER;
 import static org.openmrs.util.OpenmrsUtil.getApplicationDataDirectory;
@@ -19,7 +16,6 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -113,18 +109,10 @@ public class MpiUtils {
 			if (StringUtils.isBlank(deathDateStr)) {
 				fhirRes.put(MpiConstants.FIELD_DECEASED, dead);
 			} else {
-				Date deathDate;
-				try {
-					deathDate = MYSQL_DATETIME_FORMATTER.parse(deathDateStr);
+				if (deathDateStr.length() > 19) {
+					deathDateStr = deathDateStr.substring(0, 19);
 				}
-				catch (Exception e) {
-					if (log.isDebugEnabled()) {
-						log.debug("Failed to parse date '" + deathDateStr + "' for person with id: " + id);
-					}
-					
-					deathDate = MYSQL_DATETIME_FORMATTER_MILLS.parse(deathDateStr);
-				}
-				fhirRes.put(MpiConstants.FIELD_DECEASED_DATE, DATETIME_FORMATTER.format(deathDate));
+				fhirRes.put(MpiConstants.FIELD_DECEASED_DATE, deathDateStr);
 			}
 		} else {
 			fhirRes.put(MpiConstants.FIELD_DECEASED, Boolean.valueOf(dead));
@@ -263,12 +251,18 @@ public class MpiUtils {
 			Map<String, Object> period = new HashMap();
 			String startDate = null;
 			if (addressRow.get(8) != null && StringUtils.isNotBlank(addressRow.get(8).toString())) {
-				startDate = DATETIME_FORMATTER.format(MYSQL_DATETIME_FORMATTER.parse(addressRow.get(8).toString()));
+				startDate = addressRow.get(8).toString();
+				if (startDate.length() > 19) {
+					startDate = startDate.substring(0, 19);
+				}
 			}
 			
 			String endDate = null;
 			if (addressRow.get(9) != null && StringUtils.isNotBlank(addressRow.get(9).toString())) {
-				endDate = DATETIME_FORMATTER.format(MYSQL_DATETIME_FORMATTER.parse(addressRow.get(9).toString()));
+				endDate = addressRow.get(9).toString();
+				if (endDate.length() > 19) {
+					endDate = endDate.substring(0, 19);
+				}
 			}
 			
 			period.put(MpiConstants.FIELD_START, startDate);
