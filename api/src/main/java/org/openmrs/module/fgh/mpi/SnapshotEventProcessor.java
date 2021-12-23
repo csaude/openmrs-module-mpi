@@ -146,7 +146,7 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 					} else {
 						//TODO Loop through all patients in the batch and check which records were problematic
 						throw new APIException((fhirPatients.size() - successPatientCount)
-						        + " patients in the batch were not successfully processed by the MPI");
+						        + " patient(s) in the batch were not successfully processed by the MPI");
 					}
 				}
 			}

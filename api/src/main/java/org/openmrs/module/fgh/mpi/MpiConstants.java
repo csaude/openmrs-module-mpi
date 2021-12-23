@@ -7,7 +7,7 @@ public class MpiConstants {
 	
 	public final static String MODULE_ID = "mpi";
 	
-	public final static int DEFAULT_THREAD_COUNT = 100;
+	public final static int DEFAULT_THREAD_COUNT = 50;
 	
 	public final static String SOURCE_ID_URI = "http://openmrs.org/uuid";
 	
