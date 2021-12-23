@@ -96,6 +96,8 @@ public class MpiConstants {
 	
 	public final static String SYSTEM_PREFIX = "urn:uuid:";
 	
+	public final static DateFormat DATETIME_FORMATTER = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
+	
 	public final static String REQ_PARAM_SOURCE_ID = "sourceIdentifier";
 	
 	public final static String RESPONSE_FIELD_PARAM = "parameter";

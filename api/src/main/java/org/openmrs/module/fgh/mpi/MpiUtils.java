@@ -1,5 +1,6 @@
 package org.openmrs.module.fgh.mpi;
 
+import static org.openmrs.module.fgh.mpi.MpiConstants.DATETIME_FORMATTER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.MODULE_ID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.PATIENT_ID_OFFSET_FILE;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.ID_PLACEHOLDER;
@@ -15,10 +16,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.sql.DataSource;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -31,8 +36,6 @@ import org.openmrs.api.context.Context;
 import org.openmrs.api.db.DAOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.sql.DataSource;
 
 /**
  * Contains utility methods
@@ -109,10 +112,8 @@ public class MpiUtils {
 			if (StringUtils.isBlank(deathDateStr)) {
 				fhirRes.put(MpiConstants.FIELD_DECEASED, dead);
 			} else {
-				if (deathDateStr.length() > 19) {
-					deathDateStr = deathDateStr.substring(0, 19);
-				}
-				fhirRes.put(MpiConstants.FIELD_DECEASED_DATE, deathDateStr);
+				Date deathDate = Timestamp.valueOf(deathDateStr);
+				fhirRes.put(MpiConstants.FIELD_DECEASED_DATE, DATETIME_FORMATTER.format(deathDate));
 			}
 		} else {
 			fhirRes.put(MpiConstants.FIELD_DECEASED, Boolean.valueOf(dead));
@@ -224,8 +225,7 @@ public class MpiUtils {
 	 * @param ds {@link DataSource} object
 	 * @return
 	 */
-	private static List<Map<String, Object>> getAddresses(String patientId, Map<String, Object> mpiPatient, DataSource ds)
-	        throws Exception {
+	private static List<Map<String, Object>> getAddresses(String patientId, Map<String, Object> mpiPatient, DataSource ds) {
 		
 		List<List<Object>> addressRows = executeQuery(ds, ADDRESS_QUERY.replace(ID_PLACEHOLDER, patientId));
 		int addressListLength = addressRows.size();
@@ -251,18 +251,12 @@ public class MpiUtils {
 			Map<String, Object> period = new HashMap();
 			String startDate = null;
 			if (addressRow.get(8) != null && StringUtils.isNotBlank(addressRow.get(8).toString())) {
-				startDate = addressRow.get(8).toString();
-				if (startDate.length() > 19) {
-					startDate = startDate.substring(0, 19);
-				}
+				startDate = DATETIME_FORMATTER.format(Timestamp.valueOf(addressRow.get(8).toString()));
 			}
 			
 			String endDate = null;
 			if (addressRow.get(9) != null && StringUtils.isNotBlank(addressRow.get(9).toString())) {
-				endDate = addressRow.get(9).toString();
-				if (endDate.length() > 19) {
-					endDate = endDate.substring(0, 19);
-				}
+				endDate = DATETIME_FORMATTER.format(Timestamp.valueOf(addressRow.get(9).toString()));
 			}
 			
 			period.put(MpiConstants.FIELD_START, startDate);
