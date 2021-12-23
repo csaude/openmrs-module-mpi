@@ -1,25 +1,6 @@
 package org.openmrs.module.fgh.mpi;
 
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PASS;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PATH;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_TYPE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_BASE_URL;
-import static org.openmrs.module.fgh.mpi.MpiConstants.REQ_PARAM_SOURCE_ID;
-import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_PARAM;
-import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_VALUE_REF;
-
-import java.io.FileInputStream;
-import java.io.OutputStream;
-import java.net.URL;
-import java.security.KeyStore;
-import java.security.SecureRandom;
-import java.util.List;
-import java.util.Map;
-
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.openmrs.api.APIException;
 import org.openmrs.api.AdministrationService;
@@ -28,7 +9,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import java.io.FileInputStream;
+import java.io.OutputStream;
+import java.net.URL;
+import java.security.KeyStore;
+import java.security.SecureRandom;
+import java.util.List;
+import java.util.Map;
+
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PASS;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PATH;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_TYPE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_BASE_URL;
+import static org.openmrs.module.fgh.mpi.MpiConstants.REQ_PARAM_SOURCE_ID;
+import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_PARAM;
+import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_VALUE_REF;
 
 /**
  * Http client that posts patient data to the MPI
@@ -52,7 +50,7 @@ public class MpiHttpClient {
 	
 	/**
 	 * Looks up the patient with the specified OpenMRS uuid from the MPI
-	 * 
+	 *
 	 * @param patientUuid the patient's OpenMRS uuid
 	 * @return map representation of the patient fhir resource
 	 * @throws Exception
@@ -102,7 +100,7 @@ public class MpiHttpClient {
 	
 	/**
 	 * Submits the specified patient data to the MPI
-	 * 
+	 *
 	 * @param patientData the patient fhir json payload
 	 * @throws Exception
 	 */
@@ -120,7 +118,7 @@ public class MpiHttpClient {
 	
 	/**
 	 * Submits a request to the MPI
-	 * 
+	 *
 	 * @param requestPath the string to append to the URL
 	 * @param data the data to post if any
 	 * @param responseType the type of response to return
@@ -208,6 +206,10 @@ public class MpiHttpClient {
 				kmf.init(ks, keyStorePassArray);
 				sslContext = SSLContext.getInstance("TLSv1.2");
 				sslContext.init(kmf.getKeyManagers(), null, new SecureRandom());
+				
+				//We are communicating wih our own service that uses a self signed certificate so no need for
+				//host name verification
+				HttpsURLConnection.setDefaultHostnameVerifier((host, session) -> true);
 				
 				serverBaseUrl = adminService.getGlobalProperty(GP_MPI_BASE_URL);
 				if (StringUtils.isBlank(serverBaseUrl)) {
