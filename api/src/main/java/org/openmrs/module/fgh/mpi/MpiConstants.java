@@ -82,6 +82,8 @@ public class MpiConstants {
 	
 	public final static String FIELD_RESOURCE = "resource";
 	
+	public final static String PATIENT = "Patient";
+	
 	public final static String BUNDLE = "Bundle";
 	
 	public final static String BATCH = "batch";
@@ -91,6 +93,14 @@ public class MpiConstants {
 	public final static String MOBILE = "mobile";
 	
 	public final static String USE_OFFICIAL = "official";
+	
+	public final static String GENDER_MALE = "male";
+	
+	public final static String GENDER_FEMALE = "female";
+	
+	public final static String GENDER_OTHER = "other";
+	
+	public final static String GENDER_UNKNOWN = "unknown";
 	
 	public final static String PHONE = "phone";
 	

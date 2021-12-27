@@ -117,9 +117,10 @@ public class MpiIntegrationProcessor {
 			} else {
 				List<Object> patientDetails = patient.get(0);
 				List<Object> personDetails = person.get(0);
+				boolean patientVoided = Boolean.valueOf(patientDetails.get(0).toString());
+				
 				if (mpiPatient == null) {
-					if (Boolean.valueOf(patientDetails.get(0).toString())
-					        || Boolean.valueOf(personDetails.get(5).toString())) {
+					if (patientVoided || Boolean.valueOf(personDetails.get(5).toString())) {
 						
 						//This should effectively skip placeholder patient and person rows
 						log.info("Not submitting the patient to the MPI because the person or patient is voided");
@@ -130,7 +131,7 @@ public class MpiIntegrationProcessor {
 				
 				//TODO May be we should not build a new resource and instead update the mpiPatient if one exists
 				//And we will need to be aware of placeholder rows
-				return MpiUtils.buildFhirPatient(id, patientDetails, personDetails, mpiPatient);
+				return FhirUtils.buildPatient(id, patientVoided, personDetails, mpiPatient);
 			}
 		}
 	}
