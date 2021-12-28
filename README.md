@@ -69,6 +69,7 @@ Open the `config_production.json` and make the following changes,
   resources can allow.
 - Please remember to also regularly backup the MySQL database defined in `docker-compose.yml` which is used by the hapi
   fhir server to store all records pushed to OpenCR.
+- It's also highly recommended to backup the debezium offset and history files daily.
 
 #### Patient Matching Configuration
 The production docker compose template comes with a built-in patient matching configuration defined in the
