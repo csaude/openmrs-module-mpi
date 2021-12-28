@@ -49,7 +49,7 @@ public class FhirUtils {
 	 * @return field and value map of the patient details
 	 */
 	public static Map<String, Object> buildPatient(String id, boolean patientVoided, List<Object> person,
-	                                               Map<String, Object> mpiPatient) {
+	        Map<String, Object> mpiPatient) {
 		
 		Map<String, Object> fhirRes = new HashMap();
 		fhirRes.put(MpiConstants.FIELD_RESOURCE_TYPE, MpiConstants.PATIENT);
@@ -246,7 +246,7 @@ public class FhirUtils {
 	 * @return
 	 */
 	private static List<Map<String, Object>> getPhones(String patientId, Map<String, Object> mpiPatient,
-	                                                   AdministrationService as) {
+	        AdministrationService as) {
 		PersonService personService = Context.getPersonService();
 		String attTypeUuid = as.getGlobalProperty(MpiConstants.GP_PHONE_MOBILE);
 		String attTypeId = personService.getPersonAttributeTypeByUuid(attTypeUuid).getId().toString();

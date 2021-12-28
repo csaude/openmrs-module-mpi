@@ -70,6 +70,33 @@ public class FhirUtilsTest {
 		ids.add(id1);
 		ids.add(id2);
 		when(MpiUtils.executeQuery(FhirUtils.ID_QUERY.replace(ID_PLACEHOLDER, patientId))).thenReturn(ids);
+		final String prefix1 = "Mr";
+		final String givenName1 = "Horatio";
+		final String middleName1 = "D";
+		final String familyName1 = "HornBlower";
+		final String nameUuid1 = "name-uuid-1";
+		final String prefix2 = "Miss";
+		final String givenName2 = "John";
+		final String middleName2 = "S";
+		final String familyName2 = "Doe";
+		final String nameUuid2 = "name-uuid-2";
+		List<Object> name1 = new ArrayList();
+		name1.add(prefix1);
+		name1.add(givenName1);
+		name1.add(middleName1);
+		name1.add(familyName1);
+		name1.add(nameUuid1);
+		List<Object> name2 = new ArrayList();
+		name2.add(prefix2);
+		name2.add(givenName2);
+		name2.add(middleName2);
+		name2.add(familyName2);
+		name2.add(nameUuid2);
+		List<List<Object>> names = new ArrayList();
+		names.add(name1);
+		names.add(name2);
+		when(MpiUtils.executeQuery(FhirUtils.NAME_QUERY.replace(ID_PLACEHOLDER, patientId))).thenReturn(names);
+		
 		when(mockPersonService.getPersonAttributeTypeByUuid(anyString())).thenReturn(new PersonAttributeType(1));
 		
 		Map<String, Object> resource = FhirUtils.buildPatient("1", patientVoided, personDetails, null);
@@ -87,6 +114,15 @@ public class FhirUtilsTest {
 		assertEquals(MpiConstants.SYSTEM_PREFIX + idTypeUuid1, resourceIds.get(1).get(MpiConstants.FIELD_SYSTEM));
 		assertEquals(identifier1, resourceIds.get(1).get(MpiConstants.FIELD_VALUE));
 		assertEquals(idUuid, resourceIds.get(1).get(MpiConstants.FIELD_ID));
+		List<Map> resourceNames = (List) resource.get(MpiConstants.FIELD_NAME);
+		assertEquals(2, resourceNames.size());
+		assertEquals(MpiConstants.USE_OFFICIAL, resourceNames.get(0).get(MpiConstants.FIELD_USE));
+		assertEquals(prefix1, resourceNames.get(0).get(MpiConstants.FIELD_PREFIX));
+		assertEquals(nameUuid1, resourceNames.get(0).get(MpiConstants.FIELD_ID));
+		assertEquals(familyName1, resourceNames.get(0).get(MpiConstants.FIELD_FAMILY));
+		List<Object> givenNames = (List) resourceNames.get(0).get(MpiConstants.FIELD_GIVEN);
+		assertEquals(givenName1, givenNames.get(0));
+		assertEquals(middleName1, givenNames.get(1));
 	}
 	
 }
