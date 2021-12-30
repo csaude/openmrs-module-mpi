@@ -33,7 +33,7 @@ public class IncrementalEventProcessor extends BaseEventProcessor {
 			
 			final long start = System.currentTimeMillis();
 			
-			Map<String, Object> fhirPatient = ProcessorUtils.createFhirResource(event, patientHandler, assocHandler);
+			Map<String, Object> fhirPatient = EventProcessorUtils.createFhirResource(event, patientHandler, assocHandler);
 			if (fhirPatient != null) {
 				mpiHttpClient.submitPatient(mapper.writeValueAsString(fhirPatient));
 			}

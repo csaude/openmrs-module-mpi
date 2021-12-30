@@ -11,9 +11,9 @@ import org.slf4j.LoggerFactory;
 /**
  * Contains utility methods for event processors
  */
-public class ProcessorUtils {
+public class EventProcessorUtils {
 	
-	private static final Logger log = LoggerFactory.getLogger(ProcessorUtils.class);
+	private static final Logger log = LoggerFactory.getLogger(EventProcessorUtils.class);
 	
 	/**
 	 * Creates a fhir patient resource

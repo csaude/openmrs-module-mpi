@@ -75,7 +75,7 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 				log.info("Processing database event -> " + event);
 				final long startSingle = System.currentTimeMillis();
 				
-				Map<String, Object> fhirPatient = ProcessorUtils.createFhirResource(event, patientHandler, null);
+				Map<String, Object> fhirPatient = EventProcessorUtils.createFhirResource(event, patientHandler, null);
 				
 				log.info("Done generating fhir patient for database event -> " + event);
 				
