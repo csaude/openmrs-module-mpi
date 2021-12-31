@@ -7,6 +7,10 @@ import static org.mockito.Mockito.when;
 import static org.openmrs.module.fgh.mpi.FhirUtils.ATTR_QUERY;
 import static org.openmrs.module.fgh.mpi.FhirUtils.ATTR_TYPE_ID_PLACEHOLDER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.DATETIME_FORMATTER;
+import static org.openmrs.module.fgh.mpi.MpiConstants.HEALTH_CENTER_ATTRIB_TYPE_UUID;
+import static org.openmrs.module.fgh.mpi.MpiConstants.HEALTH_CENTER_URL;
+import static org.openmrs.module.fgh.mpi.MpiConstants.IDENTIFIER;
+import static org.openmrs.module.fgh.mpi.MpiConstants.NAME;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.ID_PLACEHOLDER;
 import static org.openmrs.module.fgh.mpi.MpiUtils.executeQuery;
 
@@ -21,8 +25,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.openmrs.Location;
 import org.openmrs.PersonAttributeType;
 import org.openmrs.api.AdministrationService;
+import org.openmrs.api.LocationService;
 import org.openmrs.api.PersonService;
 import org.openmrs.api.context.Context;
 import org.powermock.api.mockito.PowerMockito;
@@ -39,12 +45,16 @@ public class FhirUtilsTest {
 	@Mock
 	private PersonService mockPersonService;
 	
+	@Mock
+	private LocationService mockLocationService;
+	
 	@Before
 	public void setup() {
 		PowerMockito.mockStatic(Context.class);
 		PowerMockito.mockStatic(MpiUtils.class);
 		when(Context.getAdministrationService()).thenReturn(mockAdminService);
 		when(Context.getPersonService()).thenReturn(mockPersonService);
+		when(Context.getLocationService()).thenReturn(mockLocationService);
 	}
 	
 	@Test
@@ -134,6 +144,22 @@ public class FhirUtilsTest {
 		    ATTR_QUERY.replace(ID_PLACEHOLDER, patientId).replace(ATTR_TYPE_ID_PLACEHOLDER, homeAttrTypeId.toString())))
 		            .thenReturn(singletonList(homePhoneAttr));
 		
+		final Integer locationId = 1;
+		final String locationUuid = "location-uuid";
+		final String locationName = "Location";
+		final Integer healthCtrAttrTypeId = 6;
+		List<Object> healthCenter = Arrays.asList(locationId.toString(), "attrib-uuid");
+		PersonAttributeType healthCenterAttrType = new PersonAttributeType(healthCtrAttrTypeId);
+		when(mockPersonService.getPersonAttributeTypeByUuid(HEALTH_CENTER_ATTRIB_TYPE_UUID))
+		        .thenReturn(healthCenterAttrType);
+		when(executeQuery(
+		    ATTR_QUERY.replace(ID_PLACEHOLDER, patientId).replace(ATTR_TYPE_ID_PLACEHOLDER, healthCtrAttrTypeId.toString())))
+		            .thenReturn(singletonList(healthCenter));
+		Location location = new Location(locationId);
+		location.setName(locationName);
+		location.setUuid(locationUuid);
+		when(mockLocationService.getLocation(locationId)).thenReturn(location);
+		
 		Map<String, Object> resource = FhirUtils.buildPatient("1", patientVoided, personDetails, null);
 		
 		System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(resource));
@@ -209,6 +235,15 @@ public class FhirUtilsTest {
 		assertEquals(MpiConstants.HOME, resourceTelecoms.get(1).get(MpiConstants.FIELD_USE));
 		assertEquals(home, resourceTelecoms.get(1).get(MpiConstants.FIELD_VALUE));
 		assertEquals(attributeUuid2, resourceTelecoms.get(1).get(MpiConstants.FIELD_ID));
+		
+		List<Map> extension = (List) resource.get(MpiConstants.FIELD_EXTENSION);
+		assertEquals(1, extension.size());
+		assertEquals(HEALTH_CENTER_URL, extension.get(0).get(MpiConstants.FIELD_URL));
+		extension = (List) extension.get(0).get(MpiConstants.FIELD_EXTENSION);
+		assertEquals(IDENTIFIER, extension.get(0).get(MpiConstants.FIELD_URL));
+		assertEquals(locationUuid, extension.get(0).get(MpiConstants.FIELD_VALUE_STR));
+		assertEquals(NAME, extension.get(1).get(MpiConstants.FIELD_URL));
+		assertEquals(locationName, extension.get(1).get(MpiConstants.FIELD_VALUE_STR));
 	}
 	
 }

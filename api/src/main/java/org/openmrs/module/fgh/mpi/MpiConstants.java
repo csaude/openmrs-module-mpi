@@ -11,6 +11,8 @@ public class MpiConstants {
 	
 	public final static String SOURCE_ID_URI = "http://openmrs.org/uuid";
 	
+	public final static String HEALTH_CENTER_URL = "http://openmrs.org/fhir/StructureDefinition/patient-healthCenter";
+	
 	public final static String[] WATCHED_TABLES = new String[] { "person", "patient", "person_name", "person_address",
 	        "patient_identifier", "person_attribute" };
 	
@@ -27,6 +29,8 @@ public class MpiConstants {
 	public final static String GP_PHONE_MOBILE = MODULE_ID + ".person.attribute.type.mobile.phone";
 	
 	public final static String GP_PHONE_HOME = MODULE_ID + ".person.attribute.type.home.phone";
+	
+	public final static String HEALTH_CENTER_ATTRIB_TYPE_UUID = "8d87236c-c2cc-11de-8d13-0010c6dffd0f";
 	
 	public final static String FIELD_RESOURCE_TYPE = "resourceType";
 	
@@ -82,6 +86,12 @@ public class MpiConstants {
 	
 	public final static String FIELD_RESOURCE = "resource";
 	
+	public final static String FIELD_EXTENSION = "extension";
+	
+	public final static String FIELD_URL = "url";
+	
+	public final static String FIELD_VALUE_STR = "valueString";
+	
 	public final static String PATIENT = "Patient";
 	
 	public final static String BUNDLE = "Bundle";
@@ -103,6 +113,10 @@ public class MpiConstants {
 	public final static String GENDER_UNKNOWN = "unknown";
 	
 	public final static String PHONE = "phone";
+	
+	public final static String IDENTIFIER = "identifier";
+	
+	public final static String NAME = "name";
 	
 	public final static String SYSTEM_PREFIX = "urn:uuid:";
 	
