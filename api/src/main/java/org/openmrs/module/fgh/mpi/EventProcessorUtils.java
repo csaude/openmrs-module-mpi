@@ -37,6 +37,7 @@ public class EventProcessorUtils {
 			Context.addProxyPrivilege(PrivilegeConstants.SQL_LEVEL_ACCESS);
 			Context.addProxyPrivilege(PrivilegeConstants.GET_PERSON_ATTRIBUTE_TYPES);
 			Context.addProxyPrivilege(PrivilegeConstants.GET_IDENTIFIER_TYPES);
+			Context.addProxyPrivilege(PrivilegeConstants.GET_LOCATIONS);
 			
 			switch (event.getTableName()) {
 				case "person":
@@ -62,6 +63,7 @@ public class EventProcessorUtils {
 				Context.removeProxyPrivilege(PrivilegeConstants.SQL_LEVEL_ACCESS);
 				Context.removeProxyPrivilege(PrivilegeConstants.GET_PERSON_ATTRIBUTE_TYPES);
 				Context.removeProxyPrivilege(PrivilegeConstants.GET_IDENTIFIER_TYPES);
+				Context.removeProxyPrivilege(PrivilegeConstants.GET_LOCATIONS);
 			}
 			finally {
 				Context.closeSession();

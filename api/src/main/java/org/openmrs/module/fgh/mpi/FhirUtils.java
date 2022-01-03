@@ -58,7 +58,7 @@ public class FhirUtils {
 	 * @return field and value map of the patient details
 	 */
 	public static Map<String, Object> buildPatient(String id, boolean patientVoided, List<Object> person,
-	                                               Map<String, Object> mpiPatient) {
+	        Map<String, Object> mpiPatient) {
 		
 		Map<String, Object> fhirRes = new HashMap();
 		fhirRes.put(MpiConstants.FIELD_RESOURCE_TYPE, MpiConstants.PATIENT);
