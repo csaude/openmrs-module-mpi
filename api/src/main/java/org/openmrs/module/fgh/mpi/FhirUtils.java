@@ -58,7 +58,7 @@ public class FhirUtils {
 	 * @return field and value map of the patient details
 	 */
 	public static Map<String, Object> buildPatient(String id, boolean patientVoided, List<Object> person,
-	        Map<String, Object> mpiPatient) {
+	                                               Map<String, Object> mpiPatient) {
 		
 		Map<String, Object> fhirRes = new HashMap();
 		fhirRes.put(MpiConstants.FIELD_RESOURCE_TYPE, MpiConstants.PATIENT);
@@ -255,6 +255,10 @@ public class FhirUtils {
 		List<List<Object>> phoneRows = getAttributes(patientId, MpiConstants.GP_PHONE_MOBILE);
 		Map<String, Object> phoneResource = null;
 		if (!phoneRows.isEmpty()) {
+			if (phoneRows.size() > 1) {
+				throw new APIException("Found multiple mobile phone attribute values for the same patient");
+			}
+			
 			phoneResource = new HashMap();
 			phoneResource.put(MpiConstants.FIELD_ID, phoneRows.get(0).get(1));
 			phoneResource.put(MpiConstants.FIELD_SYSTEM, MpiConstants.PHONE);
@@ -273,6 +277,10 @@ public class FhirUtils {
 		phoneRows = getAttributes(patientId, MpiConstants.GP_PHONE_HOME);
 		phoneResource = null;
 		if (!phoneRows.isEmpty()) {
+			if (phoneRows.size() > 1) {
+				throw new APIException("Found multiple home phone attribute values for the same patient");
+			}
+			
 			phoneResource = new HashMap();
 			phoneResource.put(MpiConstants.FIELD_ID, phoneRows.get(0).get(1));
 			phoneResource.put(MpiConstants.FIELD_SYSTEM, MpiConstants.PHONE);
@@ -300,13 +308,13 @@ public class FhirUtils {
 		        .toString();
 		String phoneQuery = ATTR_QUERY.replace(ID_PLACEHOLDER, patientId).replace(ATTR_TYPE_ID_PLACEHOLDER, attTypeId);
 		List<List<Object>> healthCenterRows = MpiUtils.executeQuery(phoneQuery);
-		if (healthCenterRows.size() > 1) {
-			throw new APIException("Found multiple health center attribute values");
-		}
-		
 		Map<String, Object> healthCenterExt = null;
 		LocationService ls = Context.getLocationService();
 		if (!healthCenterRows.isEmpty()) {
+			if (healthCenterRows.size() > 1) {
+				throw new APIException("Found multiple health center attribute values for the same patient");
+			}
+			
 			Object locationId = healthCenterRows.get(0).get(0);
 			Location location = ls.getLocation(Integer.valueOf(locationId.toString()));
 			if (location == null) {
