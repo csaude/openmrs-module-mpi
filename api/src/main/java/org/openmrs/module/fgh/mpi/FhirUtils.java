@@ -101,7 +101,10 @@ public class FhirUtils {
 		fhirRes.put(MpiConstants.FIELD_NAME, getNames(id, mpiPatient));
 		fhirRes.put(MpiConstants.FIELD_ADDRESS, getAddresses(id, mpiPatient));
 		fhirRes.put(MpiConstants.FIELD_TELECOM, getPhones(id, mpiPatient));
-		fhirRes.put(MpiConstants.FIELD_EXTENSION, getHealthCenter(id));
+		List<Map<String, Object>> heathCenter = getHealthCenter(id);
+		if (heathCenter != null) {
+			fhirRes.put(MpiConstants.FIELD_EXTENSION, heathCenter);
+		}
 		
 		return fhirRes;
 	}
@@ -330,9 +333,11 @@ public class FhirUtils {
 			healthCenterExt = new HashMap(2);
 			healthCenterExt.put(FIELD_URL, HEALTH_CENTER_URL);
 			healthCenterExt.put(FIELD_EXTENSION, Arrays.asList(uuidExt, nameExt));
+			
+			return Collections.singletonList(healthCenterExt);
 		}
 		
-		return Collections.singletonList(healthCenterExt);
+		return null;
 	}
 	
 	/**

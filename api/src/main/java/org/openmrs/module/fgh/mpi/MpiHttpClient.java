@@ -1,17 +1,13 @@
 package org.openmrs.module.fgh.mpi;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang3.StringUtils;
-import org.openmrs.api.APIException;
-import org.openmrs.api.AdministrationService;
-import org.openmrs.api.context.Context;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PASS;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PATH;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_TYPE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_BASE_URL;
+import static org.openmrs.module.fgh.mpi.MpiConstants.REQ_PARAM_SOURCE_ID;
+import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_PARAM;
+import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_VALUE_REF;
 
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
 import java.io.FileInputStream;
 import java.io.OutputStream;
 import java.net.URL;
@@ -20,13 +16,20 @@ import java.security.SecureRandom;
 import java.util.List;
 import java.util.Map;
 
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PASS;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PATH;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_TYPE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_BASE_URL;
-import static org.openmrs.module.fgh.mpi.MpiConstants.REQ_PARAM_SOURCE_ID;
-import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_PARAM;
-import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_VALUE_REF;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.openmrs.api.APIException;
+import org.openmrs.api.AdministrationService;
+import org.openmrs.api.context.Context;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Http client that posts patient data to the MPI
@@ -111,6 +114,10 @@ public class MpiHttpClient {
 		
 		if (log.isDebugEnabled()) {
 			log.debug("MPI patient submission response: " + mpiIdsResp);
+		}
+		
+		if (CollectionUtils.isEmpty(mpiIdsResp) || mpiIdsResp.get(0) == null) {
+			throw new APIException("An empty response was received when the patient was submitted");
 		}
 		
 		log.info("Successfully submitted the patient record to the MPI");
