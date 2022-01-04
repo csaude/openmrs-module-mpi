@@ -20,7 +20,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -162,7 +161,7 @@ public class FhirUtilsTest {
 		
 		Map<String, Object> resource = FhirUtils.buildPatient("1", patientVoided, personDetails, null);
 		
-		System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(resource));
+		//System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(resource));
 		assertEquals(MpiConstants.PATIENT, resource.get(MpiConstants.FIELD_RESOURCE_TYPE));
 		assertEquals(MpiConstants.GENDER_MALE, resource.get(MpiConstants.FIELD_GENDER));
 		assertEquals(!patientVoided, resource.get(MpiConstants.FIELD_ACTIVE));

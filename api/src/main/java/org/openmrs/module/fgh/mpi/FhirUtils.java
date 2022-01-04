@@ -9,6 +9,7 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.HEALTH_CENTER_URL;
 import static org.openmrs.module.fgh.mpi.MpiConstants.IDENTIFIER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.NAME;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.ID_PLACEHOLDER;
+import static org.openmrs.module.fgh.mpi.MpiUtils.executeQuery;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -21,14 +22,19 @@ import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.openmrs.Location;
+import org.openmrs.PersonAttributeType;
 import org.openmrs.api.APIException;
 import org.openmrs.api.LocationService;
 import org.openmrs.api.context.Context;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Contains utilities for working with fhir resources
  */
 public class FhirUtils {
+	
+	private static final Logger log = LoggerFactory.getLogger(FhirUtils.class);
 	
 	public final static String ATTR_TYPE_ID_PLACEHOLDER = "{ATTR_TYPE_ID}";
 	
@@ -45,6 +51,8 @@ public class FhirUtils {
 	
 	protected final static String ATTR_QUERY = "SELECT value, uuid FROM person_attribute WHERE person_id = " + ID_PLACEHOLDER
 	        + " AND person_attribute_type_id = " + ATTR_TYPE_ID_PLACEHOLDER + " AND voided = 0";
+	
+	private final static Map<String, String> ATTR_TYPE_GP_ID_MAP = new HashMap(2);
 	
 	/**
 	 * Builds a map of fields and values with patient details that can be serialized as a fhir json
@@ -118,7 +126,7 @@ public class FhirUtils {
 	 * @return list of the patient identifiers
 	 */
 	private static List<Map<String, Object>> getIds(String patientId, List<Object> person, Map<String, Object> mpiPatient) {
-		List<List<Object>> idRows = MpiUtils.executeQuery(ID_QUERY.replace(ID_PLACEHOLDER, patientId));
+		List<List<Object>> idRows = executeQuery(ID_QUERY.replace(ID_PLACEHOLDER, patientId));
 		int idListLength = idRows.size() + 1;
 		if (mpiPatient != null && mpiPatient.get(MpiConstants.FIELD_IDENTIFIER) != null) {
 			idListLength = ((List) mpiPatient.get(MpiConstants.FIELD_IDENTIFIER)).size();
@@ -157,7 +165,7 @@ public class FhirUtils {
 	 * @return list of the patient names
 	 */
 	private static List<Map<String, Object>> getNames(String patientId, Map<String, Object> mpiPatient) {
-		List<List<Object>> nameRows = MpiUtils.executeQuery(NAME_QUERY.replace(ID_PLACEHOLDER, patientId));
+		List<List<Object>> nameRows = executeQuery(NAME_QUERY.replace(ID_PLACEHOLDER, patientId));
 		int nameListLength = nameRows.size();
 		if (mpiPatient != null && mpiPatient.get(MpiConstants.FIELD_NAME) != null) {
 			nameListLength = ((List) mpiPatient.get(MpiConstants.FIELD_NAME)).size();
@@ -201,7 +209,7 @@ public class FhirUtils {
 	 * @return list of the patient's addresses
 	 */
 	private static List<Map<String, Object>> getAddresses(String patientId, Map<String, Object> mpiPatient) {
-		List<List<Object>> addressRows = MpiUtils.executeQuery(ADDRESS_QUERY.replace(ID_PLACEHOLDER, patientId));
+		List<List<Object>> addressRows = executeQuery(ADDRESS_QUERY.replace(ID_PLACEHOLDER, patientId));
 		int addressListLength = addressRows.size();
 		if (mpiPatient != null && mpiPatient.get(MpiConstants.FIELD_ADDRESS) != null) {
 			addressListLength = ((List) mpiPatient.get(MpiConstants.FIELD_ADDRESS)).size();
@@ -310,7 +318,7 @@ public class FhirUtils {
 		String attTypeId = Context.getPersonService().getPersonAttributeTypeByUuid(HEALTH_CENTER_ATTRIB_TYPE_UUID).getId()
 		        .toString();
 		String phoneQuery = ATTR_QUERY.replace(ID_PLACEHOLDER, patientId).replace(ATTR_TYPE_ID_PLACEHOLDER, attTypeId);
-		List<List<Object>> healthCenterRows = MpiUtils.executeQuery(phoneQuery);
+		List<List<Object>> healthCenterRows = executeQuery(phoneQuery);
 		Map<String, Object> healthCenterExt = null;
 		LocationService ls = Context.getLocationService();
 		if (!healthCenterRows.isEmpty()) {
@@ -349,15 +357,27 @@ public class FhirUtils {
 	 * @return list of person attributes
 	 */
 	private static List<List<Object>> getAttributes(String patientId, String globalProperty) {
-		String attTypeUuid = Context.getAdministrationService().getGlobalProperty(globalProperty);
-		if (StringUtils.isBlank(attTypeUuid)) {
-			throw new APIException("No value found for global property named: " + globalProperty);
+		String attTypeId = ATTR_TYPE_GP_ID_MAP.get(globalProperty);
+		if (attTypeId == null) {
+			if (log.isDebugEnabled()) {
+				log.debug("Loading person attribute type associated to the global property named: " + globalProperty);
+			}
+			
+			String attTypeUuid = Context.getAdministrationService().getGlobalProperty(globalProperty);
+			if (StringUtils.isBlank(attTypeUuid)) {
+				throw new APIException("No value found for global property named: " + globalProperty);
+			}
+			
+			PersonAttributeType attributeType = Context.getPersonService().getPersonAttributeTypeByUuid(attTypeUuid);
+			if (attributeType == null) {
+				throw new APIException("No person attribute type found with uuid: " + attTypeUuid);
+			}
+			
+			attTypeId = attributeType.getId().toString();
+			ATTR_TYPE_GP_ID_MAP.put(globalProperty, attTypeId);
 		}
 		
-		String attTypeId = Context.getPersonService().getPersonAttributeTypeByUuid(attTypeUuid).getId().toString();
-		String phoneQuery = ATTR_QUERY.replace(ID_PLACEHOLDER, patientId).replace(ATTR_TYPE_ID_PLACEHOLDER, attTypeId);
-		
-		return MpiUtils.executeQuery(phoneQuery);
+		return executeQuery(ATTR_QUERY.replace(ID_PLACEHOLDER, patientId).replace(ATTR_TYPE_ID_PLACEHOLDER, attTypeId));
 	}
 	
 }
