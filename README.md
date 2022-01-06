@@ -8,8 +8,9 @@ in OpenCR.
 1. [Technical Overview](#technical-overview)
 2. [Assumptions](#assumptions)
 3. [OpenCR Installation](#opencr-installation)
-    1. [Update Config File](#update-config-file)
-    2. [Patient Matching Configuration](#patient-matching-configuration)
+    1. [Setting Up Certificates](#setting-up-certificates)
+    2. [Update Config File](#update-config-file)
+    3. [Patient Matching Configuration](#patient-matching-configuration)
 4. [Build and Install](#build-and-install)
 5. [OpenMRS Configuration](#openmrs-configuration)
     1. [Global properties](#global-properties)
@@ -39,6 +40,14 @@ using for this integration, the steps below are based on [system admin documenta
 - Edit the `db.env` file and be sure to change at least the passwords and any other values to match your requirements.
 - Edit the `application.yml` file and make sure that the spring datasource username and password match those defined in
   the `db.env` file, you can also tweak more field values to match your requirements.
+
+**IMPORTANT**
+- For security reasons, **DO NOT** expose the OpenCR instance on the public internet
+
+### Setting Up Certificates
+- Generate OpenCR server certificates and a client certificate for OpenMRS instance using [this guide](https://github.com/intrahealth/client-registry/tree/master/server/serverCertificates) 
+and please keep note of the locations of the generated files, they will be needed in later steps.
+- Copy the generated OpenCR server certificates to the directory containing the `docker-compose.prod.yml` file.   
 
 #### Update Config File
 Open the `config_production.json` and make the following changes,
@@ -97,6 +106,19 @@ mvn clean install
 Take the generated .omod file in the `omod/target` folder and install it in the central OpenMRS instance
 
 ### OpenMRS Configuration
+Import the OpenCR server certificate into the JVM's trust store for the OpenMRS instance using the following steps,
+- Find the OpenCR public key file that you generated under [Setting Up Certificates](#setting-up-certificates) section.
+  Alternatively, you can fetch the OpenCR server certificate by running the command below which saves the certificate to 
+  a file named `opencr_server.pem` where {OPENCR_HOST} and {OPENCR_PORT} are placeholders for OpenCR host and port,
+    ```
+    echo "Q" | openssl s_client -connect {OPENCR_HOST}:{OPENCR_PORT} | openssl x509 > opencr_server.pem
+    ```
+- Run the command below to add the OpenCR server certificate to the JVM's trust store, it assumes JAVA_HOME environment 
+  property is set where {PATH_TO_OPENCR_CERT_FILE} is the path to the OpenCR server certificate.
+    ```
+    keytool -import -alias opencr -keystore $JAVA_HOME/jre/lib/security/cacerts -file {PATH_TO_OPENCR_CERT_FILE}
+
+    ```
 
 #### Global properties
 Navigate to the main admin settings page as mentioned below,
