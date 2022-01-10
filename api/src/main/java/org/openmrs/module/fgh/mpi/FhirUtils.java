@@ -95,7 +95,7 @@ public class FhirUtils {
 		if (Boolean.valueOf(dead)) {
 			String deathDateStr = person.get(3) != null ? person.get(3).toString() : null;
 			if (StringUtils.isBlank(deathDateStr)) {
-				fhirRes.put(MpiConstants.FIELD_DECEASED, dead);
+				fhirRes.put(MpiConstants.FIELD_DECEASED, Boolean.valueOf(dead));
 			} else {
 				Date deathDate = Timestamp.valueOf(deathDateStr);
 				fhirRes.put(MpiConstants.FIELD_DECEASED_DATE, DATETIME_FORMATTER.format(deathDate));

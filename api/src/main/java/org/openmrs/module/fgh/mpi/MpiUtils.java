@@ -69,7 +69,7 @@ public class MpiUtils {
 			}
 			
 			if (StringUtils.isBlank(patientId)) {
-				log.info("Not patient id found that was previously saved");
+				log.info("No patient id found that was previously saved");
 				return null;
 			}
 			

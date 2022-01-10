@@ -1,12 +1,22 @@
 package org.openmrs.module.fgh.mpi;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.openmrs.module.fgh.mpi.FhirUtils.ATTR_QUERY;
 import static org.openmrs.module.fgh.mpi.FhirUtils.ATTR_TYPE_ID_PLACEHOLDER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.DATETIME_FORMATTER;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_EXTENSION;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_GENDER;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_FEMALE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_MALE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_OTHER;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_UNKNOWN;
 import static org.openmrs.module.fgh.mpi.MpiConstants.HEALTH_CENTER_ATTRIB_TYPE_UUID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.HEALTH_CENTER_URL;
 import static org.openmrs.module.fgh.mpi.MpiConstants.IDENTIFIER;
@@ -16,7 +26,7 @@ import static org.openmrs.module.fgh.mpi.MpiUtils.executeQuery;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -26,6 +36,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.openmrs.Location;
 import org.openmrs.PersonAttributeType;
+import org.openmrs.api.APIException;
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.LocationService;
 import org.openmrs.api.PersonService;
@@ -54,40 +65,42 @@ public class FhirUtilsTest {
 		when(Context.getAdministrationService()).thenReturn(mockAdminService);
 		when(Context.getPersonService()).thenReturn(mockPersonService);
 		when(Context.getLocationService()).thenReturn(mockLocationService);
+		when(mockAdminService.getGlobalProperty(anyString())).thenReturn("test");
+		when(mockPersonService.getPersonAttributeTypeByUuid(anyString())).thenReturn(new PersonAttributeType(0));
 	}
 	
 	@Test
-	public void buildPatient_shouldBuildAPatientResource() throws Exception {
+	public void buildPatient_shouldBuildAPatientResource() {
 		final String patientId = "1";
 		final String birthDate = "1986-10-07";
 		final boolean dead = false;
 		final String patientUuid = "person-uuid";
 		final boolean personVoided = false;
 		final boolean patientVoided = false;
-		List<Object> personDetails = Arrays.asList("M", birthDate, dead, null, patientUuid, personVoided);
+		List<Object> personDetails = asList("M", birthDate, dead, null, patientUuid, personVoided);
 		final String identifier1 = "12345";
 		final String idTypeUuid1 = "id-type-uuid-1";
 		final String idUuid1 = "id-uuid-1";
-		List<Object> id1 = Arrays.asList(identifier1, idTypeUuid1, idUuid1);
+		List<Object> id1 = asList(identifier1, idTypeUuid1, idUuid1);
 		final String identifier2 = "qwerty";
 		final String idTypeUuid2 = "id-type-uuid-2";
 		final String idUuid2 = "id-uuid-2";
-		List<Object> id2 = Arrays.asList(identifier2, idTypeUuid2, idUuid2);
-		List<List<Object>> ids = Arrays.asList(id1, id2);
+		List<Object> id2 = asList(identifier2, idTypeUuid2, idUuid2);
+		List<List<Object>> ids = asList(id1, id2);
 		when(executeQuery(FhirUtils.ID_QUERY.replace(ID_PLACEHOLDER, patientId))).thenReturn(ids);
 		final String prefix1 = "Mr";
 		final String givenName1 = "Horatio";
 		final String middleName1 = "D";
 		final String familyName1 = "HornBlower";
 		final String nameUuid1 = "name-uuid-1";
-		List<Object> name1 = Arrays.asList(prefix1, givenName1, middleName1, familyName1, nameUuid1);
+		List<Object> name1 = asList(prefix1, givenName1, middleName1, familyName1, nameUuid1);
 		final String prefix2 = "Miss";
 		final String givenName2 = "John";
 		final String middleName2 = "S";
 		final String familyName2 = "Doe";
 		final String nameUuid2 = "name-uuid-2";
-		List<Object> name2 = Arrays.asList(prefix2, givenName2, middleName2, familyName2, nameUuid2);
-		List<List<Object>> names = Arrays.asList(name1, name2);
+		List<Object> name2 = asList(prefix2, givenName2, middleName2, familyName2, nameUuid2);
+		List<List<Object>> names = asList(name1, name2);
 		when(executeQuery(FhirUtils.NAME_QUERY.replace(ID_PLACEHOLDER, patientId))).thenReturn(names);
 		final String line1Address2 = "123";
 		final String line1Address6 = "Ocean";
@@ -100,8 +113,8 @@ public class FhirUtilsTest {
 		final String startDate1 = "2020-01-01 00:00:00";
 		final String endDate1 = "2020-12-31 00:00:00";
 		final String addressUuid1 = "address-uuid-1";
-		List<Object> personAddress1 = Arrays.asList(line1Address1, line1Address2, line1Address3, line1Address5,
-		    line1Address6, countyDistrict1, stateProvince1, country1, startDate1, endDate1, addressUuid1);
+		List<Object> personAddress1 = asList(line1Address1, line1Address2, line1Address3, line1Address5, line1Address6,
+		    countyDistrict1, stateProvince1, country1, startDate1, endDate1, addressUuid1);
 		final String line2Address2 = "987";
 		final String line2Address6 = "Rubaga";
 		final String line2Address5 = "Rd";
@@ -113,8 +126,8 @@ public class FhirUtilsTest {
 		final String startDate2 = "2009-01-01 00:00:00";
 		final String endDate2 = "2009-12-31 00:00:00";
 		final String addressUuid2 = "address-uuid-2";
-		List<Object> personAddress2 = Arrays.asList(line2Address1, line2Address2, line2Address3, line2Address5,
-		    line2Address6, countyDistrict2, stateProvince2, country2, startDate2, endDate2, addressUuid2);
+		List<Object> personAddress2 = asList(line2Address1, line2Address2, line2Address3, line2Address5, line2Address6,
+		    countyDistrict2, stateProvince2, country2, startDate2, endDate2, addressUuid2);
 		List<List<Object>> addresses = new ArrayList();
 		addresses.add(personAddress1);
 		addresses.add(personAddress2);
@@ -124,7 +137,7 @@ public class FhirUtilsTest {
 		final String attributeUuid1 = "attr-uuid-1";
 		final Integer mobileAttrTypeId = 1;
 		final String mobileAttrTypeUuid = "attr-type-uuid-1";
-		List<Object> mobileAttr = Arrays.asList(mobile, attributeUuid1);
+		List<Object> mobileAttr = asList(mobile, attributeUuid1);
 		when(mockAdminService.getGlobalProperty(MpiConstants.GP_PHONE_MOBILE)).thenReturn(mobileAttrTypeUuid);
 		PersonAttributeType mobileAttrType = new PersonAttributeType(mobileAttrTypeId);
 		when(mockPersonService.getPersonAttributeTypeByUuid(mobileAttrTypeUuid)).thenReturn(mobileAttrType);
@@ -135,7 +148,7 @@ public class FhirUtilsTest {
 		final String attributeUuid2 = "attr-uuid-2";
 		final Integer homeAttrTypeId = 2;
 		final String homeAttrTypeUuid = "attr-type-uuid-2";
-		List<Object> homePhoneAttr = Arrays.asList(home, attributeUuid2);
+		List<Object> homePhoneAttr = asList(home, attributeUuid2);
 		when(mockAdminService.getGlobalProperty(MpiConstants.GP_PHONE_HOME)).thenReturn(homeAttrTypeUuid);
 		PersonAttributeType homeAttrType = new PersonAttributeType(homeAttrTypeId);
 		when(mockPersonService.getPersonAttributeTypeByUuid(homeAttrTypeUuid)).thenReturn(homeAttrType);
@@ -147,7 +160,7 @@ public class FhirUtilsTest {
 		final String locationUuid = "location-uuid";
 		final String locationName = "Location";
 		final Integer healthCtrAttrTypeId = 6;
-		List<Object> healthCenter = Arrays.asList(locationId.toString(), "attrib-uuid");
+		List<Object> healthCenter = asList(locationId.toString(), "attrib-uuid");
 		PersonAttributeType healthCenterAttrType = new PersonAttributeType(healthCtrAttrTypeId);
 		when(mockPersonService.getPersonAttributeTypeByUuid(HEALTH_CENTER_ATTRIB_TYPE_UUID))
 		        .thenReturn(healthCenterAttrType);
@@ -163,10 +176,11 @@ public class FhirUtilsTest {
 		
 		//System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(resource));
 		assertEquals(MpiConstants.PATIENT, resource.get(MpiConstants.FIELD_RESOURCE_TYPE));
-		assertEquals(MpiConstants.GENDER_MALE, resource.get(MpiConstants.FIELD_GENDER));
+		assertEquals(GENDER_MALE, resource.get(MpiConstants.FIELD_GENDER));
 		assertEquals(!patientVoided, resource.get(MpiConstants.FIELD_ACTIVE));
 		assertEquals(birthDate, resource.get(MpiConstants.FIELD_BIRTHDATE));
 		assertEquals(dead, resource.get(MpiConstants.FIELD_DECEASED));
+		assertNull(resource.get(MpiConstants.FIELD_DECEASED_DATE));
 		
 		List<Map> resourceIds = (List) resource.get(MpiConstants.FIELD_IDENTIFIER);
 		assertEquals(3, resourceIds.size());
@@ -243,6 +257,90 @@ public class FhirUtilsTest {
 		assertEquals(locationUuid, extension.get(0).get(MpiConstants.FIELD_VALUE_STR));
 		assertEquals(NAME, extension.get(1).get(MpiConstants.FIELD_URL));
 		assertEquals(locationName, extension.get(1).get(MpiConstants.FIELD_VALUE_STR));
+	}
+	
+	@Test
+	public void buildPatient_shouldSetTheCorrectGender() {
+		List<Object> personDetails = asList("M", null, false, null, null, false);
+		assertEquals(GENDER_MALE, FhirUtils.buildPatient("1", false, personDetails, null).get(FIELD_GENDER));
+		//Should be case insensitive
+		personDetails = asList("m", null, false, null, null, false);
+		assertEquals(GENDER_MALE, FhirUtils.buildPatient("1", false, personDetails, null).get(FIELD_GENDER));
+		
+		personDetails = asList("F", null, false, null, null, false);
+		assertEquals(GENDER_FEMALE, FhirUtils.buildPatient("1", false, personDetails, null).get(FIELD_GENDER));
+		
+		personDetails = asList("f", null, false, null, null, false);
+		assertEquals(GENDER_FEMALE, FhirUtils.buildPatient("1", false, personDetails, null).get(FIELD_GENDER));
+		
+		personDetails = asList("O", null, false, null, null, false);
+		assertEquals(GENDER_OTHER, FhirUtils.buildPatient("1", false, personDetails, null).get(FIELD_GENDER));
+		
+		personDetails = asList("o", null, false, null, null, false);
+		assertEquals(GENDER_OTHER, FhirUtils.buildPatient("1", false, personDetails, null).get(FIELD_GENDER));
+		
+		personDetails = asList(null, null, false, null, null, false);
+		assertEquals(GENDER_UNKNOWN, FhirUtils.buildPatient("1", false, personDetails, null).get(FIELD_GENDER));
+		
+		personDetails = asList("", null, false, null, null, false);
+		assertEquals(GENDER_UNKNOWN, FhirUtils.buildPatient("1", false, personDetails, null).get(FIELD_GENDER));
+		
+		personDetails = asList(" ", null, false, null, null, false);
+		assertEquals(GENDER_UNKNOWN, FhirUtils.buildPatient("1", false, personDetails, null).get(FIELD_GENDER));
+	}
+	
+	@Test(expected = APIException.class)
+	public void buildPatient_shouldFailForAnInvalidGender() {
+		FhirUtils.buildPatient("1", false, asList("Y", null, false, null, null, false), null);
+	}
+	
+	@Test
+	public void buildPatient_shouldSetDeathDateIfSpecifiedForADeadPatient() throws Exception {
+		final String deathDate = "2020-12-12 13:00:00";
+		List<Object> personDetails = asList(null, null, true, deathDate, null, false);
+		
+		Map<String, Object> resource = FhirUtils.buildPatient("1", false, personDetails, null);
+		
+		assertNull(resource.get(MpiConstants.FIELD_DECEASED));
+		Date expectedDate = Timestamp.valueOf(deathDate);
+		assertEquals(DATETIME_FORMATTER.format(expectedDate), resource.get(MpiConstants.FIELD_DECEASED_DATE));
+	}
+	
+	@Test
+	public void buildPatient_shouldNotSetDeathDateIfNotSpecifiedForADeadPatient() {
+		List<Object> personDetails = asList(null, null, true, null, null, false);
+		
+		Map<String, Object> resource = FhirUtils.buildPatient("1", false, personDetails, null);
+		
+		assertNull(resource.get(MpiConstants.FIELD_DECEASED_DATE));
+		assertEquals(true, resource.get(MpiConstants.FIELD_DECEASED));
+	}
+	
+	@Test
+	public void buildPatient_shouldOmitHealthCenterExtensionIfThePatientHasNone() {
+		List<Object> personDetails = asList(null, null, false, null, null, false);
+		assertNull(FhirUtils.buildPatient("1", false, personDetails, null).get(FIELD_EXTENSION));
+	}
+	
+	@Test
+	public void buildPatient_shouldReplaceIdentifierInTheMpiThatDoNotExistInOpenmrsWithNullValues() {
+		List<Object> personDetails = asList(null, null, false, null, null, false);
+		final String patientId = "1";
+		final String identifier1 = "12345";
+		final String idTypeUuid1 = "id-type-uuid-1";
+		final String idUuid1 = "id-uuid-1";
+		List<List<Object>> ids = asList(asList(identifier1, idTypeUuid1, idUuid1));
+		when(executeQuery(FhirUtils.ID_QUERY.replace(ID_PLACEHOLDER, patientId))).thenReturn(ids);
+		Map<String, Object> mpiPatient = singletonMap(IDENTIFIER, asList(null, null, null, null));
+		
+		Map<String, Object> res = FhirUtils.buildPatient("1", false, personDetails, mpiPatient);
+		
+		List identifiers = (List) res.get(IDENTIFIER);
+		assertEquals(4, identifiers.size());
+		assertNotNull(identifiers.get(0));
+		assertNotNull(identifiers.get(1));
+		assertNull(identifiers.get(2));
+		assertNull(identifiers.get(3));
 	}
 	
 }
