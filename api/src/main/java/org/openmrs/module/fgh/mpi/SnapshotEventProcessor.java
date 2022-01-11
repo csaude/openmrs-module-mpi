@@ -32,6 +32,8 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 	
 	private List<CompletableFuture<Map<String, Object>>> futures;
 	
+	private MpiHttpClient mpiHttpClient;
+	
 	private AtomicInteger successCount;
 	
 	private Long start;
@@ -39,7 +41,8 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 	private Integer lastSubmittedPatientId;
 	
 	public SnapshotEventProcessor(PatientAndPersonEventHandler patientHandler, MpiHttpClient mpiHttpClient) {
-		super(patientHandler, mpiHttpClient);
+		super(patientHandler, null);
+		this.mpiHttpClient = mpiHttpClient;
 		//TODO make the thread pool count and futures size configurable, they must be equal
 		executor = Executors.newFixedThreadPool(DEFAULT_THREAD_COUNT);
 		futures = synchronizedList(new ArrayList(DEFAULT_THREAD_COUNT));
@@ -75,7 +78,7 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 				log.info("Processing database event -> " + event);
 				final long startSingle = System.currentTimeMillis();
 				
-				Map<String, Object> fhirPatient = EventProcessorUtils.createFhirResource(event, patientHandler, null);
+				Map<String, Object> fhirPatient = createFhirResource(event);
 				
 				log.info("Done generating fhir patient for database event -> " + event);
 				

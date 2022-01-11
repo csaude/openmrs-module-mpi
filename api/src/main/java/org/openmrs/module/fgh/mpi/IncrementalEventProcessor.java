@@ -16,13 +16,12 @@ public class IncrementalEventProcessor extends BaseEventProcessor {
 	
 	private static final Logger log = LoggerFactory.getLogger(IncrementalEventProcessor.class);
 	
-	private AssociationEventHandler assocHandler;
+	private MpiHttpClient mpiHttpClient;
 	
 	public IncrementalEventProcessor(PatientAndPersonEventHandler patientHandler, AssociationEventHandler assocHandler,
 	    MpiHttpClient mpiHttpClient) {
-		
-		super(patientHandler, mpiHttpClient);
-		this.assocHandler = assocHandler;
+		super(patientHandler, assocHandler);
+		this.mpiHttpClient = mpiHttpClient;
 	}
 	
 	@Override
@@ -33,7 +32,7 @@ public class IncrementalEventProcessor extends BaseEventProcessor {
 			
 			final long start = System.currentTimeMillis();
 			
-			Map<String, Object> fhirPatient = EventProcessorUtils.createFhirResource(event, patientHandler, assocHandler);
+			Map<String, Object> fhirPatient = createFhirResource(event);
 			if (fhirPatient != null) {
 				mpiHttpClient.submitPatient(mapper.writeValueAsString(fhirPatient));
 			}
