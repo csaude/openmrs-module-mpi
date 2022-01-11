@@ -142,6 +142,7 @@ public class MpiHttpClient {
 			connection.setSSLSocketFactory(sslContext.getSocketFactory());
 			connection.setRequestProperty("Accept", CONTENT_TYPE);
 			connection.setDoInput(true);
+			connection.setConnectTimeout(30000);
 			connection.setUseCaches(false);
 			
 			if (data != null) {
