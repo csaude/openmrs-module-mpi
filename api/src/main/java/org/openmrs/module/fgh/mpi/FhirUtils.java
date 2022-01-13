@@ -109,7 +109,7 @@ public class FhirUtils {
 		fhirRes.put(MpiConstants.FIELD_NAME, getNames(id, mpiPatient));
 		fhirRes.put(MpiConstants.FIELD_ADDRESS, getAddresses(id, mpiPatient));
 		fhirRes.put(MpiConstants.FIELD_TELECOM, getPhones(id, mpiPatient));
-		List<Map<String, Object>> heathCenter = getHealthCenter(id);
+		List<Map<String, Object>> heathCenter = getHealthCenter(id, mpiPatient);
 		if (heathCenter != null) {
 			fhirRes.put(MpiConstants.FIELD_EXTENSION, heathCenter);
 		}
@@ -312,9 +312,10 @@ public class FhirUtils {
 	 * Generates and returns the patient health center as the assigning org
 	 *
 	 * @param patientId patientId the patient id
+	 * @param mpiPatient a map of patient fields and values from the MPI
 	 * @return list of extensions containing only the patient's health center
 	 */
-	private static List<Map<String, Object>> getHealthCenter(String patientId) {
+	private static List<Map<String, Object>> getHealthCenter(String patientId, Map<String, Object> mpiPatient) {
 		String attTypeId = Context.getPersonService().getPersonAttributeTypeByUuid(HEALTH_CENTER_ATTRIB_TYPE_UUID).getId()
 		        .toString();
 		String phoneQuery = ATTR_QUERY.replace(ID_PLACEHOLDER, patientId).replace(ATTR_TYPE_ID_PLACEHOLDER, attTypeId);
@@ -338,6 +339,18 @@ public class FhirUtils {
 			Map<String, String> nameExt = new HashMap(2);
 			nameExt.put(FIELD_URL, NAME);
 			nameExt.put(FIELD_VALUE_STR, location.getName());
+			healthCenterExt = new HashMap(2);
+			healthCenterExt.put(FIELD_URL, HEALTH_CENTER_URL);
+			healthCenterExt.put(FIELD_EXTENSION, Arrays.asList(uuidExt, nameExt));
+			
+			return Collections.singletonList(healthCenterExt);
+		} else if (mpiPatient != null && mpiPatient.get(FIELD_EXTENSION) != null) {
+			Map<String, String> uuidExt = new HashMap(2);
+			uuidExt.put(FIELD_URL, IDENTIFIER);
+			uuidExt.put(FIELD_VALUE_STR, null);
+			Map<String, String> nameExt = new HashMap(2);
+			nameExt.put(FIELD_URL, NAME);
+			nameExt.put(FIELD_VALUE_STR, null);
 			healthCenterExt = new HashMap(2);
 			healthCenterExt.put(FIELD_URL, HEALTH_CENTER_URL);
 			healthCenterExt.put(FIELD_EXTENSION, Arrays.asList(uuidExt, nameExt));
