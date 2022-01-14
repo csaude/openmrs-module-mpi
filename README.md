@@ -5,20 +5,28 @@ in OpenCR.
 
 ## Table of Contents
 
-1. [Technical Overview](#technical-overview)
-2. [Assumptions](#assumptions)
-3. [OpenCR Installation](#opencr-installation)
+1. [MPI Integration Technical Overview](#mpi-integration-technical-overview)
+2. [Module Technical Overview](#module-technical-overview)
+3. [Assumptions](#assumptions)
+4. [OpenCR Installation](#opencr-installation)
     1. [Setting Up Certificates](#setting-up-certificates)
     2. [Update Config File](#update-config-file)
     3. [Patient Matching Configuration](#patient-matching-configuration)
-4. [Build and Install](#build-and-install)
-5. [OpenMRS Configuration](#openmrs-configuration)
+5. [Build and Install](#build-and-install)
+6. [OpenMRS Configuration](#openmrs-configuration)
     1. [Global properties](#global-properties)
     2. [Logging](#logging)
-6. [Initial Loading Of Existing Patients](#initial-loading-of-existing-patients)
-7. [Incremental Integration](#incremental-integration)
+7. [Initial Loading Of Existing Patients](#initial-loading-of-existing-patients)
+8. [Incremental Integration](#incremental-integration)
 
-### Technical Overview
+### MPI Integration Technical Overview
+![#](docs/mpi_integration.jpg)
+
+TODO
+
+### Module Technical Overview
+![#](docs/mpi_module.jpg)
+
 TODO
 
 ### Assumptions
