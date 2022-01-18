@@ -1,6 +1,8 @@
 package org.openmrs.module.fgh.mpi;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
@@ -11,8 +13,11 @@ import static org.mockito.Mockito.when;
 import static org.openmrs.module.fgh.mpi.FhirUtils.ATTR_QUERY;
 import static org.openmrs.module.fgh.mpi.FhirUtils.ATTR_TYPE_ID_PLACEHOLDER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.DATETIME_FORMATTER;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ADDRESS;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_EXTENSION;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_GENDER;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_NAME;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_TELECOM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_FEMALE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_MALE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_OTHER;
@@ -323,13 +328,13 @@ public class FhirUtilsTest {
 	}
 	
 	@Test
-	public void buildPatient_shouldReplaceIdentifierInTheMpiThatDoNotExistInOpenmrsWithNullValues() {
+	public void buildPatient_shouldReplaceIdentifierWithNullValuesInTheMpiThatDoNotExistInOpenmrs() {
 		List<Object> personDetails = asList(null, null, false, null, null, false);
 		final String patientId = "1";
-		final String identifier1 = "12345";
-		final String idTypeUuid1 = "id-type-uuid-1";
+		final String identifier = "12345";
+		final String idTypeUuid = "id-type-uuid-1";
 		final String idUuid1 = "id-uuid-1";
-		List<List<Object>> ids = asList(asList(identifier1, idTypeUuid1, idUuid1));
+		List<List<Object>> ids = asList(asList(identifier, idTypeUuid, idUuid1));
 		when(executeQuery(FhirUtils.ID_QUERY.replace(ID_PLACEHOLDER, patientId))).thenReturn(ids);
 		Map<String, Object> mpiPatient = singletonMap(IDENTIFIER, asList(null, null, null, null));
 		
@@ -341,6 +346,101 @@ public class FhirUtilsTest {
 		assertNotNull(identifiers.get(1));
 		assertNull(identifiers.get(2));
 		assertNull(identifiers.get(3));
+	}
+	
+	@Test
+	public void buildPatient_shouldReplaceNamesWithNullValuesInTheMpiThatDoNotExistInOpenmrs() {
+		List<Object> personDetails = asList(null, null, false, null, null, false);
+		final String patientId = "1";
+		final String givenName = "John";
+		final String familyName = "Doe";
+		List<List<Object>> ids = asList(asList(null, givenName, null, familyName, null));
+		when(executeQuery(FhirUtils.NAME_QUERY.replace(ID_PLACEHOLDER, patientId))).thenReturn(ids);
+		Map<String, Object> mpiPatient = singletonMap(FIELD_NAME, asList(null, null, null));
+		
+		Map<String, Object> res = FhirUtils.buildPatient("1", false, personDetails, mpiPatient);
+		
+		List names = (List) res.get(FIELD_NAME);
+		assertEquals(3, names.size());
+		assertNotNull(names.get(0));
+		assertNull(names.get(1));
+		assertNull(names.get(2));
+	}
+	
+	@Test
+	public void buildPatient_shouldReplaceAddressesWithNullValuesInTheMpiThatDoNotExistInOpenmrs() {
+		List<Object> personDetails = asList(null, null, false, null, null, false);
+		final String patientId = "1";
+		final String countyDistrict = "Test";
+		List<List<Object>> ids = asList(asList(null, null, null, null, null, countyDistrict, null, null, null, null, null));
+		when(executeQuery(FhirUtils.ADDRESS_QUERY.replace(ID_PLACEHOLDER, patientId))).thenReturn(ids);
+		Map<String, Object> mpiPatient = singletonMap(FIELD_ADDRESS, asList(null, null, null));
+		
+		Map<String, Object> res = FhirUtils.buildPatient("1", false, personDetails, mpiPatient);
+		
+		List addresses = (List) res.get(FIELD_ADDRESS);
+		assertEquals(3, addresses.size());
+		assertNotNull(addresses.get(0));
+		assertNull(addresses.get(1));
+		assertNull(addresses.get(2));
+	}
+	
+	@Test
+	public void buildPatient_shouldReplacePhonesWithNullValuesInTheMpiThatDoNotExistInOpenmrs() {
+		List<Object> personDetails = asList(null, null, false, null, null, false);
+		final String patientId = "1";
+		final String mobile = "123-456-7890";
+		final String attributeUuid = "attr-uuid-1";
+		final Integer mobileAttrTypeId = 1;
+		final String mobileAttrTypeUuid = "attr-type-uuid-1";
+		List<Object> mobileAttr = asList(mobile, attributeUuid);
+		when(mockAdminService.getGlobalProperty(MpiConstants.GP_PHONE_MOBILE)).thenReturn(mobileAttrTypeUuid);
+		PersonAttributeType mobileAttrType = new PersonAttributeType(mobileAttrTypeId);
+		when(mockPersonService.getPersonAttributeTypeByUuid(mobileAttrTypeUuid)).thenReturn(mobileAttrType);
+		when(executeQuery(
+		    ATTR_QUERY.replace(ID_PLACEHOLDER, patientId).replace(ATTR_TYPE_ID_PLACEHOLDER, mobileAttrTypeId.toString())))
+		            .thenReturn(singletonList(mobileAttr));
+		Map<String, Object> mpiPatient = singletonMap(FIELD_TELECOM, asList(null, null, null));
+		
+		Map<String, Object> res = FhirUtils.buildPatient("1", false, personDetails, mpiPatient);
+		
+		List phones = (List) res.get(FIELD_TELECOM);
+		assertEquals(3, phones.size());
+		assertNotNull(phones.get(0));
+		assertNull(phones.get(1));
+		assertNull(phones.get(2));
+	}
+	
+	@Test
+	public void buildPatient_shouldReplaceHealthCenterWithNullValuesInTheMpiIfItDoNotExistInOpenmrs() {
+		List<Object> personDetails = asList(null, null, false, null, null, false);
+		final String patientId = "1";
+		final Integer locationId = 1;
+		final String locationUuid = "location-uuid";
+		final String locationName = "Location";
+		final Integer healthCtrAttrTypeId = 6;
+		PersonAttributeType healthCenterAttrType = new PersonAttributeType(healthCtrAttrTypeId);
+		when(mockPersonService.getPersonAttributeTypeByUuid(HEALTH_CENTER_ATTRIB_TYPE_UUID))
+		        .thenReturn(healthCenterAttrType);
+		when(executeQuery(
+		    ATTR_QUERY.replace(ID_PLACEHOLDER, patientId).replace(ATTR_TYPE_ID_PLACEHOLDER, healthCtrAttrTypeId.toString())))
+		            .thenReturn(emptyList());
+		Location location = new Location(locationId);
+		location.setName(locationName);
+		location.setUuid(locationUuid);
+		when(mockLocationService.getLocation(locationId)).thenReturn(location);
+		Map<String, Object> mpiPatient = singletonMap(FIELD_EXTENSION, asList(emptyMap()));
+		
+		Map<String, Object> res = FhirUtils.buildPatient("1", false, personDetails, mpiPatient);
+		
+		List<Map> extension = (List) res.get(MpiConstants.FIELD_EXTENSION);
+		assertEquals(1, extension.size());
+		assertEquals(HEALTH_CENTER_URL, extension.get(0).get(MpiConstants.FIELD_URL));
+		extension = (List) extension.get(0).get(MpiConstants.FIELD_EXTENSION);
+		assertEquals(IDENTIFIER, extension.get(0).get(MpiConstants.FIELD_URL));
+		assertNull(extension.get(0).get(MpiConstants.FIELD_VALUE_STR));
+		assertEquals(NAME, extension.get(1).get(MpiConstants.FIELD_URL));
+		assertNull(extension.get(1).get(MpiConstants.FIELD_VALUE_STR));
 	}
 	
 }
