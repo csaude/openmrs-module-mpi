@@ -14,7 +14,7 @@ public class MpiConstants {
 	public final static String HEALTH_CENTER_URL = "http://openmrs.org/fhir/StructureDefinition/patient-healthCenter";
 	
 	public final static String[] WATCHED_TABLES = new String[] { "person", "patient", "person_name", "person_address",
-	        "patient_identifier", "person_attribute" };
+	        "patient_identifier", "person_attribute", "relationship" };
 	
 	public final static String PATIENT_ID_OFFSET_FILE = ".patientIdOffset.txt";
 	
@@ -91,6 +91,8 @@ public class MpiConstants {
 	public final static String FIELD_URL = "url";
 	
 	public final static String FIELD_VALUE_STR = "valueString";
+	
+	public final static String FIELD_CONTACT = "contact";
 	
 	public final static String PATIENT = "Patient";
 	

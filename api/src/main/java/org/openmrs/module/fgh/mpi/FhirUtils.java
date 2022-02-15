@@ -1,7 +1,11 @@
 package org.openmrs.module.fgh.mpi;
 
 import static org.openmrs.module.fgh.mpi.MpiConstants.DATETIME_FORMATTER;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_CONTACT;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_EXTENSION;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_GENDER;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ID;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_NAME;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_URL;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE_STR;
 import static org.openmrs.module.fgh.mpi.MpiConstants.HEALTH_CENTER_ATTRIB_TYPE_UUID;
@@ -52,6 +56,12 @@ public class FhirUtils {
 	protected final static String ATTR_QUERY = "SELECT value, uuid FROM person_attribute WHERE person_id = " + ID_PLACEHOLDER
 	        + " AND person_attribute_type_id = " + ATTR_TYPE_ID_PLACEHOLDER + " AND voided = 0";
 	
+	protected final static String RELATIONSHIP_QUERY = "SELECT person_a, person_b, relationship, start_date, end_date, uuid FROM relationship "
+	        + "WHERE (" + "person_a = " + ID_PLACEHOLDER + " OR person_b = " + ID_PLACEHOLDER
+	        + ") AND voided = 0 ORDER BY voided ASC";
+	
+	public final static String CONTACT_PERSON_QUERY = "SELECT uuid, gender FROM person WHERE person_id = " + ID_PLACEHOLDER;
+	
 	private final static Map<String, String> ATTR_TYPE_GP_ID_MAP = new HashMap(2);
 	
 	/**
@@ -72,20 +82,7 @@ public class FhirUtils {
 		fhirRes.put(MpiConstants.FIELD_RESOURCE_TYPE, MpiConstants.PATIENT);
 		fhirRes.put(MpiConstants.FIELD_ACTIVE, !patientVoided);
 		
-		String fhirGender = "";
-		String gender = person.get(0) != null ? person.get(0).toString() : null;
-		if ("M".equalsIgnoreCase(gender)) {
-			fhirGender = MpiConstants.GENDER_MALE;
-		} else if ("F".equalsIgnoreCase(gender)) {
-			fhirGender = MpiConstants.GENDER_FEMALE;
-		} else if ("O".equalsIgnoreCase(gender)) {
-			fhirGender = MpiConstants.GENDER_OTHER;
-		} else if (StringUtils.isBlank(gender)) {
-			fhirGender = MpiConstants.GENDER_UNKNOWN;
-		} else if (gender != null) {
-			throw new APIException("Don't know how to represent in fhir gender value: " + gender);
-		}
-		
+		String fhirGender = convertToFhirGender(person.get(0) != null ? person.get(0).toString() : null);
 		fhirRes.put(MpiConstants.FIELD_GENDER, fhirGender);
 		
 		String birthDate = person.get(1) != null ? person.get(1).toString() : "";
@@ -106,9 +103,21 @@ public class FhirUtils {
 		}
 		
 		fhirRes.put(MpiConstants.FIELD_IDENTIFIER, getIds(id, person, mpiPatient));
-		fhirRes.put(MpiConstants.FIELD_NAME, getNames(id, mpiPatient));
-		fhirRes.put(MpiConstants.FIELD_ADDRESS, getAddresses(id, mpiPatient));
+		Integer existingNameCount = null;
+		if (mpiPatient != null && mpiPatient.get(MpiConstants.FIELD_NAME) != null) {
+			existingNameCount = ((List) mpiPatient.get(MpiConstants.FIELD_NAME)).size();
+		}
+		
+		fhirRes.put(MpiConstants.FIELD_NAME, getNames(id, existingNameCount, true));
+		
+		Integer existingAddressCount = null;
+		if (mpiPatient != null && mpiPatient.get(MpiConstants.FIELD_ADDRESS) != null) {
+			existingAddressCount = ((List) mpiPatient.get(MpiConstants.FIELD_ADDRESS)).size();
+		}
+		
+		fhirRes.put(MpiConstants.FIELD_ADDRESS, getAddresses(id, existingAddressCount, true));
 		fhirRes.put(MpiConstants.FIELD_TELECOM, getPhones(id, mpiPatient));
+		fhirRes.put(MpiConstants.FIELD_CONTACT, getRelationships(id, mpiPatient));
 		List<Map<String, Object>> heathCenter = getHealthCenter(id, mpiPatient);
 		if (heathCenter != null) {
 			fhirRes.put(MpiConstants.FIELD_EXTENSION, heathCenter);
@@ -158,17 +167,18 @@ public class FhirUtils {
 	}
 	
 	/**
-	 * Generates and returns the patient name list
+	 * Generates and returns the person name list
 	 *
-	 * @param patientId id the patient id
-	 * @param mpiPatient a map of patient fields and values from the MPI
-	 * @return list of the patient names
+	 * @param personId id the person id
+	 * @param existingNameCount the count of names of the person record fetched from the MPI
+	 * @return list of the person names
 	 */
-	private static List<Map<String, Object>> getNames(String patientId, Map<String, Object> mpiPatient) {
-		List<List<Object>> nameRows = executeQuery(NAME_QUERY.replace(ID_PLACEHOLDER, patientId));
+	private static List<Map<String, Object>> getNames(String personId, Integer existingNameCount, boolean getAll) {
+		final String query = getAll ? NAME_QUERY : NAME_QUERY + " LIMIT 1";
+		List<List<Object>> nameRows = executeQuery(query.replace(ID_PLACEHOLDER, personId));
 		int nameListLength = nameRows.size();
-		if (mpiPatient != null && mpiPatient.get(MpiConstants.FIELD_NAME) != null) {
-			nameListLength = ((List) mpiPatient.get(MpiConstants.FIELD_NAME)).size();
+		if (existingNameCount != null) {
+			nameListLength = existingNameCount;
 		}
 		
 		List<Map<String, Object>> names = new ArrayList(nameListLength);
@@ -204,15 +214,16 @@ public class FhirUtils {
 	/**
 	 * Generates and returns the patient address list
 	 *
-	 * @param patientId id the patient id
-	 * @param mpiPatient a map of patient fields and values from the MPI
-	 * @return list of the patient's addresses
+	 * @param personId id the person id
+	 * @param existingAddressCount the count of addresses of the patient record fetched from the MPI
+	 * @return list of the person's addresses
 	 */
-	private static List<Map<String, Object>> getAddresses(String patientId, Map<String, Object> mpiPatient) {
-		List<List<Object>> addressRows = executeQuery(ADDRESS_QUERY.replace(ID_PLACEHOLDER, patientId));
+	private static List<Map<String, Object>> getAddresses(String personId, Integer existingAddressCount, boolean getAll) {
+		final String query = getAll ? ADDRESS_QUERY : ADDRESS_QUERY + " LIMIT 1";
+		List<List<Object>> addressRows = executeQuery(query.replace(ID_PLACEHOLDER, personId));
 		int addressListLength = addressRows.size();
-		if (mpiPatient != null && mpiPatient.get(MpiConstants.FIELD_ADDRESS) != null) {
-			addressListLength = ((List) mpiPatient.get(MpiConstants.FIELD_ADDRESS)).size();
+		if (existingAddressCount != null) {
+			addressListLength = existingAddressCount;
 		}
 		
 		List<Map<String, Object>> addresses = new ArrayList(addressListLength);
@@ -256,14 +267,14 @@ public class FhirUtils {
 	}
 	
 	/**
-	 * Generates and returns the patient phone number list
+	 * Generates and returns the person phone number list
 	 *
-	 * @param patientId id the patient id
-	 * @param mpiPatient a map of patient fields and values from the MPI
-	 * @return list of the patient's telephones
+	 * @param personId id the person id
+	 * @param mpiPerson a map of person fields and values from the MPI
+	 * @return list of the person's telephones
 	 */
-	private static List<Map<String, Object>> getPhones(String patientId, Map<String, Object> mpiPatient) {
-		List<List<Object>> phoneRows = getAttributes(patientId, MpiConstants.GP_PHONE_MOBILE);
+	private static List<Map<String, Object>> getPhones(String personId, Map<String, Object> mpiPerson) {
+		List<List<Object>> phoneRows = getAttributes(personId, MpiConstants.GP_PHONE_MOBILE);
 		Map<String, Object> phoneResource = null;
 		if (!phoneRows.isEmpty()) {
 			if (phoneRows.size() > 1) {
@@ -278,18 +289,18 @@ public class FhirUtils {
 		}
 		
 		int phoneListLength = 2;
-		if (mpiPatient != null && mpiPatient.get(MpiConstants.FIELD_TELECOM) != null) {
-			phoneListLength = ((List) mpiPatient.get(MpiConstants.FIELD_TELECOM)).size();
+		if (mpiPerson != null && mpiPerson.get(MpiConstants.FIELD_TELECOM) != null) {
+			phoneListLength = ((List) mpiPerson.get(MpiConstants.FIELD_TELECOM)).size();
 		}
 		
 		List<Map<String, Object>> phones = new ArrayList(phoneListLength);
 		phones.add(phoneResource);
 		
-		phoneRows = getAttributes(patientId, MpiConstants.GP_PHONE_HOME);
+		phoneRows = getAttributes(personId, MpiConstants.GP_PHONE_HOME);
 		phoneResource = null;
 		if (!phoneRows.isEmpty()) {
 			if (phoneRows.size() > 1) {
-				throw new APIException("Found multiple home phone attribute values for the same patient");
+				throw new APIException("Found multiple home phone attribute values for the same person");
 			}
 			
 			phoneResource = new HashMap();
@@ -324,7 +335,7 @@ public class FhirUtils {
 		LocationService ls = Context.getLocationService();
 		if (!healthCenterRows.isEmpty()) {
 			if (healthCenterRows.size() > 1) {
-				throw new APIException("Found multiple health center attribute values for the same patient");
+				throw new APIException("Found multiple health center attribute values for the same person");
 			}
 			
 			Object locationId = healthCenterRows.get(0).get(0);
@@ -391,6 +402,120 @@ public class FhirUtils {
 		}
 		
 		return executeQuery(ATTR_QUERY.replace(ID_PLACEHOLDER, patientId).replace(ATTR_TYPE_ID_PLACEHOLDER, attTypeId));
+	}
+	
+	/**
+	 * Generates and returns the patient relationship list i.e contacts in fhir
+	 *
+	 * @param patientId id the patient id
+	 * @param mpiPatient a map of patient fields and values from the MPI
+	 * @return list of the patient relationships
+	 */
+	private static List<Map> getRelationships(String patientId, Map<String, Object> mpiPatient) {
+		List<List<Object>> relationshipRows = executeQuery(RELATIONSHIP_QUERY.replace(ID_PLACEHOLDER, patientId));
+		int relationshipLength = relationshipRows.size();
+		if (mpiPatient != null && mpiPatient.get(MpiConstants.FIELD_CONTACT) != null) {
+			relationshipLength = ((List) mpiPatient.get(MpiConstants.FIELD_CONTACT)).size();
+		}
+		
+		List<Map> relationships = new ArrayList(relationshipLength);
+		for (List<Object> relationshipRow : relationshipRows) {
+			Map<String, Object> resource = new HashMap();
+			Integer otherPersonId = (Integer) (patientId.equals(relationshipRow.get(0)) ? relationshipRow.get(1)
+			        : relationshipRow.get(0));
+			List<List<Object>> otherPersonDetails = executeQuery(
+			    CONTACT_PERSON_QUERY.replace(ID_PLACEHOLDER, otherPersonId.toString()));
+			resource.put(FIELD_ID, patientId.equals(otherPersonDetails.get(0)));
+			
+			if (otherPersonDetails.size() == 1) {
+				String gender = otherPersonDetails.get(1) != null ? otherPersonDetails.get(1).toString() : null;
+				resource.put(FIELD_GENDER, gender);
+			}
+			
+			if (mpiPatient != null && mpiPatient.get(FIELD_CONTACT) != null) {
+				List<Map> contacts = (List) mpiPatient.get(FIELD_CONTACT);
+				Map existingContact = getExistingContactByUuid(null, contacts);
+				Integer existingNameCount = null;
+				if (existingContact != null && existingContact.get(MpiConstants.FIELD_NAME) != null) {
+					existingNameCount = ((List) existingContact.get(MpiConstants.FIELD_NAME)).size();
+				}
+				
+				resource.put(FIELD_NAME, getNames(otherPersonId.toString(), existingNameCount, false));
+				
+				Integer existingAddressCount = null;
+				if (existingContact != null && existingContact.get(MpiConstants.FIELD_ADDRESS) != null) {
+					existingAddressCount = ((List) existingContact.get(MpiConstants.FIELD_ADDRESS)).size();
+				}
+				
+				resource.put(MpiConstants.FIELD_ADDRESS,
+				    getAddresses(otherPersonId.toString(), existingAddressCount, false));
+				
+				resource.put(MpiConstants.FIELD_TELECOM, getPhones(otherPersonId.toString(), existingContact));
+				
+				Map<String, Object> period = new HashMap();
+				String startDate = null;
+				if (relationshipRow.get(3) != null && StringUtils.isNotBlank(relationshipRow.get(3).toString())) {
+					startDate = DATETIME_FORMATTER.format(Timestamp.valueOf(relationshipRow.get(3).toString()));
+				}
+				
+				String endDate = null;
+				if (relationshipRow.get(4) != null && StringUtils.isNotBlank(relationshipRow.get(4).toString())) {
+					endDate = DATETIME_FORMATTER.format(Timestamp.valueOf(relationshipRow.get(4).toString()));
+				}
+				
+				period.put(MpiConstants.FIELD_START, startDate);
+				period.put(MpiConstants.FIELD_END, endDate);
+				resource.put(MpiConstants.FIELD_PERIOD, period);
+			}
+			
+			relationships.add(resource);
+		}
+		
+		while (relationships.size() < relationshipLength) {
+			relationships.add(null);
+		}
+		
+		return relationships;
+	}
+	
+	/**
+	 * Converts a the specified gender value to the fhir equivalent
+	 * 
+	 * @param openmrsGender the OpenMRS gender value to convert
+	 * @return the fhir gender value
+	 */
+	private static String convertToFhirGender(String openmrsGender) {
+		String fhirGender = "";
+		if ("M".equalsIgnoreCase(openmrsGender)) {
+			fhirGender = MpiConstants.GENDER_MALE;
+		} else if ("F".equalsIgnoreCase(openmrsGender)) {
+			fhirGender = MpiConstants.GENDER_FEMALE;
+		} else if ("O".equalsIgnoreCase(openmrsGender)) {
+			fhirGender = MpiConstants.GENDER_OTHER;
+		} else if (StringUtils.isBlank(openmrsGender)) {
+			fhirGender = MpiConstants.GENDER_UNKNOWN;
+		} else if (openmrsGender != null) {
+			throw new APIException("Don't know how to represent in fhir gender value: " + openmrsGender);
+		}
+		
+		return fhirGender;
+	}
+	
+	/**
+	 * Looks the contact from the specified list that matches the specified uuid
+	 * 
+	 * @param uuid the person uuid to match
+	 * @param contacts the list of contacts
+	 * @return the matching contact otherwise null
+	 */
+	private static Map getExistingContactByUuid(String uuid, List<Map> contacts) {
+		for (Map contact : contacts) {
+			if (contact.get(FIELD_ID) != null && uuid.equalsIgnoreCase(contact.get(FIELD_ID).toString())) {
+				return contact;
+			}
+		}
+		
+		return null;
 	}
 	
 }
