@@ -5,6 +5,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -18,6 +19,10 @@ import static org.openmrs.module.fgh.mpi.FhirUtils.NAME_QUERY;
 import static org.openmrs.module.fgh.mpi.FhirUtils.RELATIONSHIP_QUERY;
 import static org.openmrs.module.fgh.mpi.MpiConstants.DATETIME_FORMATTER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ADDRESS;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_CODE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_CODING;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_CONTACT;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_DISPLAY;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_END;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_EXTENSION;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_GENDER;
@@ -25,14 +30,20 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_GIVEN;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_NAME;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_PREFIX;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_RELATIONSHIP;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_START;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_TELECOM;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_TEXT;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_USE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_FEMALE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_MALE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_OTHER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_UNKNOWN;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_PHONE_HOME;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_PHONE_MOBILE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_CONCEPT_MAP;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.HEALTH_CENTER_ATTRIB_TYPE_UUID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.HEALTH_CENTER_URL;
 import static org.openmrs.module.fgh.mpi.MpiConstants.IDENTIFIER;
@@ -49,11 +60,14 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.openmrs.Location;
 import org.openmrs.PersonAttributeType;
+import org.openmrs.RelationshipType;
 import org.openmrs.api.APIException;
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.LocationService;
@@ -77,15 +91,23 @@ public class FhirUtilsTest {
 	@Mock
 	private LocationService mockLocationService;
 	
+	private static final String TERMINOLOGY_SYSTEM = "http://test.com";
+	
+	@Rule
+	public ExpectedException expectedException = ExpectedException.none();
+	
 	@Before
 	public void setup() {
 		PowerMockito.mockStatic(Context.class);
 		PowerMockito.mockStatic(MpiUtils.class);
 		Whitebox.setInternalState(FhirUtils.class, "ATTR_TYPE_GP_ID_MAP", new HashMap(2));
+		Whitebox.setInternalState(FhirUtils.class, "relationshipTypeSystem", (Object) null);
+		Whitebox.setInternalState(FhirUtils.class, "uuidFhirRelationshipTypeMap", (Object) null);
 		when(Context.getAdministrationService()).thenReturn(mockAdminService);
 		when(Context.getPersonService()).thenReturn(mockPersonService);
 		when(Context.getLocationService()).thenReturn(mockLocationService);
-		when(mockAdminService.getGlobalProperty(anyString())).thenReturn("test");
+		when(mockAdminService.getGlobalProperty(GP_PHONE_MOBILE)).thenReturn("test-mobile-uuid");
+		when(mockAdminService.getGlobalProperty(GP_PHONE_HOME)).thenReturn("test-home-uuid");
 		when(mockPersonService.getPersonAttributeTypeByUuid(anyString())).thenReturn(new PersonAttributeType(0));
 	}
 	
@@ -309,9 +331,12 @@ public class FhirUtilsTest {
 		assertEquals(GENDER_UNKNOWN, FhirUtils.buildPatient("1", false, personDetails, null).get(FIELD_GENDER));
 	}
 	
-	@Test(expected = APIException.class)
+	@Test
 	public void buildPatient_shouldFailForAnInvalidGender() {
-		FhirUtils.buildPatient("1", false, asList("Y", null, false, null, null, false), null);
+		expectedException.expect(APIException.class);
+		final String gender = "Y";
+		expectedException.expectMessage(equalTo("Don't know how to represent in fhir gender value: " + gender));
+		FhirUtils.buildPatient("1", false, asList(gender, null, false, null, null, false), null);
 	}
 	
 	@Test
@@ -463,12 +488,15 @@ public class FhirUtilsTest {
 		List<Object> personDetails = asList(null, null, false, null, null, false);
 		final Integer patientId = 1;
 		final Integer motherPersonId = 2;
-		final String motherPrefix = "Miss";
 		final String motherGivenName = "Mary";
-		final String motherMiddleName = "S";
 		final String motherFamilyName = "Jane";
 		final String motherNameUuid = "mother-name-uuid";
-		List<Object> motherName = asList(motherPrefix, motherGivenName, motherMiddleName, motherFamilyName, motherNameUuid);
+		final String motherRelationshipUuid = "mother-relationship-uuid";
+		final String motherRelationshipTypeUuid = "mother-relationship-type-uuid";
+		final String motherRelationshipTypeCode = "M";
+		final String motherRelationshipTypeDisplay = "Mother";
+		final String motherRelationshipTypeText = "Biological Mother";
+		List<Object> motherName = asList(null, motherGivenName, null, motherFamilyName, motherNameUuid);
 		when(executeQuery((NAME_QUERY + " LIMIT 1").replace(ID_PLACEHOLDER, motherPersonId.toString())))
 		        .thenReturn(asList(motherName));
 		final String motherLine1Address2 = "123";
@@ -492,35 +520,47 @@ public class FhirUtilsTest {
 		when(mockPersonService.getPersonAttributeTypeByUuid(mobileAttrTypeUuid)).thenReturn(mobileAttrType);
 		when(executeQuery(ATTR_QUERY.replace(ID_PLACEHOLDER, motherPersonId.toString()).replace(ATTR_TYPE_ID_PLACEHOLDER,
 		    mobileAttrTypeId.toString()))).thenReturn(singletonList(mobileAttr));
-		final String motherRelationshipUuid = "mother-relationship-uuid";
 		final Integer husbandPersonId = 3;
-		final String husbandPrefix = "Mr";
 		final String husbandGivenName = "Horatio";
-		final String husbandMiddleName = "R";
 		final String husbandFamilyName = "Hornblower";
 		final String husbandNameUuid = "husband-name-uuid";
-		List<Object> husbandName = asList(husbandPrefix, husbandGivenName, husbandMiddleName, husbandFamilyName,
-		    husbandNameUuid);
+		final String husbandRelationshipUuid = "husband-relationship-uuid";
+		final String husbandRelationshipTypeUuid = "husband-relationship-type-uuid";
+		final String husbandRelationshipTypeCode = "H";
+		final String husbandRelationshipTypeDisplay = "Husband";
+		final String husbandRelationshipTypeText = "Legal Husband";
+		List<Object> husbandName = asList(null, husbandGivenName, null, husbandFamilyName, husbandNameUuid);
 		when(executeQuery((NAME_QUERY + " LIMIT 1").replace(ID_PLACEHOLDER, husbandPersonId.toString())))
 		        .thenReturn(asList(husbandName));
-		final String husbandRelationshipUuid = "husband-relationship-uuid";
 		List<Object> motherDetails = asList("F");
 		when(executeQuery(CONTACT_PERSON_QUERY.replace(ID_PLACEHOLDER, motherPersonId.toString())))
 		        .thenReturn(asList(motherDetails));
 		List<Object> husbandDetails = asList("M");
 		when(executeQuery(CONTACT_PERSON_QUERY.replace(ID_PLACEHOLDER, husbandPersonId.toString())))
 		        .thenReturn(asList(husbandDetails));
-		List<Object> motherRelationship = asList(patientId, motherPersonId, null, null, null, motherRelationshipUuid);
+		List<Object> motherRelationship = asList(patientId, motherPersonId, null, null, motherRelationshipUuid,
+		    motherRelationshipTypeUuid);
 		final String startDate = "2021-01-01 00:00:00";
 		final String endDate = "2021-12-31 00:00:00";
-		List<Object> husbandRelationship = asList(husbandPersonId, patientId, null, startDate, endDate,
-		    husbandRelationshipUuid);
+		List<Object> husbandRelationship = asList(husbandPersonId, patientId, startDate, endDate, husbandRelationshipUuid,
+		    husbandRelationshipTypeUuid);
 		List<List<Object>> relationships = asList(motherRelationship, husbandRelationship);
 		when(executeQuery(RELATIONSHIP_QUERY.replace(ID_PLACEHOLDER, patientId.toString()))).thenReturn(relationships);
+		when(mockAdminService.getGlobalProperty(GP_RELATIONSHIP_TYPE_SYSTEM)).thenReturn(TERMINOLOGY_SYSTEM);
+		final String motherMap = motherRelationshipTypeUuid + ":" + motherRelationshipTypeCode + ":"
+		        + motherRelationshipTypeDisplay;
+		final String husbandMap = husbandRelationshipTypeUuid + ":" + husbandRelationshipTypeCode + ":"
+		        + husbandRelationshipTypeDisplay;
+		when(mockAdminService.getGlobalProperty(GP_RELATIONSHIP_TYPE_CONCEPT_MAP)).thenReturn(husbandMap + ", " + motherMap);
+		RelationshipType motherRelationshipType = new RelationshipType();
+		motherRelationshipType.setName(motherRelationshipTypeText);
+		when(mockPersonService.getRelationshipTypeByUuid(motherRelationshipTypeUuid)).thenReturn(motherRelationshipType);
+		RelationshipType husbandRelationshipType = new RelationshipType();
+		husbandRelationshipType.setName(husbandRelationshipTypeText);
+		when(mockPersonService.getRelationshipTypeByUuid(husbandRelationshipTypeUuid)).thenReturn(husbandRelationshipType);
 		
 		Map<String, Object> res = FhirUtils.buildPatient(patientId.toString(), false, personDetails, null);
 		
-		//System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(res));
 		List<Map> contacts = (List) res.get(MpiConstants.FIELD_CONTACT);
 		assertEquals(2, contacts.size());
 		Map mother = contacts.get(0);
@@ -529,32 +569,19 @@ public class FhirUtilsTest {
 		List<Map> motherNameResources = (List) mother.get(FIELD_NAME);
 		assertEquals(1, motherNameResources.size());
 		assertEquals(MpiConstants.USE_OFFICIAL, motherNameResources.get(0).get(FIELD_USE));
-		assertEquals(motherPrefix, motherNameResources.get(0).get(FIELD_PREFIX));
 		assertEquals(motherNameUuid, motherNameResources.get(0).get(FIELD_ID));
 		assertEquals(motherFamilyName, motherNameResources.get(0).get(MpiConstants.FIELD_FAMILY));
 		List<Object> motherGivenNames = (List) motherNameResources.get(0).get(FIELD_GIVEN);
 		assertEquals(motherGivenName, motherGivenNames.get(0));
-		assertEquals(motherMiddleName, motherGivenNames.get(1));
 		Map motherPeriod = (Map) mother.get(MpiConstants.FIELD_PERIOD);
 		assertNull(motherPeriod.get(FIELD_START));
 		assertNull(motherPeriod.get(FIELD_END));
-		
-		Map husband = contacts.get(1);
-		assertEquals(husbandRelationshipUuid, husband.get(FIELD_ID));
-		assertEquals(GENDER_MALE, husband.get(FIELD_GENDER));
-		assertEquals(husbandRelationshipUuid, contacts.get(1).get(FIELD_ID));
-		List<Map> husbandNameResources = (List) husband.get(FIELD_NAME);
-		assertEquals(1, husbandNameResources.size());
-		assertEquals(MpiConstants.USE_OFFICIAL, husbandNameResources.get(0).get(FIELD_USE));
-		assertEquals(husbandPrefix, husbandNameResources.get(0).get(FIELD_PREFIX));
-		assertEquals(husbandNameUuid, husbandNameResources.get(0).get(FIELD_ID));
-		assertEquals(husbandFamilyName, husbandNameResources.get(0).get(MpiConstants.FIELD_FAMILY));
-		List<Object> husbandGivenNames = (List) husbandNameResources.get(0).get(FIELD_GIVEN);
-		assertEquals(husbandGivenName, husbandGivenNames.get(0));
-		assertEquals(husbandMiddleName, husbandGivenNames.get(1));
-		Map husbandPeriod = (Map) contacts.get(1).get(MpiConstants.FIELD_PERIOD);
-		assertEquals(DATETIME_FORMATTER.format(Timestamp.valueOf(startDate)), husbandPeriod.get(FIELD_START));
-		assertEquals(DATETIME_FORMATTER.format(Timestamp.valueOf(endDate)), husbandPeriod.get(FIELD_END));
+		Map motherContactType = (Map) mother.get(FIELD_RELATIONSHIP);
+		Map motherContactCoding = (Map) ((List) motherContactType.get(FIELD_CODING)).get(0);
+		assertEquals(TERMINOLOGY_SYSTEM, motherContactCoding.get(FIELD_SYSTEM));
+		assertEquals(motherRelationshipTypeCode, motherContactCoding.get(FIELD_CODE));
+		assertEquals(motherRelationshipTypeDisplay, motherContactCoding.get(FIELD_DISPLAY));
+		assertEquals(motherRelationshipTypeText, motherContactType.get(FIELD_TEXT));
 		
 		List<Map> motherAddressResources = (List) mother.get(MpiConstants.FIELD_ADDRESS);
 		assertEquals(1, motherAddressResources.size());
@@ -572,6 +599,103 @@ public class FhirUtilsTest {
 		assertEquals(MpiConstants.MOBILE, motherTelecoms.get(0).get(FIELD_USE));
 		assertEquals(motherMobile, motherTelecoms.get(0).get(MpiConstants.FIELD_VALUE));
 		assertEquals(attributeUuid1, motherTelecoms.get(0).get(FIELD_ID));
+		
+		Map husband = contacts.get(1);
+		assertEquals(husbandRelationshipUuid, husband.get(FIELD_ID));
+		assertEquals(GENDER_MALE, husband.get(FIELD_GENDER));
+		assertEquals(husbandRelationshipUuid, contacts.get(1).get(FIELD_ID));
+		List<Map> husbandNameResources = (List) husband.get(FIELD_NAME);
+		assertEquals(1, husbandNameResources.size());
+		assertEquals(MpiConstants.USE_OFFICIAL, husbandNameResources.get(0).get(FIELD_USE));
+		assertEquals(husbandNameUuid, husbandNameResources.get(0).get(FIELD_ID));
+		assertEquals(husbandFamilyName, husbandNameResources.get(0).get(MpiConstants.FIELD_FAMILY));
+		List<Object> husbandGivenNames = (List) husbandNameResources.get(0).get(FIELD_GIVEN);
+		assertEquals(husbandGivenName, husbandGivenNames.get(0));
+		Map husbandPeriod = (Map) contacts.get(1).get(MpiConstants.FIELD_PERIOD);
+		assertEquals(DATETIME_FORMATTER.format(Timestamp.valueOf(startDate)), husbandPeriod.get(FIELD_START));
+		assertEquals(DATETIME_FORMATTER.format(Timestamp.valueOf(endDate)), husbandPeriod.get(FIELD_END));
+		Map husbandContactType = (Map) husband.get(FIELD_RELATIONSHIP);
+		Map husbandContactCoding = (Map) ((List) husbandContactType.get(FIELD_CODING)).get(0);
+		assertEquals(TERMINOLOGY_SYSTEM, husbandContactCoding.get(FIELD_SYSTEM));
+		assertEquals(husbandRelationshipTypeCode, husbandContactCoding.get(FIELD_CODE));
+		assertEquals(husbandRelationshipTypeDisplay, husbandContactCoding.get(FIELD_DISPLAY));
+		assertEquals(husbandRelationshipTypeText, husbandContactType.get(FIELD_TEXT));
+	}
+	
+	@Test
+	public void buildPatient_shouldFailIfRelationshipTypeSystemGlobalPropertyIsNotSet() {
+		final String patientId = "1";
+		when(executeQuery(RELATIONSHIP_QUERY.replace(ID_PLACEHOLDER, patientId))).thenReturn(asList(emptyList()));
+		expectedException.expect(APIException.class);
+		expectedException
+		        .expectMessage(equalTo("No value set for the global property named: " + GP_RELATIONSHIP_TYPE_SYSTEM));
+		List<Object> personDetails = asList(null, null, false, null, null, false);
+		FhirUtils.buildPatient(patientId, false, personDetails, null);
+	}
+	
+	@Test
+	public void buildPatient_shouldFailIfNoConceptIsMappedToTheRelationshipType() {
+		final String patientId = "1";
+		final String uuid = "mother-relationship-type-uuid";
+		List<Object> relationship = asList(null, null, null, null, null, uuid);
+		when(executeQuery(RELATIONSHIP_QUERY.replace(ID_PLACEHOLDER, patientId))).thenReturn(asList(relationship));
+		when(mockAdminService.getGlobalProperty(GP_RELATIONSHIP_TYPE_SYSTEM)).thenReturn(TERMINOLOGY_SYSTEM);
+		when(mockAdminService.getGlobalProperty(GP_RELATIONSHIP_TYPE_CONCEPT_MAP)).thenReturn(uuid + ":M:Mother");
+		expectedException.expect(APIException.class);
+		expectedException.expectMessage(equalTo("No relationship type found with uuid: " + uuid));
+		List<Object> personDetails = asList(null, null, false, null, null, false);
+		FhirUtils.buildPatient(patientId, false, personDetails, null);
+	}
+	
+	@Test
+	public void buildPatient_shouldFailIfNoRelationshipTypeIsFoundMatchingTheMappedUuid() {
+		final String patientId = "1";
+		final String uuid = "mother-relationship-type-uuid";
+		List<Object> relationship = asList(null, null, null, null, null, uuid);
+		when(executeQuery(RELATIONSHIP_QUERY.replace(ID_PLACEHOLDER, patientId))).thenReturn(asList(relationship));
+		when(mockAdminService.getGlobalProperty(GP_RELATIONSHIP_TYPE_SYSTEM)).thenReturn(TERMINOLOGY_SYSTEM);
+		expectedException.expect(APIException.class);
+		expectedException.expectMessage(equalTo("No concept mapped to the relationship type with uuid: " + uuid));
+		List<Object> personDetails = asList(null, null, false, null, null, false);
+		FhirUtils.buildPatient(patientId, false, personDetails, null);
+	}
+	
+	@Test
+	public void buildPatient_shouldReplaceContactsWithNullValuesInTheMpiThatDoNotExistInOpenmrs() {
+		List<Object> personDetails = asList(null, null, false, null, null, false);
+		final Integer patientId = 1;
+		final Integer motherPersonId = 2;
+		final String motherRelationshipUuid = "mother-relationship-uuid";
+		final String motherRelationshipTypeUuid = "mother-relationship-type-uuid";
+		final String motherRelationshipTypeCode = "M";
+		final String motherRelationshipTypeDisplay = "Mother";
+		final String motherRelationshipTypeText = "Biological Mother";
+		List<Object> motherName = asList(null, "Mary", null, "Jane", "mother-name-uuid");
+		when(executeQuery((NAME_QUERY + " LIMIT 1").replace(ID_PLACEHOLDER, motherPersonId.toString())))
+		        .thenReturn(asList(motherName));
+		List<Object> motherDetails = asList("F");
+		when(executeQuery(CONTACT_PERSON_QUERY.replace(ID_PLACEHOLDER, motherPersonId.toString())))
+		        .thenReturn(asList(motherDetails));
+		List<Object> motherRelationship = asList(patientId, motherPersonId, null, null, motherRelationshipUuid,
+		    motherRelationshipTypeUuid);
+		List<List<Object>> relationships = asList(motherRelationship);
+		when(executeQuery(RELATIONSHIP_QUERY.replace(ID_PLACEHOLDER, patientId.toString()))).thenReturn(relationships);
+		when(mockAdminService.getGlobalProperty(GP_RELATIONSHIP_TYPE_SYSTEM)).thenReturn(TERMINOLOGY_SYSTEM);
+		final String motherMap = motherRelationshipTypeUuid + ":" + motherRelationshipTypeCode + ":"
+		        + motherRelationshipTypeDisplay;
+		when(mockAdminService.getGlobalProperty(GP_RELATIONSHIP_TYPE_CONCEPT_MAP)).thenReturn(motherMap);
+		RelationshipType motherRelationshipType = new RelationshipType();
+		motherRelationshipType.setName(motherRelationshipTypeText);
+		when(mockPersonService.getRelationshipTypeByUuid(motherRelationshipTypeUuid)).thenReturn(motherRelationshipType);
+		Map<String, Object> mpiPatient = singletonMap(FIELD_CONTACT, asList(emptyMap(), emptyMap(), emptyMap()));
+		
+		Map<String, Object> res = FhirUtils.buildPatient(patientId.toString(), false, personDetails, mpiPatient);
+		
+		List<Map> contacts = (List) res.get(MpiConstants.FIELD_CONTACT);
+		assertEquals(3, contacts.size());
+		assertNotNull(contacts.get(0));
+		assertNull(contacts.get(1));
+		assertNull(contacts.get(2));
 	}
 	
 }

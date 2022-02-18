@@ -60,6 +60,22 @@
         </description>
         <defaultValue>e6c97a9d-a77b-401f-b06e-81900e21ed1d</defaultValue>
     </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.relationship.type.terminology.system.uri</property>
+        <description>
+            Specifies the URI of the terminology system for the concepts mapped to relationship types in OpenMRS
+        </description>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.relationship.type.uuid.concept.mappings</property>
+        <description>
+            Comma-separated list of mappings between OpenMRS relationship type uuids and concepts in the
+            terminology system associated to the URI set via the global property named
+            ${project.parent.artifactId}.relationship.type.concept.source.uri, should be of the form
+            relationshipTypeUuid-1:conceptCode1:conceptDisplay1,relationshipTypeUuid-2:conceptCode2:conceptDisplay2
+            e.g a5c97a9d-a77b-401f-b06e-81900e21ed1e:M:Mother,b7c97a9d-a77b-401f-b06e-81900e21ed1e:L:Lawyer
+        </description>
+    </globalProperty>
 
 </module>
 

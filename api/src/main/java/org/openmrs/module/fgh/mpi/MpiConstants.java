@@ -30,6 +30,10 @@ public class MpiConstants {
 	
 	public final static String GP_PHONE_HOME = MODULE_ID + ".person.attribute.type.home.phone";
 	
+	public final static String GP_RELATIONSHIP_TYPE_SYSTEM = MODULE_ID + ".relationship.type.terminology.system.uri";
+	
+	public final static String GP_RELATIONSHIP_TYPE_CONCEPT_MAP = MODULE_ID + ".relationship.type.uuid.concept.mappings";
+	
 	public final static String HEALTH_CENTER_ATTRIB_TYPE_UUID = "8d87236c-c2cc-11de-8d13-0010c6dffd0f";
 	
 	public final static String FIELD_RESOURCE_TYPE = "resourceType";
@@ -93,6 +97,16 @@ public class MpiConstants {
 	public final static String FIELD_VALUE_STR = "valueString";
 	
 	public final static String FIELD_CONTACT = "contact";
+	
+	public final static String FIELD_RELATIONSHIP = "relationship";
+	
+	public final static String FIELD_CODING = "coding";
+	
+	public final static String FIELD_TEXT = "text";
+	
+	public final static String FIELD_CODE = "code";
+	
+	public final static String FIELD_DISPLAY = "display";
 	
 	public final static String PATIENT = "Patient";
 	
