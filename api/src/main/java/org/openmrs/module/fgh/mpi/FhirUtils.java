@@ -1,12 +1,20 @@
 package org.openmrs.module.fgh.mpi;
 
 import static org.openmrs.module.fgh.mpi.MpiConstants.DATETIME_FORMATTER;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ADDRESS;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_CONTACT;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_END;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_EXTENSION;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_GENDER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_NAME;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_PERIOD;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_START;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_SYSTEM;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_TELECOM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_URL;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_USE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE_STR;
 import static org.openmrs.module.fgh.mpi.MpiConstants.HEALTH_CENTER_ATTRIB_TYPE_UUID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.HEALTH_CENTER_URL;
@@ -60,7 +68,7 @@ public class FhirUtils {
 	        + "WHERE (" + "person_a = " + ID_PLACEHOLDER + " OR person_b = " + ID_PLACEHOLDER
 	        + ") AND voided = 0 ORDER BY voided ASC";
 	
-	public final static String CONTACT_PERSON_QUERY = "SELECT uuid, gender FROM person WHERE person_id = " + ID_PLACEHOLDER;
+	public final static String CONTACT_PERSON_QUERY = "SELECT gender FROM person WHERE person_id = " + ID_PLACEHOLDER;
 	
 	private final static Map<String, String> ATTR_TYPE_GP_ID_MAP = new HashMap(2);
 	
@@ -76,7 +84,7 @@ public class FhirUtils {
 	 * @return field and value map of the patient details
 	 */
 	public static Map<String, Object> buildPatient(String id, boolean patientVoided, List<Object> person,
-	        Map<String, Object> mpiPatient) {
+	                                               Map<String, Object> mpiPatient) {
 		
 		Map<String, Object> fhirRes = new HashMap();
 		fhirRes.put(MpiConstants.FIELD_RESOURCE_TYPE, MpiConstants.PATIENT);
@@ -104,20 +112,20 @@ public class FhirUtils {
 		
 		fhirRes.put(MpiConstants.FIELD_IDENTIFIER, getIds(id, person, mpiPatient));
 		Integer existingNameCount = null;
-		if (mpiPatient != null && mpiPatient.get(MpiConstants.FIELD_NAME) != null) {
-			existingNameCount = ((List) mpiPatient.get(MpiConstants.FIELD_NAME)).size();
+		if (mpiPatient != null && mpiPatient.get(FIELD_NAME) != null) {
+			existingNameCount = ((List) mpiPatient.get(FIELD_NAME)).size();
 		}
 		
-		fhirRes.put(MpiConstants.FIELD_NAME, getNames(id, existingNameCount, true));
+		fhirRes.put(FIELD_NAME, getNames(id, existingNameCount, true));
 		
 		Integer existingAddressCount = null;
-		if (mpiPatient != null && mpiPatient.get(MpiConstants.FIELD_ADDRESS) != null) {
-			existingAddressCount = ((List) mpiPatient.get(MpiConstants.FIELD_ADDRESS)).size();
+		if (mpiPatient != null && mpiPatient.get(FIELD_ADDRESS) != null) {
+			existingAddressCount = ((List) mpiPatient.get(FIELD_ADDRESS)).size();
 		}
 		
-		fhirRes.put(MpiConstants.FIELD_ADDRESS, getAddresses(id, existingAddressCount, true));
-		fhirRes.put(MpiConstants.FIELD_TELECOM, getPhones(id, mpiPatient));
-		fhirRes.put(MpiConstants.FIELD_CONTACT, getRelationships(id, mpiPatient));
+		fhirRes.put(FIELD_ADDRESS, getAddresses(id, existingAddressCount, true));
+		fhirRes.put(FIELD_TELECOM, getPhones(id, mpiPatient));
+		fhirRes.put(FIELD_CONTACT, getRelationships(id, mpiPatient));
 		List<Map<String, Object>> heathCenter = getHealthCenter(id, mpiPatient);
 		if (heathCenter != null) {
 			fhirRes.put(MpiConstants.FIELD_EXTENSION, heathCenter);
@@ -143,16 +151,16 @@ public class FhirUtils {
 		
 		List<Map<String, Object>> identifiers = new ArrayList(idListLength);
 		Map<String, Object> sourceIdRes = new HashMap();
-		sourceIdRes.put(MpiConstants.FIELD_SYSTEM, MpiConstants.SOURCE_ID_URI);
-		sourceIdRes.put(MpiConstants.FIELD_VALUE, person.get(4));
+		sourceIdRes.put(FIELD_SYSTEM, MpiConstants.SOURCE_ID_URI);
+		sourceIdRes.put(FIELD_VALUE, person.get(4));
 		identifiers.add(sourceIdRes);
 		
 		idRows.stream().forEach(idRow -> {
 			Map<String, Object> idResource = new HashMap();
-			idResource.put(MpiConstants.FIELD_ID, idRow.get(2));
+			idResource.put(FIELD_ID, idRow.get(2));
 			String system = MpiConstants.SYSTEM_PREFIX + idRow.get(1);
-			idResource.put(MpiConstants.FIELD_SYSTEM, system);
-			idResource.put(MpiConstants.FIELD_VALUE, idRow.get(0));
+			idResource.put(FIELD_SYSTEM, system);
+			idResource.put(FIELD_VALUE, idRow.get(0));
 			identifiers.add(idResource);
 		});
 		
@@ -185,7 +193,7 @@ public class FhirUtils {
 		boolean foundPreferred = false;
 		for (List<Object> nameRow : nameRows) {
 			Map<String, Object> nameRes = new HashMap();
-			nameRes.put(MpiConstants.FIELD_ID, nameRow.get(4));
+			nameRes.put(FIELD_ID, nameRow.get(4));
 			nameRes.put(MpiConstants.FIELD_PREFIX, nameRow.get(0));
 			
 			List<Object> givenNames = new ArrayList(2);
@@ -196,7 +204,7 @@ public class FhirUtils {
 			nameRes.put(MpiConstants.FIELD_FAMILY, nameRow.get(3));
 			//TODO Add family name suffix and degree as suffix fields
 			
-			nameRes.put(MpiConstants.FIELD_USE, !foundPreferred ? MpiConstants.USE_OFFICIAL : null);
+			nameRes.put(FIELD_USE, !foundPreferred ? MpiConstants.USE_OFFICIAL : null);
 			if (!foundPreferred) {
 				foundPreferred = true;
 			}
@@ -229,7 +237,7 @@ public class FhirUtils {
 		List<Map<String, Object>> addresses = new ArrayList(addressListLength);
 		for (List<Object> addressRow : addressRows) {
 			Map<String, Object> addressResource = new HashMap();
-			addressResource.put(MpiConstants.FIELD_ID, addressRow.get(10));
+			addressResource.put(FIELD_ID, addressRow.get(10));
 			List<Object> lineRes = new ArrayList(5);
 			lineRes.add(addressRow.get(1));//address2
 			lineRes.add(addressRow.get(4));//address6
@@ -252,9 +260,9 @@ public class FhirUtils {
 				endDate = DATETIME_FORMATTER.format(Timestamp.valueOf(addressRow.get(9).toString()));
 			}
 			
-			period.put(MpiConstants.FIELD_START, startDate);
-			period.put(MpiConstants.FIELD_END, endDate);
-			addressResource.put(MpiConstants.FIELD_PERIOD, period);
+			period.put(FIELD_START, startDate);
+			period.put(FIELD_END, endDate);
+			addressResource.put(FIELD_PERIOD, period);
 			
 			addresses.add(addressResource);
 		}
@@ -282,15 +290,15 @@ public class FhirUtils {
 			}
 			
 			phoneResource = new HashMap();
-			phoneResource.put(MpiConstants.FIELD_ID, phoneRows.get(0).get(1));
-			phoneResource.put(MpiConstants.FIELD_SYSTEM, MpiConstants.PHONE);
-			phoneResource.put(MpiConstants.FIELD_VALUE, phoneRows.get(0).get(0));
-			phoneResource.put(MpiConstants.FIELD_USE, MpiConstants.MOBILE);
+			phoneResource.put(FIELD_ID, phoneRows.get(0).get(1));
+			phoneResource.put(FIELD_SYSTEM, MpiConstants.PHONE);
+			phoneResource.put(FIELD_VALUE, phoneRows.get(0).get(0));
+			phoneResource.put(FIELD_USE, MpiConstants.MOBILE);
 		}
 		
 		int phoneListLength = 2;
-		if (mpiPerson != null && mpiPerson.get(MpiConstants.FIELD_TELECOM) != null) {
-			phoneListLength = ((List) mpiPerson.get(MpiConstants.FIELD_TELECOM)).size();
+		if (mpiPerson != null && mpiPerson.get(FIELD_TELECOM) != null) {
+			phoneListLength = ((List) mpiPerson.get(FIELD_TELECOM)).size();
 		}
 		
 		List<Map<String, Object>> phones = new ArrayList(phoneListLength);
@@ -304,10 +312,10 @@ public class FhirUtils {
 			}
 			
 			phoneResource = new HashMap();
-			phoneResource.put(MpiConstants.FIELD_ID, phoneRows.get(0).get(1));
-			phoneResource.put(MpiConstants.FIELD_SYSTEM, MpiConstants.PHONE);
-			phoneResource.put(MpiConstants.FIELD_VALUE, phoneRows.get(0).get(0));
-			phoneResource.put(MpiConstants.FIELD_USE, MpiConstants.HOME);
+			phoneResource.put(FIELD_ID, phoneRows.get(0).get(1));
+			phoneResource.put(FIELD_SYSTEM, MpiConstants.PHONE);
+			phoneResource.put(FIELD_VALUE, phoneRows.get(0).get(0));
+			phoneResource.put(FIELD_USE, MpiConstants.HOME);
 		}
 		
 		phones.add(phoneResource);
@@ -414,59 +422,55 @@ public class FhirUtils {
 	private static List<Map> getRelationships(String patientId, Map<String, Object> mpiPatient) {
 		List<List<Object>> relationshipRows = executeQuery(RELATIONSHIP_QUERY.replace(ID_PLACEHOLDER, patientId));
 		int relationshipLength = relationshipRows.size();
-		if (mpiPatient != null && mpiPatient.get(MpiConstants.FIELD_CONTACT) != null) {
-			relationshipLength = ((List) mpiPatient.get(MpiConstants.FIELD_CONTACT)).size();
+		if (mpiPatient != null && mpiPatient.get(FIELD_CONTACT) != null) {
+			relationshipLength = ((List) mpiPatient.get(FIELD_CONTACT)).size();
 		}
 		
 		List<Map> relationships = new ArrayList(relationshipLength);
 		for (List<Object> relationshipRow : relationshipRows) {
 			Map<String, Object> resource = new HashMap();
-			Integer otherPersonId = (Integer) (patientId.equals(relationshipRow.get(0)) ? relationshipRow.get(1)
+			Integer otherPersonId = (Integer) (patientId.equals(relationshipRow.get(0).toString()) ? relationshipRow.get(1)
 			        : relationshipRow.get(0));
 			List<List<Object>> otherPersonDetails = executeQuery(
 			    CONTACT_PERSON_QUERY.replace(ID_PLACEHOLDER, otherPersonId.toString()));
-			resource.put(FIELD_ID, patientId.equals(otherPersonDetails.get(0)));
+			resource.put(FIELD_ID, relationshipRow.get(5));
+			String gender = otherPersonDetails.get(0).get(0) != null ? otherPersonDetails.get(0).get(0).toString() : null;
+			resource.put(FIELD_GENDER, convertToFhirGender(gender));
 			
-			if (otherPersonDetails.size() == 1) {
-				String gender = otherPersonDetails.get(1) != null ? otherPersonDetails.get(1).toString() : null;
-				resource.put(FIELD_GENDER, gender);
-			}
-			
+			Map existingContact = null;
+			Integer existingNameCount = null;
+			Integer existingAddressCount = null;
 			if (mpiPatient != null && mpiPatient.get(FIELD_CONTACT) != null) {
 				List<Map> contacts = (List) mpiPatient.get(FIELD_CONTACT);
-				Map existingContact = getExistingContactByUuid(null, contacts);
-				Integer existingNameCount = null;
-				if (existingContact != null && existingContact.get(MpiConstants.FIELD_NAME) != null) {
-					existingNameCount = ((List) existingContact.get(MpiConstants.FIELD_NAME)).size();
-				}
-				
-				resource.put(FIELD_NAME, getNames(otherPersonId.toString(), existingNameCount, false));
-				
-				Integer existingAddressCount = null;
-				if (existingContact != null && existingContact.get(MpiConstants.FIELD_ADDRESS) != null) {
-					existingAddressCount = ((List) existingContact.get(MpiConstants.FIELD_ADDRESS)).size();
-				}
-				
-				resource.put(MpiConstants.FIELD_ADDRESS,
-				    getAddresses(otherPersonId.toString(), existingAddressCount, false));
-				
-				resource.put(MpiConstants.FIELD_TELECOM, getPhones(otherPersonId.toString(), existingContact));
-				
-				Map<String, Object> period = new HashMap();
-				String startDate = null;
-				if (relationshipRow.get(3) != null && StringUtils.isNotBlank(relationshipRow.get(3).toString())) {
-					startDate = DATETIME_FORMATTER.format(Timestamp.valueOf(relationshipRow.get(3).toString()));
-				}
-				
-				String endDate = null;
-				if (relationshipRow.get(4) != null && StringUtils.isNotBlank(relationshipRow.get(4).toString())) {
-					endDate = DATETIME_FORMATTER.format(Timestamp.valueOf(relationshipRow.get(4).toString()));
-				}
-				
-				period.put(MpiConstants.FIELD_START, startDate);
-				period.put(MpiConstants.FIELD_END, endDate);
-				resource.put(MpiConstants.FIELD_PERIOD, period);
+				existingContact = getExistingContactByUuid(null, contacts);
 			}
+			
+			if (existingContact != null && existingContact.get(FIELD_NAME) != null) {
+				existingNameCount = ((List) existingContact.get(FIELD_NAME)).size();
+			}
+			
+			if (existingContact != null && existingContact.get(FIELD_ADDRESS) != null) {
+				existingAddressCount = ((List) existingContact.get(FIELD_ADDRESS)).size();
+			}
+			
+			resource.put(FIELD_NAME, getNames(otherPersonId.toString(), existingNameCount, false));
+			resource.put(FIELD_ADDRESS, getAddresses(otherPersonId.toString(), existingAddressCount, false));
+			resource.put(FIELD_TELECOM, getPhones(otherPersonId.toString(), existingContact));
+			
+			Map<String, Object> period = new HashMap();
+			String startDate = null;
+			if (relationshipRow.get(3) != null && StringUtils.isNotBlank(relationshipRow.get(3).toString())) {
+				startDate = DATETIME_FORMATTER.format(Timestamp.valueOf(relationshipRow.get(3).toString()));
+			}
+			
+			String endDate = null;
+			if (relationshipRow.get(4) != null && StringUtils.isNotBlank(relationshipRow.get(4).toString())) {
+				endDate = DATETIME_FORMATTER.format(Timestamp.valueOf(relationshipRow.get(4).toString()));
+			}
+			
+			period.put(FIELD_START, startDate);
+			period.put(FIELD_END, endDate);
+			resource.put(FIELD_PERIOD, period);
 			
 			relationships.add(resource);
 		}
