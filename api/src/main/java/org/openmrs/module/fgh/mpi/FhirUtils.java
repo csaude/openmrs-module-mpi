@@ -72,8 +72,8 @@ public class FhirUtils {
 	protected final static String ATTR_QUERY = "SELECT value, uuid FROM person_attribute WHERE person_id = " + ID_PLACEHOLDER
 	        + " AND person_attribute_type_id = " + ATTR_TYPE_ID_PLACEHOLDER + " AND voided = 0";
 	
-	protected final static String RELATIONSHIP_QUERY = "SELECT r.person_a, r.person_b, r.start_date, r.end_date, r.uuid "
-	        + "t.uuid FROM relationship r, relationship_type t WHERE r.relationship = t.relation_ship_type_id AND r.person_a = "
+	protected final static String RELATIONSHIP_QUERY = "SELECT r.person_a, r.person_b, r.start_date, r.end_date, r.uuid, "
+	        + "t.uuid FROM relationship r, relationship_type t WHERE r.relationship = t.relationship_type_id AND (r.person_a = "
 	        + ID_PLACEHOLDER + " OR r.person_b = " + ID_PLACEHOLDER + ") AND r.voided = 0 ORDER BY r.voided ASC";
 	
 	public final static String CONTACT_PERSON_QUERY = "SELECT gender FROM person WHERE person_id = " + ID_PLACEHOLDER;
@@ -469,14 +469,15 @@ public class FhirUtils {
 			        : relationshipRow.get(0));
 			List<List<Object>> otherPersonDetails = executeQuery(
 			    CONTACT_PERSON_QUERY.replace(ID_PLACEHOLDER, otherPersonId.toString()));
-			resource.put(FIELD_ID, relationshipRow.get(4));
+			final String relationshipUuid = relationshipRow.get(4).toString();
+			resource.put(FIELD_ID, relationshipUuid);
 			String gender = otherPersonDetails.get(0).get(0) != null ? otherPersonDetails.get(0).get(0).toString() : null;
 			resource.put(FIELD_GENDER, convertToFhirGender(gender));
 			
 			Map existingContact = null;
 			if (mpiPatient != null && mpiPatient.get(FIELD_CONTACT) != null) {
 				List<Map> contacts = (List) mpiPatient.get(FIELD_CONTACT);
-				existingContact = getExistingContactByUuid(null, contacts);
+				existingContact = getExistingContactByUuid(relationshipUuid, contacts);
 			}
 			
 			resource.put(FIELD_NAME, getNames(otherPersonId.toString(), 1, false).get(0));
@@ -532,15 +533,15 @@ public class FhirUtils {
 	}
 	
 	/**
-	 * Looks the contact from the specified list that matches the specified uuid
+	 * Looks the contact from the specified list that matches the specified relationship uuid
 	 * 
-	 * @param uuid the person uuid to match
+	 * @param relationshipUuid the relationship uuid to match
 	 * @param contacts the list of contacts
-	 * @return the matching contact otherwise null
+	 * @return the matching contact details otherwise null
 	 */
-	private static Map getExistingContactByUuid(String uuid, List<Map> contacts) {
+	private static Map getExistingContactByUuid(String relationshipUuid, List<Map> contacts) {
 		for (Map contact : contacts) {
-			if (contact.get(FIELD_ID) != null && uuid.equalsIgnoreCase(contact.get(FIELD_ID).toString())) {
+			if (contact.get(FIELD_ID) != null && relationshipUuid.equalsIgnoreCase(contact.get(FIELD_ID).toString())) {
 				return contact;
 			}
 		}
@@ -569,6 +570,8 @@ public class FhirUtils {
 							if (type == null) {
 								throw new APIException("No relationship type found with uuid: " + uuid);
 							}
+							
+							//TODO Set text to a_is_to_b or b_is_to_a value
 							
 							uuidFhirRelationshipTypeMap.put(uuid,
 							    new RelationshipTypeConcept(details[1].trim(), details[2].trim(), type.getName()));
