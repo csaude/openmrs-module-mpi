@@ -566,12 +566,11 @@ public class FhirUtilsTest {
 		Map mother = contacts.get(0);
 		assertEquals(motherRelationshipUuid, mother.get(FIELD_ID));
 		assertEquals(GENDER_FEMALE, mother.get(FIELD_GENDER));
-		List<Map> motherNameResources = (List) mother.get(FIELD_NAME);
-		assertEquals(1, motherNameResources.size());
-		assertEquals(MpiConstants.USE_OFFICIAL, motherNameResources.get(0).get(FIELD_USE));
-		assertEquals(motherNameUuid, motherNameResources.get(0).get(FIELD_ID));
-		assertEquals(motherFamilyName, motherNameResources.get(0).get(MpiConstants.FIELD_FAMILY));
-		List<Object> motherGivenNames = (List) motherNameResources.get(0).get(FIELD_GIVEN);
+		Map motherNameResource = (Map) mother.get(FIELD_NAME);
+		assertEquals(MpiConstants.USE_OFFICIAL, motherNameResource.get(FIELD_USE));
+		assertEquals(motherNameUuid, motherNameResource.get(FIELD_ID));
+		assertEquals(motherFamilyName, motherNameResource.get(MpiConstants.FIELD_FAMILY));
+		List<Object> motherGivenNames = (List) motherNameResource.get(FIELD_GIVEN);
 		assertEquals(motherGivenName, motherGivenNames.get(0));
 		Map motherPeriod = (Map) mother.get(MpiConstants.FIELD_PERIOD);
 		assertNull(motherPeriod.get(FIELD_START));
@@ -583,16 +582,15 @@ public class FhirUtilsTest {
 		assertEquals(motherRelationshipTypeDisplay, motherContactCoding.get(FIELD_DISPLAY));
 		assertEquals(motherRelationshipTypeText, motherContactType.get(FIELD_TEXT));
 		
-		List<Map> motherAddressResources = (List) mother.get(MpiConstants.FIELD_ADDRESS);
-		assertEquals(1, motherAddressResources.size());
-		List<Object> motherLine1 = (List) motherAddressResources.get(0).get(MpiConstants.FIELD_LINE);
+		Map motherAddressResource = (Map) mother.get(MpiConstants.FIELD_ADDRESS);
+		List<Object> motherLine1 = (List) motherAddressResource.get(MpiConstants.FIELD_LINE);
 		assertEquals(motherLine1Address2, motherLine1.get(0));
 		assertEquals(motherLine1Address6, motherLine1.get(1));
 		assertEquals(motherLine1Address5, motherLine1.get(2));
-		assertEquals(motherCountyDistrict, motherAddressResources.get(0).get(MpiConstants.FIELD_DISTRICT));
-		assertEquals(motherStateProvince, motherAddressResources.get(0).get(MpiConstants.FIELD_STATE));
-		assertEquals(motherCountry, motherAddressResources.get(0).get(MpiConstants.FIELD_COUNTRY));
-		assertEquals(motherAddressUuid, motherAddressResources.get(0).get(FIELD_ID));
+		assertEquals(motherCountyDistrict, motherAddressResource.get(MpiConstants.FIELD_DISTRICT));
+		assertEquals(motherStateProvince, motherAddressResource.get(MpiConstants.FIELD_STATE));
+		assertEquals(motherCountry, motherAddressResource.get(MpiConstants.FIELD_COUNTRY));
+		assertEquals(motherAddressUuid, motherAddressResource.get(FIELD_ID));
 		
 		List<Map> motherTelecoms = (List) mother.get(MpiConstants.FIELD_TELECOM);
 		assertEquals(MpiConstants.PHONE, motherTelecoms.get(0).get(MpiConstants.FIELD_SYSTEM));
@@ -604,12 +602,11 @@ public class FhirUtilsTest {
 		assertEquals(husbandRelationshipUuid, husband.get(FIELD_ID));
 		assertEquals(GENDER_MALE, husband.get(FIELD_GENDER));
 		assertEquals(husbandRelationshipUuid, contacts.get(1).get(FIELD_ID));
-		List<Map> husbandNameResources = (List) husband.get(FIELD_NAME);
-		assertEquals(1, husbandNameResources.size());
-		assertEquals(MpiConstants.USE_OFFICIAL, husbandNameResources.get(0).get(FIELD_USE));
-		assertEquals(husbandNameUuid, husbandNameResources.get(0).get(FIELD_ID));
-		assertEquals(husbandFamilyName, husbandNameResources.get(0).get(MpiConstants.FIELD_FAMILY));
-		List<Object> husbandGivenNames = (List) husbandNameResources.get(0).get(FIELD_GIVEN);
+		Map husbandNameResource = (Map) husband.get(FIELD_NAME);
+		assertEquals(MpiConstants.USE_OFFICIAL, husbandNameResource.get(FIELD_USE));
+		assertEquals(husbandNameUuid, husbandNameResource.get(FIELD_ID));
+		assertEquals(husbandFamilyName, husbandNameResource.get(MpiConstants.FIELD_FAMILY));
+		List<Object> husbandGivenNames = (List) husbandNameResource.get(FIELD_GIVEN);
 		assertEquals(husbandGivenName, husbandGivenNames.get(0));
 		Map husbandPeriod = (Map) contacts.get(1).get(MpiConstants.FIELD_PERIOD);
 		assertEquals(DATETIME_FORMATTER.format(Timestamp.valueOf(startDate)), husbandPeriod.get(FIELD_START));

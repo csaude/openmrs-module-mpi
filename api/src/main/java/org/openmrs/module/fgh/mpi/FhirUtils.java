@@ -474,23 +474,13 @@ public class FhirUtils {
 			resource.put(FIELD_GENDER, convertToFhirGender(gender));
 			
 			Map existingContact = null;
-			Integer existingNameCount = null;
-			Integer existingAddressCount = null;
 			if (mpiPatient != null && mpiPatient.get(FIELD_CONTACT) != null) {
 				List<Map> contacts = (List) mpiPatient.get(FIELD_CONTACT);
 				existingContact = getExistingContactByUuid(null, contacts);
 			}
 			
-			if (existingContact != null && existingContact.get(FIELD_NAME) != null) {
-				existingNameCount = ((List) existingContact.get(FIELD_NAME)).size();
-			}
-			
-			if (existingContact != null && existingContact.get(FIELD_ADDRESS) != null) {
-				existingAddressCount = ((List) existingContact.get(FIELD_ADDRESS)).size();
-			}
-			
-			resource.put(FIELD_NAME, getNames(otherPersonId.toString(), existingNameCount, false));
-			resource.put(FIELD_ADDRESS, getAddresses(otherPersonId.toString(), existingAddressCount, false));
+			resource.put(FIELD_NAME, getNames(otherPersonId.toString(), 1, false).get(0));
+			resource.put(FIELD_ADDRESS, getAddresses(otherPersonId.toString(), 1, false).get(0));
 			resource.put(FIELD_TELECOM, getPhones(otherPersonId.toString(), existingContact));
 			
 			Map<String, Object> period = new HashMap();
