@@ -32,17 +32,14 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 	
 	private List<CompletableFuture<Map<String, Object>>> futures;
 	
-	private MpiHttpClient mpiHttpClient;
-	
 	private AtomicInteger successCount;
 	
 	private Long start;
 	
 	private Integer lastSubmittedPatientId;
 	
-	public SnapshotEventProcessor(PatientAndPersonEventHandler patientHandler, MpiHttpClient mpiHttpClient) {
-		super(patientHandler, null);
-		this.mpiHttpClient = mpiHttpClient;
+	public SnapshotEventProcessor() {
+		super(true);
 		//TODO make the thread pool count and futures size configurable, they must be equal
 		executor = Executors.newFixedThreadPool(DEFAULT_THREAD_COUNT);
 		futures = synchronizedList(new ArrayList(DEFAULT_THREAD_COUNT));

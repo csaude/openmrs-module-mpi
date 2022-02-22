@@ -2,6 +2,7 @@ package org.openmrs.module.fgh.mpi;
 
 import static java.lang.System.currentTimeMillis;
 
+import java.util.List;
 import java.util.Map;
 
 import org.openmrs.api.APIException;
@@ -16,12 +17,8 @@ public class IncrementalEventProcessor extends BaseEventProcessor {
 	
 	private static final Logger log = LoggerFactory.getLogger(IncrementalEventProcessor.class);
 	
-	private MpiHttpClient mpiHttpClient;
-	
-	public IncrementalEventProcessor(PatientAndPersonEventHandler patientHandler, AssociationEventHandler assocHandler,
-	    MpiHttpClient mpiHttpClient) {
-		super(patientHandler, assocHandler);
-		this.mpiHttpClient = mpiHttpClient;
+	public IncrementalEventProcessor() {
+		super(false);
 	}
 	
 	@Override
@@ -32,9 +29,16 @@ public class IncrementalEventProcessor extends BaseEventProcessor {
 			
 			final long start = System.currentTimeMillis();
 			
-			Map<String, Object> fhirPatient = createFhirResource(event);
-			if (fhirPatient != null) {
-				mpiHttpClient.submitPatient(mapper.writeValueAsString(fhirPatient));
+			Map<String, Object> fhirResource = createFhirResource(event);
+			if (fhirResource != null) {
+				//Because a relationship references 2 persons, in case they are both patients update all in the MPI
+				if (MpiConstants.BUNDLE.equals(fhirResource.get((MpiConstants.FIELD_RESOURCE_TYPE)))) {
+					for (Map<String, Object> fhirPatient : (List<Map>) fhirResource.get(MpiConstants.FIELD_ENTRY)) {
+						mpiHttpClient.submitPatient(mapper.writeValueAsString(fhirPatient));
+					}
+				} else {
+					mpiHttpClient.submitPatient(mapper.writeValueAsString(fhirResource));
+				}
 			}
 			
 			log.info("Done processing database event -> " + event);

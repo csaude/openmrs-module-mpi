@@ -17,20 +17,30 @@ public abstract class BaseEventProcessor {
 	
 	private static final Logger log = LoggerFactory.getLogger(BaseEventProcessor.class);
 	
-	private PatientAndPersonEventHandler patientHandler;
+	protected PatientAndPersonEventHandler patientHandler;
 	
-	private AssociationEventHandler assocHandler;
+	protected AssociationEventHandler assocHandler;
+	
+	protected RelationshipEventHandler relationshipHandler;
+	
+	protected MpiHttpClient mpiHttpClient;
 	
 	protected ObjectMapper mapper;
 	
-	public BaseEventProcessor(PatientAndPersonEventHandler patientHandler, AssociationEventHandler assocHandler) {
-		this.patientHandler = patientHandler;
-		this.assocHandler = assocHandler;
+	public BaseEventProcessor(boolean snapshotOnly) {
+		this.patientHandler = Context.getRegisteredComponents(PatientAndPersonEventHandler.class).get(0);
+		this.mpiHttpClient = Context.getRegisteredComponents(MpiHttpClient.class).get(0);
 		mapper = new ObjectMapper();
+		
+		if (!snapshotOnly) {
+			this.assocHandler = Context.getRegisteredComponents(AssociationEventHandler.class).get(0);
+			this.relationshipHandler = Context.getRegisteredComponents(RelationshipEventHandler.class).get(0);
+		}
 	}
 	
 	/**
-	 * Creates a fhir patient resource
+	 * Creates a fhir patient resource or bundle of 2 patient resources in case of a relationship table
+	 * event, this is because a relationship row references 2 persons which could both be patients.
 	 *
 	 * @param event the {@link DatabaseEvent} object to process
 	 * @throws Throwable
@@ -49,6 +59,7 @@ public abstract class BaseEventProcessor {
 			Context.addProxyPrivilege(PrivilegeConstants.GET_PERSON_ATTRIBUTE_TYPES);
 			Context.addProxyPrivilege(PrivilegeConstants.GET_IDENTIFIER_TYPES);
 			Context.addProxyPrivilege(PrivilegeConstants.GET_LOCATIONS);
+			Context.addProxyPrivilege(PrivilegeConstants.GET_RELATIONSHIP_TYPES);
 			
 			switch (event.getTableName()) {
 				case "person":
@@ -60,6 +71,9 @@ public abstract class BaseEventProcessor {
 				case "patient_identifier":
 				case "person_attribute":
 					resource = assocHandler.handle(event);
+					break;
+				case "relationship":
+					resource = relationshipHandler.handle(event);
 					break;
 			}
 			
@@ -75,6 +89,7 @@ public abstract class BaseEventProcessor {
 				Context.removeProxyPrivilege(PrivilegeConstants.GET_PERSON_ATTRIBUTE_TYPES);
 				Context.removeProxyPrivilege(PrivilegeConstants.GET_IDENTIFIER_TYPES);
 				Context.removeProxyPrivilege(PrivilegeConstants.GET_LOCATIONS);
+				Context.removeProxyPrivilege(PrivilegeConstants.GET_RELATIONSHIP_TYPES);
 			}
 			finally {
 				Context.closeSession();

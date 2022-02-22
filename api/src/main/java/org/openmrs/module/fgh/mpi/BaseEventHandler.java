@@ -23,10 +23,6 @@ public abstract class BaseEventHandler {
 		log.info("Looking up patient Id associated to the event");
 		
 		Integer patientId = getPatientId(event);
-		if (patientId == null) {
-			log.info("No patient id found");
-			return null;
-		}
 		
 		log.info("Found patient id: " + patientId);
 		

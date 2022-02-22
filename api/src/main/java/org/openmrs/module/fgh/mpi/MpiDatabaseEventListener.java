@@ -10,22 +10,12 @@ import org.openmrs.module.debezium.DatabaseEventListener;
 import org.openmrs.module.debezium.DebeziumConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component(DebeziumConstants.DB_EVENT_LISTENER_BEAN_NAME)
 public class MpiDatabaseEventListener implements DatabaseEventListener {
 	
 	private static final Logger log = LoggerFactory.getLogger(MpiDatabaseEventListener.class);
-	
-	@Autowired
-	private PatientAndPersonEventHandler patientHandler;
-	
-	@Autowired
-	private AssociationEventHandler associationHandler;
-	
-	@Autowired
-	private MpiHttpClient mpiHttpClient;
 	
 	private boolean snapshotOnly;
 	
@@ -35,9 +25,9 @@ public class MpiDatabaseEventListener implements DatabaseEventListener {
 	public void init(boolean snapshotOnly) {
 		this.snapshotOnly = snapshotOnly;
 		if (snapshotOnly) {
-			eventProcessor = new SnapshotEventProcessor(patientHandler, mpiHttpClient);
+			eventProcessor = new SnapshotEventProcessor();
 		} else {
-			eventProcessor = new IncrementalEventProcessor(patientHandler, associationHandler, mpiHttpClient);
+			eventProcessor = new IncrementalEventProcessor();
 		}
 	}
 	
