@@ -24,7 +24,7 @@ public abstract class BaseEventHandler {
 		
 		Integer patientId = getPatientId(event);
 		
-		log.info("Found patient id: " + patientId);
+		log.info("Patient id: " + patientId);
 		
 		return processor.process(patientId, event);
 	}

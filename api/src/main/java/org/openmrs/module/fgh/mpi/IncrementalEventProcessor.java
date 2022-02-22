@@ -31,7 +31,7 @@ public class IncrementalEventProcessor extends BaseEventProcessor {
 			
 			Map<String, Object> fhirResource = createFhirResource(event);
 			if (fhirResource != null) {
-				//Because a relationship references 2 persons, in case they are both patients update all in the MPI
+				//Because a relationship references 2 persons, process all
 				if (MpiConstants.BUNDLE.equals(fhirResource.get((MpiConstants.FIELD_RESOURCE_TYPE)))) {
 					for (Map<String, Object> fhirPatient : (List<Map>) fhirResource.get(MpiConstants.FIELD_ENTRY)) {
 						mpiHttpClient.submitPatient(mapper.writeValueAsString(fhirPatient));

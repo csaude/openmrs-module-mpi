@@ -19,12 +19,7 @@ public class PatientAndPersonEventHandler extends BaseEventHandler {
 			log.debug("Handling " + event.getTableName() + " event -> " + event);
 		}
 		
-		Integer patientId = Integer.valueOf(event.getPrimaryKeyId().toString());
-		if (log.isDebugEnabled()) {
-			log.debug("Patient Id: " + patientId);
-		}
-		
-		return patientId;
+		return Integer.valueOf(event.getPrimaryKeyId().toString());
 	}
 	
 }

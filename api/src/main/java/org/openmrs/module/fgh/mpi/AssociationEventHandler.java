@@ -30,10 +30,6 @@ public class AssociationEventHandler extends BaseEventHandler {
 			patientId = event.getNewState().get(columnName);
 		}
 		
-		if (log.isDebugEnabled()) {
-			log.debug("Patient Id: " + patientId);
-		}
-		
 		//TODO If person attribute and it's not one of the phone number attribute types ignore
 		
 		return Integer.valueOf(patientId.toString());
