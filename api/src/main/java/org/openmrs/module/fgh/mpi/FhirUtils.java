@@ -1,5 +1,6 @@
 package org.openmrs.module.fgh.mpi;
 
+import static java.util.Collections.singletonList;
 import static org.openmrs.module.fgh.mpi.MpiConstants.DATETIME_FORMATTER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ADDRESS;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_CODE;
@@ -21,6 +22,7 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_URL;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_USE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE_STR;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE_UUID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_CONCEPT_MAP_A;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_CONCEPT_MAP_B;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_SYSTEM;
@@ -28,13 +30,14 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.HEALTH_CENTER_ATTRIB_TYPE_
 import static org.openmrs.module.fgh.mpi.MpiConstants.HEALTH_CENTER_URL;
 import static org.openmrs.module.fgh.mpi.MpiConstants.IDENTIFIER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.NAME;
+import static org.openmrs.module.fgh.mpi.MpiConstants.PERSON_UUID_URL;
+import static org.openmrs.module.fgh.mpi.MpiConstants.UUID_PREFIX;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.ID_PLACEHOLDER;
 import static org.openmrs.module.fgh.mpi.MpiUtils.executeQuery;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -77,7 +80,7 @@ public class FhirUtils {
 	        + "t.uuid FROM relationship r, relationship_type t WHERE r.relationship = t.relationship_type_id AND (r.person_a = "
 	        + ID_PLACEHOLDER + " OR r.person_b = " + ID_PLACEHOLDER + ") AND r.voided = 0 ORDER BY r.voided ASC";
 	
-	public final static String CONTACT_PERSON_QUERY = "SELECT gender FROM person WHERE person_id = " + ID_PLACEHOLDER;
+	public final static String CONTACT_PERSON_QUERY = "SELECT gender, uuid FROM person WHERE person_id = " + ID_PLACEHOLDER;
 	
 	private final static Map<String, String> ATTR_TYPE_GP_ID_MAP = new HashMap(2);
 	
@@ -173,7 +176,7 @@ public class FhirUtils {
 		idRows.stream().forEach(idRow -> {
 			Map<String, Object> idResource = new HashMap();
 			idResource.put(FIELD_ID, idRow.get(2));
-			String system = MpiConstants.SYSTEM_PREFIX + idRow.get(1);
+			String system = UUID_PREFIX + idRow.get(1);
 			idResource.put(FIELD_SYSTEM, system);
 			idResource.put(FIELD_VALUE, idRow.get(0));
 			identifiers.add(idResource);
@@ -369,7 +372,7 @@ public class FhirUtils {
 			
 			Map<String, String> uuidExt = new HashMap(2);
 			uuidExt.put(FIELD_URL, IDENTIFIER);
-			uuidExt.put(FIELD_VALUE_STR, location.getUuid());
+			uuidExt.put(FIELD_VALUE_UUID, UUID_PREFIX + location.getUuid());
 			Map<String, String> nameExt = new HashMap(2);
 			nameExt.put(FIELD_URL, NAME);
 			nameExt.put(FIELD_VALUE_STR, location.getName());
@@ -377,11 +380,11 @@ public class FhirUtils {
 			healthCenterExt.put(FIELD_URL, HEALTH_CENTER_URL);
 			healthCenterExt.put(FIELD_EXTENSION, Arrays.asList(uuidExt, nameExt));
 			
-			return Collections.singletonList(healthCenterExt);
+			return singletonList(healthCenterExt);
 		} else if (mpiPatient != null && mpiPatient.get(FIELD_EXTENSION) != null) {
 			Map<String, String> uuidExt = new HashMap(2);
 			uuidExt.put(FIELD_URL, IDENTIFIER);
-			uuidExt.put(FIELD_VALUE_STR, null);
+			uuidExt.put(FIELD_VALUE_UUID, null);
 			Map<String, String> nameExt = new HashMap(2);
 			nameExt.put(FIELD_URL, NAME);
 			nameExt.put(FIELD_VALUE_STR, null);
@@ -389,7 +392,7 @@ public class FhirUtils {
 			healthCenterExt.put(FIELD_URL, HEALTH_CENTER_URL);
 			healthCenterExt.put(FIELD_EXTENSION, Arrays.asList(uuidExt, nameExt));
 			
-			return Collections.singletonList(healthCenterExt);
+			return singletonList(healthCenterExt);
 		}
 		
 		return null;
@@ -455,17 +458,17 @@ public class FhirUtils {
 			
 			final String relationshipTypeUuid = relationshipRow.get(5).toString();
 			Integer otherPersonId;
-			boolean sideA = false;
-			if (patientId.equals(relationshipRow.get(0).toString())) {//Side A
-				otherPersonId = (Integer) (relationshipRow.get(1));//side B
+			boolean isPersonA = false;
+			if (patientId.equals(relationshipRow.get(0).toString())) {
+				otherPersonId = (Integer) (relationshipRow.get(1));
 			} else {
-				sideA = true;
-				otherPersonId = (Integer) (relationshipRow.get(0));//Side A
+				isPersonA = true;
+				otherPersonId = (Integer) (relationshipRow.get(0));
 			}
 			
-			RelationshipTypeConcept concept = getRelationshipTypeConcept(relationshipTypeUuid, sideA);
+			RelationshipTypeConcept concept = getRelationshipTypeConcept(relationshipTypeUuid, isPersonA);
 			if (concept == null) {
-				throw new APIException("No concept mapped to person " + (sideA ? "A" : "B")
+				throw new APIException("No concept mapped to person " + (isPersonA ? "A" : "B")
 				        + " of the relationship type with uuid: " + relationshipTypeUuid);
 			}
 			
@@ -474,7 +477,7 @@ public class FhirUtils {
 			codingResource.put(FIELD_CODE, concept.code);
 			codingResource.put(FIELD_DISPLAY, concept.display);
 			Map relationshipTypeResource = new HashMap();
-			relationshipTypeResource.put(FIELD_CODING, Collections.singletonList(codingResource));
+			relationshipTypeResource.put(FIELD_CODING, singletonList(codingResource));
 			relationshipTypeResource.put(FIELD_TEXT, concept.text);
 			Map<String, Object> resource = new HashMap();
 			resource.put(FIELD_RELATIONSHIP, relationshipTypeResource);
@@ -484,6 +487,10 @@ public class FhirUtils {
 			resource.put(FIELD_ID, relationshipUuid);
 			String gender = otherPersonDetails.get(0).get(0) != null ? otherPersonDetails.get(0).get(0).toString() : null;
 			resource.put(FIELD_GENDER, convertToFhirGender(gender));
+			Map personUuidExt = new HashMap(2);
+			personUuidExt.put(FIELD_URL, PERSON_UUID_URL);
+			personUuidExt.put(FIELD_VALUE_UUID, UUID_PREFIX + otherPersonDetails.get(0).get(1));
+			resource.put(FIELD_EXTENSION, singletonList(personUuidExt));
 			
 			Map existingContact = null;
 			if (mpiPatient != null && mpiPatient.get(FIELD_CONTACT) != null) {
@@ -565,18 +572,19 @@ public class FhirUtils {
 	 * specified uuid
 	 * 
 	 * @param relationshipTypeUuid the relationship type uuid to match
-	 * @param personA specifies the person's side of the relationship type the concept maps to
+	 * @param isPersonA specifies the person's side of the relationship type the concept maps to
 	 * @return FhirRelationshipType object
 	 */
-	private static RelationshipTypeConcept getRelationshipTypeConcept(String relationshipTypeUuid, boolean personA) {
-		Map<String, RelationshipTypeConcept> relMap = personA ? uuidFhirRelationshipTypePersonAMap
+	private static RelationshipTypeConcept getRelationshipTypeConcept(String relationshipTypeUuid, boolean isPersonA) {
+		Map<String, RelationshipTypeConcept> relMap = isPersonA ? uuidFhirRelationshipTypePersonAMap
 		        : uuidFhirRelationshipTypePersonBMap;
 		
 		if (relMap == null) {
 			synchronized (FhirUtils.class) {
 				if (relMap == null) {
 					relMap = new HashMap();
-					final String gpName = personA ? GP_RELATIONSHIP_TYPE_CONCEPT_MAP_A : GP_RELATIONSHIP_TYPE_CONCEPT_MAP_B;
+					final String gpName = isPersonA ? GP_RELATIONSHIP_TYPE_CONCEPT_MAP_A
+					        : GP_RELATIONSHIP_TYPE_CONCEPT_MAP_B;
 					String maps = Context.getAdministrationService().getGlobalProperty(gpName);
 					if (StringUtils.isNotBlank(maps)) {
 						for (String map : maps.trim().split(",")) {
@@ -587,7 +595,7 @@ public class FhirUtils {
 								throw new APIException("No relationship type found with uuid: " + uuid);
 							}
 							
-							final String text = personA ? type.getaIsToB() : type.getbIsToA();
+							final String text = isPersonA ? type.getaIsToB() : type.getbIsToA();
 							relMap.put(uuid, new RelationshipTypeConcept(details[1].trim(), details[2].trim(), text));
 						}
 					}

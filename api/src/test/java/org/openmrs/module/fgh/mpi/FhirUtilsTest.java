@@ -35,7 +35,9 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_START;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_TELECOM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_TEXT;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_URL;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_USE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE_UUID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_FEMALE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_MALE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_OTHER;
@@ -49,6 +51,8 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.HEALTH_CENTER_ATTRIB_TYPE_
 import static org.openmrs.module.fgh.mpi.MpiConstants.HEALTH_CENTER_URL;
 import static org.openmrs.module.fgh.mpi.MpiConstants.IDENTIFIER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.NAME;
+import static org.openmrs.module.fgh.mpi.MpiConstants.PERSON_UUID_URL;
+import static org.openmrs.module.fgh.mpi.MpiConstants.UUID_PREFIX;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.ID_PLACEHOLDER;
 import static org.openmrs.module.fgh.mpi.MpiUtils.executeQuery;
 
@@ -230,10 +234,10 @@ public class FhirUtilsTest {
 		assertEquals(3, resourceIds.size());
 		assertEquals(MpiConstants.SOURCE_ID_URI, resourceIds.get(0).get(MpiConstants.FIELD_SYSTEM));
 		assertEquals(patientUuid, resourceIds.get(0).get(MpiConstants.FIELD_VALUE));
-		assertEquals(MpiConstants.SYSTEM_PREFIX + idTypeUuid1, resourceIds.get(1).get(MpiConstants.FIELD_SYSTEM));
+		assertEquals(MpiConstants.UUID_PREFIX + idTypeUuid1, resourceIds.get(1).get(MpiConstants.FIELD_SYSTEM));
 		assertEquals(identifier1, resourceIds.get(1).get(MpiConstants.FIELD_VALUE));
 		assertEquals(idUuid1, resourceIds.get(1).get(FIELD_ID));
-		assertEquals(MpiConstants.SYSTEM_PREFIX + idTypeUuid2, resourceIds.get(2).get(MpiConstants.FIELD_SYSTEM));
+		assertEquals(MpiConstants.UUID_PREFIX + idTypeUuid2, resourceIds.get(2).get(MpiConstants.FIELD_SYSTEM));
 		assertEquals(identifier2, resourceIds.get(2).get(MpiConstants.FIELD_VALUE));
 		assertEquals(idUuid2, resourceIds.get(2).get(FIELD_ID));
 		
@@ -298,7 +302,7 @@ public class FhirUtilsTest {
 		assertEquals(HEALTH_CENTER_URL, extension.get(0).get(MpiConstants.FIELD_URL));
 		extension = (List) extension.get(0).get(MpiConstants.FIELD_EXTENSION);
 		assertEquals(IDENTIFIER, extension.get(0).get(MpiConstants.FIELD_URL));
-		assertEquals(locationUuid, extension.get(0).get(MpiConstants.FIELD_VALUE_STR));
+		assertEquals(UUID_PREFIX + locationUuid, extension.get(0).get(MpiConstants.FIELD_VALUE_UUID));
 		assertEquals(NAME, extension.get(1).get(MpiConstants.FIELD_URL));
 		assertEquals(locationName, extension.get(1).get(MpiConstants.FIELD_VALUE_STR));
 	}
@@ -480,7 +484,7 @@ public class FhirUtilsTest {
 		assertEquals(HEALTH_CENTER_URL, extension.get(0).get(MpiConstants.FIELD_URL));
 		extension = (List) extension.get(0).get(MpiConstants.FIELD_EXTENSION);
 		assertEquals(IDENTIFIER, extension.get(0).get(MpiConstants.FIELD_URL));
-		assertNull(extension.get(0).get(MpiConstants.FIELD_VALUE_STR));
+		assertNull(extension.get(0).get(MpiConstants.FIELD_VALUE_UUID));
 		assertEquals(NAME, extension.get(1).get(MpiConstants.FIELD_URL));
 		assertNull(extension.get(1).get(MpiConstants.FIELD_VALUE_STR));
 	}
@@ -490,6 +494,7 @@ public class FhirUtilsTest {
 		List<Object> personDetails = asList(null, null, false, null, null, false);
 		final Integer patientId = 1;
 		final Integer motherPersonId = 2;
+		final String motherUuid = "mother-uuid";
 		final String motherGivenName = "Mary";
 		final String motherFamilyName = "Jane";
 		final String motherNameUuid = "mother-name-uuid";
@@ -523,6 +528,7 @@ public class FhirUtilsTest {
 		when(executeQuery(ATTR_QUERY.replace(ID_PLACEHOLDER, motherPersonId.toString()).replace(ATTR_TYPE_ID_PLACEHOLDER,
 		    mobileAttrTypeId.toString()))).thenReturn(singletonList(mobileAttr));
 		final Integer husbandPersonId = 3;
+		final String husbandUuid = "husband-uuid";
 		final String husbandGivenName = "Horatio";
 		final String husbandFamilyName = "Hornblower";
 		final String husbandNameUuid = "husband-name-uuid";
@@ -534,10 +540,10 @@ public class FhirUtilsTest {
 		List<Object> husbandName = asList(null, husbandGivenName, null, husbandFamilyName, husbandNameUuid);
 		when(executeQuery((NAME_QUERY + " LIMIT 1").replace(ID_PLACEHOLDER, husbandPersonId.toString())))
 		        .thenReturn(asList(husbandName));
-		List<Object> motherDetails = asList("F");
+		List<Object> motherDetails = asList("F", motherUuid);
 		when(executeQuery(CONTACT_PERSON_QUERY.replace(ID_PLACEHOLDER, motherPersonId.toString())))
 		        .thenReturn(asList(motherDetails));
-		List<Object> husbandDetails = asList("M");
+		List<Object> husbandDetails = asList("M", husbandUuid);
 		when(executeQuery(CONTACT_PERSON_QUERY.replace(ID_PLACEHOLDER, husbandPersonId.toString())))
 		        .thenReturn(asList(husbandDetails));
 		List<Object> motherRelationship = asList(patientId, motherPersonId, null, null, motherRelationshipUuid,
@@ -570,6 +576,9 @@ public class FhirUtilsTest {
 		Map mother = contacts.get(0);
 		assertEquals(motherRelationshipUuid, mother.get(FIELD_ID));
 		assertEquals(GENDER_FEMALE, mother.get(FIELD_GENDER));
+		Map motherUuidExt = (Map) ((List) mother.get(FIELD_EXTENSION)).get(0);
+		assertEquals(PERSON_UUID_URL, motherUuidExt.get(FIELD_URL));
+		assertEquals(UUID_PREFIX + motherUuid, motherUuidExt.get(FIELD_VALUE_UUID));
 		Map motherNameResource = (Map) mother.get(FIELD_NAME);
 		assertEquals(MpiConstants.USE_OFFICIAL, motherNameResource.get(FIELD_USE));
 		assertEquals(motherNameUuid, motherNameResource.get(FIELD_ID));
@@ -605,6 +614,9 @@ public class FhirUtilsTest {
 		Map husband = contacts.get(1);
 		assertEquals(husbandRelationshipUuid, husband.get(FIELD_ID));
 		assertEquals(GENDER_MALE, husband.get(FIELD_GENDER));
+		Map husbandUuidExt = (Map) ((List) husband.get(FIELD_EXTENSION)).get(0);
+		assertEquals(PERSON_UUID_URL, husbandUuidExt.get(FIELD_URL));
+		assertEquals(UUID_PREFIX + husbandUuid, husbandUuidExt.get(FIELD_VALUE_UUID));
 		assertEquals(husbandRelationshipUuid, contacts.get(1).get(FIELD_ID));
 		Map husbandNameResource = (Map) husband.get(FIELD_NAME);
 		assertEquals(MpiConstants.USE_OFFICIAL, husbandNameResource.get(FIELD_USE));
@@ -630,8 +642,7 @@ public class FhirUtilsTest {
 		expectedException.expect(APIException.class);
 		expectedException
 		        .expectMessage(equalTo("No value set for the global property named: " + GP_RELATIONSHIP_TYPE_SYSTEM));
-		List<Object> personDetails = asList(null, null, false, null, null, false);
-		FhirUtils.buildPatient(patientId, false, personDetails, null);
+		FhirUtils.buildPatient(patientId, false, asList(null, null, false, null, null, false), null);
 	}
 	
 	@Test
@@ -644,8 +655,7 @@ public class FhirUtilsTest {
 		when(mockAdminService.getGlobalProperty(GP_RELATIONSHIP_TYPE_CONCEPT_MAP_B)).thenReturn(uuid + ":M:Mother");
 		expectedException.expect(APIException.class);
 		expectedException.expectMessage(equalTo("No relationship type found with uuid: " + uuid));
-		List<Object> personDetails = asList(null, null, false, null, null, false);
-		FhirUtils.buildPatient(patientId, false, personDetails, null);
+		FhirUtils.buildPatient(patientId, false, asList(null, null, false, null, null, false), null);
 	}
 	
 	@Test
@@ -658,8 +668,7 @@ public class FhirUtilsTest {
 		expectedException.expect(APIException.class);
 		expectedException
 		        .expectMessage(equalTo("No concept mapped to person B of the relationship type with uuid: " + uuid));
-		List<Object> personDetails = asList(null, null, false, null, null, false);
-		FhirUtils.buildPatient(patientId, false, personDetails, null);
+		FhirUtils.buildPatient(patientId, false, asList(null, null, false, null, null, false), null);
 	}
 	
 	@Test
@@ -672,8 +681,7 @@ public class FhirUtilsTest {
 		expectedException.expect(APIException.class);
 		expectedException
 		        .expectMessage(equalTo("No concept mapped to person A of the relationship type with uuid: " + uuid));
-		List<Object> personDetails = asList(null, null, false, null, null, false);
-		FhirUtils.buildPatient(patientId, false, personDetails, null);
+		FhirUtils.buildPatient(patientId, false, asList(null, null, false, null, null, false), null);
 	}
 	
 	@Test
@@ -689,7 +697,7 @@ public class FhirUtilsTest {
 		List<Object> motherName = asList(null, "Mary", null, "Jane", "mother-name-uuid");
 		when(executeQuery((NAME_QUERY + " LIMIT 1").replace(ID_PLACEHOLDER, motherPersonId.toString())))
 		        .thenReturn(asList(motherName));
-		List<Object> motherDetails = asList("F");
+		List<Object> motherDetails = asList("F", "mother-uuid");
 		when(executeQuery(CONTACT_PERSON_QUERY.replace(ID_PLACEHOLDER, motherPersonId.toString())))
 		        .thenReturn(asList(motherDetails));
 		List<Object> motherRelationship = asList(patientId, motherPersonId, null, null, motherRelationshipUuid,

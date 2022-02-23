@@ -13,6 +13,8 @@ public class MpiConstants {
 	
 	public final static String HEALTH_CENTER_URL = "http://openmrs.org/fhir/StructureDefinition/patient-healthCenter";
 	
+	public final static String PERSON_UUID_URL = "http://openmrs.org/fhir/StructureDefinition/person-uuid";
+	
 	public final static String[] WATCHED_TABLES = new String[] { "person", "patient", "person_name", "person_address",
 	        "patient_identifier", "person_attribute", "relationship" };
 	
@@ -100,6 +102,8 @@ public class MpiConstants {
 	
 	public final static String FIELD_VALUE_STR = "valueString";
 	
+	public final static String FIELD_VALUE_UUID = "valueUuid";
+	
 	public final static String FIELD_CONTACT = "contact";
 	
 	public final static String FIELD_RELATIONSHIP = "relationship";
@@ -138,7 +142,7 @@ public class MpiConstants {
 	
 	public final static String NAME = "name";
 	
-	public final static String SYSTEM_PREFIX = "urn:uuid:";
+	public final static String UUID_PREFIX = "urn:uuid:";
 	
 	public final static DateFormat DATETIME_FORMATTER = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
 	
