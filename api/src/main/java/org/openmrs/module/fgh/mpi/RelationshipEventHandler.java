@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
- * Handler for relation table events
+ * Handler for events in the relationship table
  */
 @Component("relationshipEventHandler")
 public class RelationshipEventHandler extends BaseEventHandler {
@@ -28,9 +28,10 @@ public class RelationshipEventHandler extends BaseEventHandler {
 		if (log.isDebugEnabled()) {
 			log.debug("Handling " + event.getTableName() + " event -> " + event);
 		}
+		
 		log.info("Looking up the ids of the persons associated to the relationship event");
 		
-		//There can be 2-4 affected patient records for an update
+		//There can be 2-4 affected patient records for an update event
 		Set<Integer> personIds = new HashSet();
 		if (event.getPreviousState() != null) {
 			personIds.add(Integer.valueOf(event.getPreviousState().get(COLUMN_PERSON_A).toString()));

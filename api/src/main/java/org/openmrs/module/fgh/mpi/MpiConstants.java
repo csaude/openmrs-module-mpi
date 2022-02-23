@@ -32,7 +32,11 @@ public class MpiConstants {
 	
 	public final static String GP_RELATIONSHIP_TYPE_SYSTEM = MODULE_ID + ".relationship.type.terminology.system.uri";
 	
-	public final static String GP_RELATIONSHIP_TYPE_CONCEPT_MAP = MODULE_ID + ".relationship.type.uuid.concept.mappings";
+	public final static String GP_RELATIONSHIP_TYPE_CONCEPT_MAP_A = MODULE_ID
+	        + ".relationship.type.uuid.personA.concept.mappings";
+	
+	public final static String GP_RELATIONSHIP_TYPE_CONCEPT_MAP_B = MODULE_ID
+	        + ".relationship.type.uuid.personB.concept.mappings";
 	
 	public final static String HEALTH_CENTER_ATTRIB_TYPE_UUID = "8d87236c-c2cc-11de-8d13-0010c6dffd0f";
 	

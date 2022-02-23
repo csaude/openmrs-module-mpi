@@ -67,13 +67,23 @@
         </description>
     </globalProperty>
     <globalProperty>
-        <property>${project.parent.artifactId}.relationship.type.uuid.concept.mappings</property>
+        <property>${project.parent.artifactId}.relationship.type.uuid.personA.concept.mappings</property>
         <description>
-            Comma-separated list of mappings between OpenMRS relationship type uuids and concepts in the
-            terminology system associated to the URI set via the global property named
+            Comma-separated list of mappings between OpenMRS relationship type uuids for person A and concepts
+            in the terminology system associated to the URI set via the global property named
             ${project.parent.artifactId}.relationship.type.concept.source.uri, should be of the form
             relationshipTypeUuid-1:conceptCode1:conceptDisplay1,relationshipTypeUuid-2:conceptCode2:conceptDisplay2
             e.g a5c97a9d-a77b-401f-b06e-81900e21ed1e:M:Mother,b7c97a9d-a77b-401f-b06e-81900e21ed1e:L:Lawyer
+        </description>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.relationship.type.uuid.personB.concept.mappings</property>
+        <description>
+            Comma-separated list of mappings between OpenMRS relationship type uuids for person B and concepts
+            in the terminology system associated to the URI set via the global property named
+            ${project.parent.artifactId}.relationship.type.concept.source.uri, should be of the form
+            relationshipTypeUuid-1:conceptCode1:conceptDisplay1,relationshipTypeUuid-2:conceptCode2:conceptDisplay2
+            e.g a5c97a9d-a77b-401f-b06e-81900e21ed1e:CH:Child,b7c97a9d-a77b-401f-b06e-81900e21ed1e:CL:Client
         </description>
     </globalProperty>
 

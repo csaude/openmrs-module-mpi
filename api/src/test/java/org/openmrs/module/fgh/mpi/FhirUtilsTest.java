@@ -42,7 +42,8 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_OTHER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_UNKNOWN;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_PHONE_HOME;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_PHONE_MOBILE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_CONCEPT_MAP;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_CONCEPT_MAP_A;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_CONCEPT_MAP_B;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.HEALTH_CENTER_ATTRIB_TYPE_UUID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.HEALTH_CENTER_URL;
@@ -102,7 +103,8 @@ public class FhirUtilsTest {
 		PowerMockito.mockStatic(MpiUtils.class);
 		Whitebox.setInternalState(FhirUtils.class, "ATTR_TYPE_GP_ID_MAP", new HashMap(2));
 		Whitebox.setInternalState(FhirUtils.class, "relationshipTypeSystem", (Object) null);
-		Whitebox.setInternalState(FhirUtils.class, "uuidFhirRelationshipTypeMap", (Object) null);
+		Whitebox.setInternalState(FhirUtils.class, "uuidFhirRelationshipTypePersonAMap", (Object) null);
+		Whitebox.setInternalState(FhirUtils.class, "uuidFhirRelationshipTypePersonBMap", (Object) null);
 		when(Context.getAdministrationService()).thenReturn(mockAdminService);
 		when(Context.getPersonService()).thenReturn(mockPersonService);
 		when(Context.getLocationService()).thenReturn(mockLocationService);
@@ -495,7 +497,7 @@ public class FhirUtilsTest {
 		final String motherRelationshipTypeUuid = "mother-relationship-type-uuid";
 		final String motherRelationshipTypeCode = "M";
 		final String motherRelationshipTypeDisplay = "Mother";
-		final String motherRelationshipTypeText = "Biological Mother";
+		final String motherRelationshipTypePersonB = "Biological Mother";
 		List<Object> motherName = asList(null, motherGivenName, null, motherFamilyName, motherNameUuid);
 		when(executeQuery((NAME_QUERY + " LIMIT 1").replace(ID_PLACEHOLDER, motherPersonId.toString())))
 		        .thenReturn(asList(motherName));
@@ -528,7 +530,7 @@ public class FhirUtilsTest {
 		final String husbandRelationshipTypeUuid = "husband-relationship-type-uuid";
 		final String husbandRelationshipTypeCode = "H";
 		final String husbandRelationshipTypeDisplay = "Husband";
-		final String husbandRelationshipTypeText = "Legal Husband";
+		final String husbandRelationshipTypePersonA = "Legal Husband";
 		List<Object> husbandName = asList(null, husbandGivenName, null, husbandFamilyName, husbandNameUuid);
 		when(executeQuery((NAME_QUERY + " LIMIT 1").replace(ID_PLACEHOLDER, husbandPersonId.toString())))
 		        .thenReturn(asList(husbandName));
@@ -551,16 +553,18 @@ public class FhirUtilsTest {
 		        + motherRelationshipTypeDisplay;
 		final String husbandMap = husbandRelationshipTypeUuid + ":" + husbandRelationshipTypeCode + ":"
 		        + husbandRelationshipTypeDisplay;
-		when(mockAdminService.getGlobalProperty(GP_RELATIONSHIP_TYPE_CONCEPT_MAP)).thenReturn(husbandMap + ", " + motherMap);
+		when(mockAdminService.getGlobalProperty(GP_RELATIONSHIP_TYPE_CONCEPT_MAP_B)).thenReturn(motherMap);
+		when(mockAdminService.getGlobalProperty(GP_RELATIONSHIP_TYPE_CONCEPT_MAP_A)).thenReturn(husbandMap);
 		RelationshipType motherRelationshipType = new RelationshipType();
-		motherRelationshipType.setName(motherRelationshipTypeText);
+		motherRelationshipType.setbIsToA(motherRelationshipTypePersonB);
 		when(mockPersonService.getRelationshipTypeByUuid(motherRelationshipTypeUuid)).thenReturn(motherRelationshipType);
 		RelationshipType husbandRelationshipType = new RelationshipType();
-		husbandRelationshipType.setName(husbandRelationshipTypeText);
+		husbandRelationshipType.setaIsToB(husbandRelationshipTypePersonA);
 		when(mockPersonService.getRelationshipTypeByUuid(husbandRelationshipTypeUuid)).thenReturn(husbandRelationshipType);
 		
 		Map<String, Object> res = FhirUtils.buildPatient(patientId.toString(), false, personDetails, null);
 		
+		//System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(res));
 		List<Map> contacts = (List) res.get(MpiConstants.FIELD_CONTACT);
 		assertEquals(2, contacts.size());
 		Map mother = contacts.get(0);
@@ -580,7 +584,7 @@ public class FhirUtilsTest {
 		assertEquals(TERMINOLOGY_SYSTEM, motherContactCoding.get(FIELD_SYSTEM));
 		assertEquals(motherRelationshipTypeCode, motherContactCoding.get(FIELD_CODE));
 		assertEquals(motherRelationshipTypeDisplay, motherContactCoding.get(FIELD_DISPLAY));
-		assertEquals(motherRelationshipTypeText, motherContactType.get(FIELD_TEXT));
+		assertEquals(motherRelationshipTypePersonB, motherContactType.get(FIELD_TEXT));
 		
 		Map motherAddressResource = (Map) mother.get(MpiConstants.FIELD_ADDRESS);
 		List<Object> motherLine1 = (List) motherAddressResource.get(MpiConstants.FIELD_LINE);
@@ -616,7 +620,7 @@ public class FhirUtilsTest {
 		assertEquals(TERMINOLOGY_SYSTEM, husbandContactCoding.get(FIELD_SYSTEM));
 		assertEquals(husbandRelationshipTypeCode, husbandContactCoding.get(FIELD_CODE));
 		assertEquals(husbandRelationshipTypeDisplay, husbandContactCoding.get(FIELD_DISPLAY));
-		assertEquals(husbandRelationshipTypeText, husbandContactType.get(FIELD_TEXT));
+		assertEquals(husbandRelationshipTypePersonA, husbandContactType.get(FIELD_TEXT));
 	}
 	
 	@Test
@@ -634,10 +638,10 @@ public class FhirUtilsTest {
 	public void buildPatient_shouldFailIfNoConceptIsMappedToTheRelationshipType() {
 		final String patientId = "1";
 		final String uuid = "mother-relationship-type-uuid";
-		List<Object> relationship = asList(null, null, null, null, null, uuid);
+		List<Object> relationship = asList(patientId, null, null, null, null, uuid);
 		when(executeQuery(RELATIONSHIP_QUERY.replace(ID_PLACEHOLDER, patientId))).thenReturn(asList(relationship));
 		when(mockAdminService.getGlobalProperty(GP_RELATIONSHIP_TYPE_SYSTEM)).thenReturn(TERMINOLOGY_SYSTEM);
-		when(mockAdminService.getGlobalProperty(GP_RELATIONSHIP_TYPE_CONCEPT_MAP)).thenReturn(uuid + ":M:Mother");
+		when(mockAdminService.getGlobalProperty(GP_RELATIONSHIP_TYPE_CONCEPT_MAP_B)).thenReturn(uuid + ":M:Mother");
 		expectedException.expect(APIException.class);
 		expectedException.expectMessage(equalTo("No relationship type found with uuid: " + uuid));
 		List<Object> personDetails = asList(null, null, false, null, null, false);
@@ -645,14 +649,29 @@ public class FhirUtilsTest {
 	}
 	
 	@Test
-	public void buildPatient_shouldFailIfNoRelationshipTypeIsFoundMatchingTheMappedUuid() {
+	public void buildPatient_shouldFailIfNoConceptMapForPersonBIsFoundForTheRelationshipTypeMatchingTheMappedUuid() {
 		final String patientId = "1";
 		final String uuid = "mother-relationship-type-uuid";
-		List<Object> relationship = asList(null, null, null, null, null, uuid);
+		List<Object> relationship = asList(patientId, null, null, null, null, uuid);
 		when(executeQuery(RELATIONSHIP_QUERY.replace(ID_PLACEHOLDER, patientId))).thenReturn(asList(relationship));
 		when(mockAdminService.getGlobalProperty(GP_RELATIONSHIP_TYPE_SYSTEM)).thenReturn(TERMINOLOGY_SYSTEM);
 		expectedException.expect(APIException.class);
-		expectedException.expectMessage(equalTo("No concept mapped to the relationship type with uuid: " + uuid));
+		expectedException
+		        .expectMessage(equalTo("No concept mapped to person B of the relationship type with uuid: " + uuid));
+		List<Object> personDetails = asList(null, null, false, null, null, false);
+		FhirUtils.buildPatient(patientId, false, personDetails, null);
+	}
+	
+	@Test
+	public void buildPatient_shouldFailIfNoConceptMapForPersonABIsFoundForTheRelationshipTypeMatchingTheMappedUuid() {
+		final String patientId = "1";
+		final String uuid = "mother-relationship-type-uuid";
+		List<Object> relationship = asList(101, patientId, null, null, null, uuid);
+		when(executeQuery(RELATIONSHIP_QUERY.replace(ID_PLACEHOLDER, patientId))).thenReturn(asList(relationship));
+		when(mockAdminService.getGlobalProperty(GP_RELATIONSHIP_TYPE_SYSTEM)).thenReturn(TERMINOLOGY_SYSTEM);
+		expectedException.expect(APIException.class);
+		expectedException
+		        .expectMessage(equalTo("No concept mapped to person A of the relationship type with uuid: " + uuid));
 		List<Object> personDetails = asList(null, null, false, null, null, false);
 		FhirUtils.buildPatient(patientId, false, personDetails, null);
 	}
@@ -680,7 +699,7 @@ public class FhirUtilsTest {
 		when(mockAdminService.getGlobalProperty(GP_RELATIONSHIP_TYPE_SYSTEM)).thenReturn(TERMINOLOGY_SYSTEM);
 		final String motherMap = motherRelationshipTypeUuid + ":" + motherRelationshipTypeCode + ":"
 		        + motherRelationshipTypeDisplay;
-		when(mockAdminService.getGlobalProperty(GP_RELATIONSHIP_TYPE_CONCEPT_MAP)).thenReturn(motherMap);
+		when(mockAdminService.getGlobalProperty(GP_RELATIONSHIP_TYPE_CONCEPT_MAP_B)).thenReturn(motherMap);
 		RelationshipType motherRelationshipType = new RelationshipType();
 		motherRelationshipType.setName(motherRelationshipTypeText);
 		when(mockPersonService.getRelationshipTypeByUuid(motherRelationshipTypeUuid)).thenReturn(motherRelationshipType);

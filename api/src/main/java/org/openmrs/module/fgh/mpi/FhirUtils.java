@@ -21,7 +21,8 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_URL;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_USE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE_STR;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_CONCEPT_MAP;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_CONCEPT_MAP_A;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_CONCEPT_MAP_B;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.HEALTH_CENTER_ATTRIB_TYPE_UUID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.HEALTH_CENTER_URL;
@@ -82,7 +83,9 @@ public class FhirUtils {
 	
 	private static String relationshipTypeSystem;
 	
-	private static Map<String, RelationshipTypeConcept> uuidFhirRelationshipTypeMap;
+	private static Map<String, RelationshipTypeConcept> uuidFhirRelationshipTypePersonAMap;
+	
+	private static Map<String, RelationshipTypeConcept> uuidFhirRelationshipTypePersonBMap;
 	
 	/**
 	 * Builds a map of fields and values with patient details that can be serialized as a fhir json
@@ -451,9 +454,19 @@ public class FhirUtils {
 			}
 			
 			final String relationshipTypeUuid = relationshipRow.get(5).toString();
-			RelationshipTypeConcept concept = getRelationshipTypeConcept(relationshipTypeUuid);
+			Integer otherPersonId;
+			boolean sideA = false;
+			if (patientId.equals(relationshipRow.get(0).toString())) {//Side A
+				otherPersonId = (Integer) (relationshipRow.get(1));//side B
+			} else {
+				sideA = true;
+				otherPersonId = (Integer) (relationshipRow.get(0));//Side A
+			}
+			
+			RelationshipTypeConcept concept = getRelationshipTypeConcept(relationshipTypeUuid, sideA);
 			if (concept == null) {
-				throw new APIException("No concept mapped to the relationship type with uuid: " + relationshipTypeUuid);
+				throw new APIException("No concept mapped to person " + (sideA ? "A" : "B")
+				        + " of the relationship type with uuid: " + relationshipTypeUuid);
 			}
 			
 			Map codingResource = new HashMap();
@@ -465,8 +478,6 @@ public class FhirUtils {
 			relationshipTypeResource.put(FIELD_TEXT, concept.text);
 			Map<String, Object> resource = new HashMap();
 			resource.put(FIELD_RELATIONSHIP, relationshipTypeResource);
-			Integer otherPersonId = (Integer) (patientId.equals(relationshipRow.get(0).toString()) ? relationshipRow.get(1)
-			        : relationshipRow.get(0));
 			List<List<Object>> otherPersonDetails = executeQuery(
 			    CONTACT_PERSON_QUERY.replace(ID_PLACEHOLDER, otherPersonId.toString()));
 			final String relationshipUuid = relationshipRow.get(4).toString();
@@ -554,14 +565,19 @@ public class FhirUtils {
 	 * specified uuid
 	 * 
 	 * @param relationshipTypeUuid the relationship type uuid to match
+	 * @param personA specifies the person's side of the relationship type the concept maps to
 	 * @return FhirRelationshipType object
 	 */
-	private static RelationshipTypeConcept getRelationshipTypeConcept(String relationshipTypeUuid) {
-		if (uuidFhirRelationshipTypeMap == null) {
+	private static RelationshipTypeConcept getRelationshipTypeConcept(String relationshipTypeUuid, boolean personA) {
+		Map<String, RelationshipTypeConcept> relMap = personA ? uuidFhirRelationshipTypePersonAMap
+		        : uuidFhirRelationshipTypePersonBMap;
+		
+		if (relMap == null) {
 			synchronized (FhirUtils.class) {
-				if (uuidFhirRelationshipTypeMap == null) {
-					uuidFhirRelationshipTypeMap = new HashMap();
-					String maps = Context.getAdministrationService().getGlobalProperty(GP_RELATIONSHIP_TYPE_CONCEPT_MAP);
+				if (relMap == null) {
+					relMap = new HashMap();
+					final String gpName = personA ? GP_RELATIONSHIP_TYPE_CONCEPT_MAP_A : GP_RELATIONSHIP_TYPE_CONCEPT_MAP_B;
+					String maps = Context.getAdministrationService().getGlobalProperty(gpName);
 					if (StringUtils.isNotBlank(maps)) {
 						for (String map : maps.trim().split(",")) {
 							String[] details = map.trim().split(":");
@@ -571,17 +587,15 @@ public class FhirUtils {
 								throw new APIException("No relationship type found with uuid: " + uuid);
 							}
 							
-							//TODO Set text to a_is_to_b or b_is_to_a value
-							
-							uuidFhirRelationshipTypeMap.put(uuid,
-							    new RelationshipTypeConcept(details[1].trim(), details[2].trim(), type.getName()));
+							final String text = personA ? type.getaIsToB() : type.getbIsToA();
+							relMap.put(uuid, new RelationshipTypeConcept(details[1].trim(), details[2].trim(), text));
 						}
 					}
 				}
 			}
 		}
 		
-		return uuidFhirRelationshipTypeMap.get(relationshipTypeUuid);
+		return relMap.get(relationshipTypeUuid);
 	}
 	
 	private static class RelationshipTypeConcept {
@@ -596,6 +610,11 @@ public class FhirUtils {
 			this.code = code;
 			this.display = display;
 			this.text = text;
+		}
+		
+		@Override
+		public String toString() {
+			return "code=" + code + ", display=" + display + ", text=" + text;
 		}
 	}
 	
