@@ -123,7 +123,7 @@ public class MpiUtils {
 	}
 	
 	/**
-	 * Executes the specified query against the specified {@link DataSource}
+	 * Executes the specified query
 	 * 
 	 * @param query the query to execute
 	 * @return results
@@ -158,7 +158,7 @@ public class MpiUtils {
 	 * 
 	 * @return javax.sql.DataSource object
 	 */
-	public static DataSource getDataSource() {
+	private static DataSource getDataSource() {
 		SessionFactory sf = Context.getRegisteredComponents(SessionFactory.class).get(0);
 		return ((SessionFactoryImpl) sf).getConnectionProvider().unwrap(DataSource.class);
 	}

@@ -2,9 +2,15 @@ package org.openmrs.module.fgh.mpi;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyList;
+import static org.mockito.Matchers.anyMap;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.openmrs.module.debezium.DatabaseOperation.CREATE;
@@ -12,17 +18,24 @@ import static org.openmrs.module.debezium.DatabaseOperation.DELETE;
 import static org.openmrs.module.debezium.DatabaseOperation.READ;
 import static org.openmrs.module.debezium.DatabaseOperation.UPDATE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ACTIVE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_CONTACT;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ID;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_RELATIONSHIP;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.ID_PLACEHOLDER;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.PATIENT_QUERY;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.PERSON_QUERY;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentMatcher;
+import org.mockito.Matchers;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.debezium.DatabaseEvent;
@@ -32,8 +45,10 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.reflect.Whitebox;
 import org.slf4j.Logger;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 @RunWith(PowerMockRunner.class)
-@PrepareForTest(Context.class)
+@PrepareForTest({ Context.class, MpiUtils.class, FhirUtils.class })
 public class MpiIntegrationProcessorTest {
 	
 	@Mock
@@ -50,6 +65,8 @@ public class MpiIntegrationProcessorTest {
 	@Before
 	public void setup() {
 		PowerMockito.mockStatic(Context.class);
+		PowerMockito.mockStatic(MpiUtils.class);
+		PowerMockito.mockStatic(FhirUtils.class);
 		when(Context.getAdministrationService()).thenReturn(mockAdminService);
 		Whitebox.setInternalState(MpiIntegrationProcessor.class, Logger.class, mockLogger);
 		Whitebox.setInternalState(processor, MpiHttpClient.class, mockMpiHttpClient);
@@ -191,6 +208,103 @@ public class MpiIntegrationProcessorTest {
 		res = processor.process(1, new DatabaseEvent(null, "patient", UPDATE, null, null, null));
 		
 		assertEquals(false, res.get(FIELD_ACTIVE));
+	}
+	
+	@Test
+	public void process_shouldClearTheRelationTypeForContactsToUpdateInTheMpi() throws Exception {
+		final Integer patientId = 1;
+		final String patientUuid = "patient-uuid";
+		when(mockAdminService.executeSQL(PERSON_QUERY.replace(ID_PLACEHOLDER, patientId.toString()), true))
+		        .thenReturn(asList(asList(null, null, false, null, patientUuid, false)));
+		when(mockAdminService.executeSQL(PATIENT_QUERY.replace(ID_PLACEHOLDER, patientId.toString()), true))
+		        .thenReturn(singletonList(singletonList(false)));
+		
+		final String relationshipUuid1 = "relationship-uuid-1";
+		final String relationshipUuid2 = "relationship-uuid-2";
+		Map mpiContact1 = new HashMap();
+		mpiContact1.put(FIELD_ID, relationshipUuid1);
+		mpiContact1.put(FIELD_RELATIONSHIP, emptyMap());
+		Map mpiContact2 = new HashMap();
+		mpiContact2.put(FIELD_ID, relationshipUuid2);
+		mpiContact2.put(FIELD_RELATIONSHIP, emptyMap());
+		Map mpiPatient = new HashMap();
+		mpiPatient.put(FIELD_ACTIVE, true);
+		List mpiContacts = asList(mpiContact1, singletonMap(FIELD_RELATIONSHIP, emptyMap()), mpiContact2);
+		mpiPatient.put(FIELD_CONTACT, mpiContacts);
+		when(mockMpiHttpClient.getPatient(patientUuid)).thenReturn(mpiPatient);
+		
+		Map newContact1 = new HashMap();
+		newContact1.put(FIELD_ID, relationshipUuid1);
+		newContact1.put(FIELD_RELATIONSHIP, emptyMap());
+		Map newContact2 = new HashMap();
+		newContact2.put(FIELD_ID, relationshipUuid2);
+		newContact2.put(FIELD_RELATIONSHIP, emptyMap());
+		Map newPatient = singletonMap(FIELD_CONTACT,
+		    asList(newContact1, singletonMap(FIELD_ID, "relationship-uuid-3"), newContact2));
+		when(FhirUtils.buildPatient(anyString(), anyBoolean(), anyList(), anyMap())).thenReturn(newPatient);
+		
+		processor.process(1, new DatabaseEvent(null, "patient", UPDATE, null, null, null));
+		
+		Mockito.verify(mockMpiHttpClient).submitPatient(Matchers.argThat(new ArgumentMatcher<String>() {
+			
+			@Override
+			public boolean matches(Object json) {
+				try {
+					Map updatedContact1 = new HashMap();
+					updatedContact1.put(FIELD_ID, relationshipUuid1);
+					updatedContact1.put(FIELD_RELATIONSHIP, null);
+					Map updatedContact2 = new HashMap();
+					updatedContact2.put(FIELD_ID, relationshipUuid2);
+					updatedContact2.put(FIELD_RELATIONSHIP, null);
+					Map expectedMpiPatient = new HashMap();
+					expectedMpiPatient.put(FIELD_ACTIVE, true);
+					expectedMpiPatient.put(FIELD_CONTACT,
+					    asList(updatedContact1, singletonMap(FIELD_RELATIONSHIP, emptyMap()), updatedContact2));
+					
+					return expectedMpiPatient.equals(new ObjectMapper().readValue(json.toString(), Map.class));
+				}
+				catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}));
+	}
+	
+	@Test
+	public void process_shouldNotClearTheRelationTypeIfThereAreNoContactsToUpdateInTheMpi() throws Exception {
+		final Integer patientId = 1;
+		final String patientUuid = "patient-uuid";
+		when(mockAdminService.executeSQL(PERSON_QUERY.replace(ID_PLACEHOLDER, patientId.toString()), true))
+		        .thenReturn(asList(asList(null, null, false, null, patientUuid, false)));
+		when(mockAdminService.executeSQL(PATIENT_QUERY.replace(ID_PLACEHOLDER, patientId.toString()), true))
+		        .thenReturn(singletonList(singletonList(false)));
+		
+		final String relationshipUuid1 = "relationship-uuid-1";
+		final String relationshipUuid2 = "relationship-uuid-2";
+		Map mpiContact1 = new HashMap();
+		mpiContact1.put(FIELD_ID, relationshipUuid1);
+		mpiContact1.put(FIELD_RELATIONSHIP, emptyMap());
+		Map mpiContact2 = new HashMap();
+		mpiContact2.put(FIELD_ID, relationshipUuid2);
+		mpiContact2.put(FIELD_RELATIONSHIP, emptyMap());
+		Map mpiPatient = new HashMap();
+		mpiPatient.put(FIELD_ACTIVE, true);
+		List mpiContacts = asList(mpiContact1, singletonMap(FIELD_RELATIONSHIP, emptyMap()), mpiContact2);
+		mpiPatient.put(FIELD_CONTACT, mpiContacts);
+		when(mockMpiHttpClient.getPatient(patientUuid)).thenReturn(mpiPatient);
+		
+		Map newContact1 = new HashMap();
+		newContact1.put(FIELD_ID, "relationship-uuid-3");
+		newContact1.put(FIELD_RELATIONSHIP, emptyMap());
+		Map newContact2 = new HashMap();
+		newContact2.put(FIELD_ID, "relationship-uuid-4");
+		newContact2.put(FIELD_RELATIONSHIP, emptyMap());
+		Map newPatient = singletonMap(FIELD_CONTACT, asList(newContact1, newContact2));
+		when(FhirUtils.buildPatient(anyString(), anyBoolean(), anyList(), anyMap())).thenReturn(newPatient);
+		
+		processor.process(1, new DatabaseEvent(null, "patient", UPDATE, null, null, null));
+		
+		Mockito.verify(mockMpiHttpClient, Mockito.never()).submitPatient(anyString());
 	}
 	
 	@Test

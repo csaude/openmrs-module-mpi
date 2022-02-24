@@ -4,7 +4,11 @@ import static java.lang.Boolean.valueOf;
 import static org.openmrs.module.debezium.DatabaseOperation.CREATE;
 import static org.openmrs.module.debezium.DatabaseOperation.DELETE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ACTIVE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_CONTACT;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ID;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_RELATIONSHIP;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -15,6 +19,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * An instance of this class takes a patient uuid, loads the patient record, generates the fhir json
@@ -34,6 +40,8 @@ public class MpiIntegrationProcessor {
 	
 	@Autowired
 	private MpiHttpClient mpiHttpClient;
+	
+	private final static ObjectMapper MAPPER = new ObjectMapper();
 	
 	/**
 	 * Process the patient with the specified patient id in the MPI to generate the patient fhir
@@ -131,7 +139,33 @@ public class MpiIntegrationProcessor {
 				
 				//TODO May be we should not build a new resource and instead update the mpiPatient if one exists
 				//And we will need to be aware of placeholder rows
-				return FhirUtils.buildPatient(id, patientVoided, personDetails, mpiPatient);
+				Map<String, Object> generated = FhirUtils.buildPatient(id, patientVoided, personDetails, mpiPatient);
+				
+				//There is a bug in the MPI where contact.relationship field is never updated for existing contacts,
+				//Clear it in the MPI for existing contacts and we will later update it when we resubmit the patient
+				if (generated != null && mpiPatient != null) {
+					//TODO Avoid overwriting data submitted by third party systems
+					if (generated.get(FIELD_CONTACT) != null && mpiPatient.get(FIELD_CONTACT) != null) {
+						List mpiContactsToUpdate = new ArrayList();
+						for (Map contact : (List<Map>) generated.get(FIELD_CONTACT)) {
+							for (Map mpiContact : (List<Map>) mpiPatient.get(FIELD_CONTACT)) {
+								Object i = mpiContact.get(FIELD_ID);
+								if (i != null && contact.get(FIELD_ID).toString().equalsIgnoreCase(i.toString())) {
+									mpiContact.put(FIELD_RELATIONSHIP, null);
+									mpiContactsToUpdate.add(mpiContact);
+								}
+							}
+						}
+						
+						if (!mpiContactsToUpdate.isEmpty()) {
+							log.info("Clearing relationship types for existing relationships to be updated in the MPI");
+							
+							mpiHttpClient.submitPatient(MAPPER.writeValueAsString(mpiPatient));
+						}
+					}
+				}
+				
+				return generated;
 			}
 		}
 	}
