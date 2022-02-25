@@ -162,12 +162,7 @@ public class FhirUtils {
 	 */
 	private static List<Map<String, Object>> getIds(String patientId, List<Object> person, Map<String, Object> mpiPatient) {
 		List<List<Object>> idRows = executeQuery(ID_QUERY.replace(ID_PLACEHOLDER, patientId));
-		int idListLength = idRows.size() + 1;
-		if (mpiPatient != null && mpiPatient.get(MpiConstants.FIELD_IDENTIFIER) != null) {
-			idListLength = ((List) mpiPatient.get(MpiConstants.FIELD_IDENTIFIER)).size();
-		}
-		
-		List<Map<String, Object>> identifiers = new ArrayList(idListLength);
+		List<Map<String, Object>> identifiers = new ArrayList();
 		Map<String, Object> sourceIdRes = new HashMap();
 		sourceIdRes.put(FIELD_SYSTEM, MpiConstants.SOURCE_ID_URI);
 		sourceIdRes.put(FIELD_VALUE, person.get(4));
@@ -185,8 +180,11 @@ public class FhirUtils {
 		//We need to overwrite all ids at all indices for an existing patient otherwise OpenCR(hapi fhir) will write 
 		//each identifier data by matching indices of our list with the existing list which will be problematic if our
 		//list and existing list are of different length
-		while (identifiers.size() < idListLength) {
-			identifiers.add(null);
+		if (mpiPatient != null && mpiPatient.get(MpiConstants.FIELD_IDENTIFIER) != null) {
+			int mpiIdListLength = ((List) mpiPatient.get(MpiConstants.FIELD_IDENTIFIER)).size();
+			while (identifiers.size() < mpiIdListLength) {
+				identifiers.add(null);
+			}
 		}
 		
 		return identifiers;
@@ -202,12 +200,7 @@ public class FhirUtils {
 	private static List<Map<String, Object>> getNames(String personId, Integer existingNameCount, boolean getAll) {
 		final String query = getAll ? NAME_QUERY : NAME_QUERY + " LIMIT 1";
 		List<List<Object>> nameRows = executeQuery(query.replace(ID_PLACEHOLDER, personId));
-		int nameListLength = nameRows.size();
-		if (existingNameCount != null) {
-			nameListLength = existingNameCount;
-		}
-		
-		List<Map<String, Object>> names = new ArrayList(nameListLength);
+		List<Map<String, Object>> names = new ArrayList();
 		boolean foundPreferred = false;
 		for (List<Object> nameRow : nameRows) {
 			Map<String, Object> nameRes = new HashMap();
@@ -230,8 +223,10 @@ public class FhirUtils {
 			names.add(nameRes);
 		}
 		
-		while (names.size() < nameListLength) {
-			names.add(null);
+		if (existingNameCount != null) {
+			while (names.size() < existingNameCount) {
+				names.add(null);
+			}
 		}
 		
 		return names;
@@ -247,12 +242,7 @@ public class FhirUtils {
 	private static List<Map<String, Object>> getAddresses(String personId, Integer existingAddressCount, boolean getAll) {
 		final String query = getAll ? ADDRESS_QUERY : ADDRESS_QUERY + " LIMIT 1";
 		List<List<Object>> addressRows = executeQuery(query.replace(ID_PLACEHOLDER, personId));
-		int addressListLength = addressRows.size();
-		if (existingAddressCount != null) {
-			addressListLength = existingAddressCount;
-		}
-		
-		List<Map<String, Object>> addresses = new ArrayList(addressListLength);
+		List<Map<String, Object>> addresses = new ArrayList();
 		for (List<Object> addressRow : addressRows) {
 			Map<String, Object> addressResource = new HashMap();
 			addressResource.put(FIELD_ID, addressRow.get(10));
@@ -285,8 +275,10 @@ public class FhirUtils {
 			addresses.add(addressResource);
 		}
 		
-		while (addresses.size() < addressListLength) {
-			addresses.add(null);
+		if (existingAddressCount != null) {
+			while (addresses.size() < existingAddressCount) {
+				addresses.add(null);
+			}
 		}
 		
 		return addresses;
@@ -300,46 +292,32 @@ public class FhirUtils {
 	 * @return list of the person's telephones
 	 */
 	private static List<Map<String, Object>> getPhones(String personId, Map<String, Object> mpiPerson) {
-		List<List<Object>> phoneRows = getAttributes(personId, MpiConstants.GP_PHONE_MOBILE);
-		Map<String, Object> phoneResource = null;
-		if (!phoneRows.isEmpty()) {
-			if (phoneRows.size() > 1) {
-				throw new APIException("Found multiple mobile phone attribute values for the same patient");
-			}
-			
-			phoneResource = new HashMap();
-			phoneResource.put(FIELD_ID, phoneRows.get(0).get(1));
+		List<List<Object>> mobilePhoneRows = getAttributes(personId, MpiConstants.GP_PHONE_MOBILE);
+		List<List<Object>> homePhoneRows = getAttributes(personId, MpiConstants.GP_PHONE_HOME);
+		List<Map<String, Object>> phones = new ArrayList();
+		for (List<Object> phoneRow : mobilePhoneRows) {
+			Map<String, Object> phoneResource = new HashMap();
+			phoneResource.put(FIELD_ID, phoneRow.get(1));
 			phoneResource.put(FIELD_SYSTEM, MpiConstants.PHONE);
-			phoneResource.put(FIELD_VALUE, phoneRows.get(0).get(0));
+			phoneResource.put(FIELD_VALUE, phoneRow.get(0));
 			phoneResource.put(FIELD_USE, MpiConstants.MOBILE);
+			phones.add(phoneResource);
 		}
 		
-		int phoneListLength = 2;
-		if (mpiPerson != null && mpiPerson.get(FIELD_TELECOM) != null) {
-			phoneListLength = ((List) mpiPerson.get(FIELD_TELECOM)).size();
-		}
-		
-		List<Map<String, Object>> phones = new ArrayList(phoneListLength);
-		phones.add(phoneResource);
-		
-		phoneRows = getAttributes(personId, MpiConstants.GP_PHONE_HOME);
-		phoneResource = null;
-		if (!phoneRows.isEmpty()) {
-			if (phoneRows.size() > 1) {
-				throw new APIException("Found multiple home phone attribute values for the same person");
-			}
-			
-			phoneResource = new HashMap();
-			phoneResource.put(FIELD_ID, phoneRows.get(0).get(1));
+		for (List<Object> phoneRow : homePhoneRows) {
+			Map<String, Object> phoneResource = new HashMap();
+			phoneResource.put(FIELD_ID, phoneRow.get(1));
 			phoneResource.put(FIELD_SYSTEM, MpiConstants.PHONE);
-			phoneResource.put(FIELD_VALUE, phoneRows.get(0).get(0));
+			phoneResource.put(FIELD_VALUE, phoneRow.get(0));
 			phoneResource.put(FIELD_USE, MpiConstants.HOME);
+			phones.add(phoneResource);
 		}
 		
-		phones.add(phoneResource);
-		
-		while (phones.size() < phoneListLength) {
-			phones.add(null);
+		if (mpiPerson != null && mpiPerson.get(FIELD_TELECOM) != null) {
+			int mpiPhoneListLength = ((List) mpiPerson.get(FIELD_TELECOM)).size();
+			while (phones.size() < mpiPhoneListLength) {
+				phones.add(null);
+			}
 		}
 		
 		return phones;
@@ -439,12 +417,7 @@ public class FhirUtils {
 	 */
 	private static List<Map> getRelationships(String patientId, Map<String, Object> mpiPatient) {
 		List<List<Object>> relationshipRows = executeQuery(RELATIONSHIP_QUERY.replace(ID_PLACEHOLDER, patientId));
-		int relationshipLength = relationshipRows.size();
-		if (mpiPatient != null && mpiPatient.get(FIELD_CONTACT) != null) {
-			relationshipLength = ((List) mpiPatient.get(FIELD_CONTACT)).size();
-		}
-		
-		List<Map> relationships = new ArrayList(relationshipLength);
+		List<Map> relationships = new ArrayList();
 		for (List<Object> relationshipRow : relationshipRows) {
 			if (relationshipTypeSystem == null) {
 				synchronized (FhirUtils.class) {
@@ -520,8 +493,11 @@ public class FhirUtils {
 			relationships.add(resource);
 		}
 		
-		while (relationships.size() < relationshipLength) {
-			relationships.add(null);
+		if (mpiPatient != null && mpiPatient.get(FIELD_CONTACT) != null) {
+			int mpiRelationshipLength = ((List) mpiPatient.get(FIELD_CONTACT)).size();
+			while (relationships.size() < mpiRelationshipLength) {
+				relationships.add(null);
+			}
 		}
 		
 		return relationships;

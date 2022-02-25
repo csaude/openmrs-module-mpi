@@ -64,6 +64,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -720,6 +721,66 @@ public class FhirUtilsTest {
 		assertNotNull(contacts.get(0));
 		assertNull(contacts.get(1));
 		assertNull(contacts.get(2));
+	}
+	
+	@Test
+	public void buildPatient_shouldIncludeAllMobileAndHomePhones() throws IOException {
+		List<Object> personDetails = asList(null, null, false, null, null, false);
+		final String patientId = "1";
+		final String mobile1 = "123-456-7890";
+		final String mobile2 = "123-456-7891";
+		final String mobileAttributeUuid1 = "mobile-attr-uuid-1";
+		final String mobileAttributeUuid2 = "mobile-attr-uuid-2";
+		final Integer mobileAttrTypeId = 1;
+		final String mobileAttrTypeUuid = "mobile-attr-type-uuid";
+		List<Object> mobileAttr1 = asList(mobile1, mobileAttributeUuid1);
+		List<Object> mobileAttr2 = asList(mobile2, mobileAttributeUuid2);
+		when(mockAdminService.getGlobalProperty(GP_PHONE_MOBILE)).thenReturn(mobileAttrTypeUuid);
+		PersonAttributeType mobileAttrType = new PersonAttributeType(mobileAttrTypeId);
+		when(mockPersonService.getPersonAttributeTypeByUuid(mobileAttrTypeUuid)).thenReturn(mobileAttrType);
+		when(executeQuery(
+		    ATTR_QUERY.replace(ID_PLACEHOLDER, patientId).replace(ATTR_TYPE_ID_PLACEHOLDER, mobileAttrTypeId.toString())))
+		            .thenReturn(asList(mobileAttr1, mobileAttr2));
+		final String home1 = "098-765-4321";
+		final String home2 = "098-765-4322";
+		final String homeAttributeUuid1 = "home-attr-uuid-1";
+		final String homeAttributeUuid2 = "home-attr-uuid-2";
+		final Integer homeAttrTypeId = 2;
+		final String homeAttrTypeUuid = "home-attr-type-uuid";
+		List<Object> homePhoneAttr1 = asList(home1, homeAttributeUuid1);
+		List<Object> homePhoneAttr2 = asList(home2, homeAttributeUuid2);
+		when(mockAdminService.getGlobalProperty(MpiConstants.GP_PHONE_HOME)).thenReturn(homeAttrTypeUuid);
+		PersonAttributeType homeAttrType = new PersonAttributeType(homeAttrTypeId);
+		when(mockPersonService.getPersonAttributeTypeByUuid(homeAttrTypeUuid)).thenReturn(homeAttrType);
+		when(executeQuery(
+		    ATTR_QUERY.replace(ID_PLACEHOLDER, patientId).replace(ATTR_TYPE_ID_PLACEHOLDER, homeAttrTypeId.toString())))
+		            .thenReturn(asList(homePhoneAttr1, homePhoneAttr2));
+		
+		Map<String, Object> resource = FhirUtils.buildPatient(patientId, false, personDetails, null);
+		
+		System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(resource));
+		
+		List<Map> resourceTelecoms = (List) resource.get(MpiConstants.FIELD_TELECOM);
+		assertEquals(4, resourceTelecoms.size());
+		assertEquals(MpiConstants.PHONE, resourceTelecoms.get(0).get(MpiConstants.FIELD_SYSTEM));
+		assertEquals(MpiConstants.MOBILE, resourceTelecoms.get(0).get(FIELD_USE));
+		assertEquals(mobile1, resourceTelecoms.get(0).get(MpiConstants.FIELD_VALUE));
+		assertEquals(mobileAttributeUuid1, resourceTelecoms.get(0).get(FIELD_ID));
+		
+		assertEquals(MpiConstants.PHONE, resourceTelecoms.get(1).get(MpiConstants.FIELD_SYSTEM));
+		assertEquals(MpiConstants.MOBILE, resourceTelecoms.get(1).get(FIELD_USE));
+		assertEquals(mobile2, resourceTelecoms.get(1).get(MpiConstants.FIELD_VALUE));
+		assertEquals(mobileAttributeUuid2, resourceTelecoms.get(1).get(FIELD_ID));
+		
+		assertEquals(MpiConstants.PHONE, resourceTelecoms.get(2).get(MpiConstants.FIELD_SYSTEM));
+		assertEquals(MpiConstants.HOME, resourceTelecoms.get(2).get(FIELD_USE));
+		assertEquals(home1, resourceTelecoms.get(2).get(MpiConstants.FIELD_VALUE));
+		assertEquals(homeAttributeUuid1, resourceTelecoms.get(2).get(FIELD_ID));
+		
+		assertEquals(MpiConstants.PHONE, resourceTelecoms.get(3).get(MpiConstants.FIELD_SYSTEM));
+		assertEquals(MpiConstants.HOME, resourceTelecoms.get(3).get(FIELD_USE));
+		assertEquals(home2, resourceTelecoms.get(3).get(MpiConstants.FIELD_VALUE));
+		assertEquals(homeAttributeUuid2, resourceTelecoms.get(3).get(FIELD_ID));
 	}
 	
 }
