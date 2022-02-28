@@ -233,7 +233,7 @@ public class FhirUtilsTest {
 		
 		List<Map> resourceIds = (List) resource.get(MpiConstants.FIELD_IDENTIFIER);
 		assertEquals(3, resourceIds.size());
-		assertEquals(MpiConstants.SOURCE_ID_URI, resourceIds.get(0).get(MpiConstants.FIELD_SYSTEM));
+		assertEquals(MpiConstants.SOURCE_ID_SYSTEM, resourceIds.get(0).get(MpiConstants.FIELD_SYSTEM));
 		assertEquals(patientUuid, resourceIds.get(0).get(MpiConstants.FIELD_VALUE));
 		assertEquals(MpiConstants.UUID_PREFIX + idTypeUuid1, resourceIds.get(1).get(MpiConstants.FIELD_SYSTEM));
 		assertEquals(identifier1, resourceIds.get(1).get(MpiConstants.FIELD_VALUE));
@@ -673,7 +673,7 @@ public class FhirUtilsTest {
 	}
 	
 	@Test
-	public void buildPatient_shouldFailIfNoConceptMapForPersonABIsFoundForTheRelationshipTypeMatchingTheMappedUuid() {
+	public void buildPatient_shouldFailIfNoConceptMapForPersonAIsFoundForTheRelationshipTypeMatchingTheMappedUuid() {
 		final String patientId = "1";
 		final String uuid = "mother-relationship-type-uuid";
 		List<Object> relationship = asList(101, patientId, null, null, null, uuid);

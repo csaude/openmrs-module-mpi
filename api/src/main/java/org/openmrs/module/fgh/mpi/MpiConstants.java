@@ -9,7 +9,7 @@ public class MpiConstants {
 	
 	public final static int DEFAULT_THREAD_COUNT = 50;
 	
-	public final static String SOURCE_ID_URI = "http://openmrs.org/uuid";
+	public final static String SOURCE_ID_SYSTEM = "http://openmrs.org/uuid";
 	
 	public final static String HEALTH_CENTER_URL = "http://openmrs.org/fhir/StructureDefinition/patient-healthCenter";
 	
@@ -32,13 +32,17 @@ public class MpiConstants {
 	
 	public final static String GP_PHONE_HOME = MODULE_ID + ".person.attribute.type.home.phone";
 	
+	public final static String GP_IDENTIFIER_TYPE_SYSTEM = MODULE_ID + ".identifier.type.terminology.system.uri";
+	
+	public final static String GP_IDENTIFIER_TYPE_CONCEPT_MAP = MODULE_ID + ".identifier.type.concept.mappings";
+	
 	public final static String GP_RELATIONSHIP_TYPE_SYSTEM = MODULE_ID + ".relationship.type.terminology.system.uri";
 	
 	public final static String GP_RELATIONSHIP_TYPE_CONCEPT_MAP_A = MODULE_ID
-	        + ".relationship.type.uuid.personA.concept.mappings";
+	        + ".relationship.type.personA.concept.mappings";
 	
 	public final static String GP_RELATIONSHIP_TYPE_CONCEPT_MAP_B = MODULE_ID
-	        + ".relationship.type.uuid.personB.concept.mappings";
+	        + ".relationship.type.personB.concept.mappings";
 	
 	public final static String HEALTH_CENTER_ATTRIB_TYPE_UUID = "8d87236c-c2cc-11de-8d13-0010c6dffd0f";
 	
