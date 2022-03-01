@@ -1,5 +1,6 @@
 package org.openmrs.module.fgh.mpi;
 
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_IDENTIFIER_TYPE_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PASS;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PATH;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_TYPE;
@@ -65,7 +66,8 @@ public class MpiHttpClient {
 			log.debug("Searching for patient from MPI with OpenMRS uuid: " + patientUuid);
 		}
 		
-		String query = REQ_PARAM_SOURCE_ID + "=" + MpiConstants.SOURCE_ID_SYSTEM + "|" + patientUuid;
+		String idTypeSystem = MpiUtils.getGlobalPropertyValue(GP_IDENTIFIER_TYPE_SYSTEM);
+		String query = REQ_PARAM_SOURCE_ID + "=" + idTypeSystem + "|" + patientUuid;
 		Map<String, Object> pixResponse = submitRequest(SUBPATH_PATIENT + "/$ihe-pix?" + query, null, Map.class);
 		List<Map<String, Object>> ids = (List<Map<String, Object>>) pixResponse.get(RESPONSE_FIELD_PARAM);
 		if (ids.isEmpty()) {

@@ -154,6 +154,21 @@ public class MpiUtils {
 	}
 	
 	/**
+	 * Retrieves the value of a global property with the specified name
+	 *
+	 * @param gpName the global property name
+	 * @return the global property value
+	 */
+	public static String getGlobalPropertyValue(String gpName) {
+		String value = Context.getAdministrationService().getGlobalProperty(gpName);
+		if (StringUtils.isBlank(value)) {
+			throw new APIException("No value set for the global property named: " + gpName);
+		}
+		
+		return value;
+	}
+	
+	/**
 	 * Gets the DataSource object
 	 * 
 	 * @return javax.sql.DataSource object

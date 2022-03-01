@@ -9,14 +9,12 @@ public class MpiConstants {
 	
 	public final static int DEFAULT_THREAD_COUNT = 50;
 	
-	public final static String SOURCE_ID_SYSTEM = "http://openmrs.org/uuid";
-	
-	public final static String HEALTH_CENTER_URL = "http://openmrs.org/fhir/StructureDefinition/patient-healthCenter";
-	
-	public final static String PERSON_UUID_URL = "http://openmrs.org/fhir/StructureDefinition/person-uuid";
-	
 	public final static String[] WATCHED_TABLES = new String[] { "person", "patient", "person_name", "person_address",
 	        "patient_identifier", "person_attribute", "relationship" };
+	
+	public final static String GP_HEALTH_CENTER_EXT_URL = MODULE_ID + ".patient.health.center.url";
+	
+	public final static String GP_PERSON_UUID_EXT_URL = MODULE_ID + ".person.uuid.url";
 	
 	public final static String PATIENT_ID_OFFSET_FILE = ".patientIdOffset.txt";
 	
@@ -43,6 +41,10 @@ public class MpiConstants {
 	
 	public final static String GP_RELATIONSHIP_TYPE_CONCEPT_MAP_B = MODULE_ID
 	        + ".relationship.type.personB.concept.mappings";
+	
+	public final static String GP_OPENMRS_UUID_CONCEPT_MAP = MODULE_ID + ".openmrs.uuid.concept.map";
+	
+	public final static String OPENMRS_UUID = "OpenMRS Internal UUID";
 	
 	public final static String HEALTH_CENTER_ATTRIB_TYPE_UUID = "8d87236c-c2cc-11de-8d13-0010c6dffd0f";
 	

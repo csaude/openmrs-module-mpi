@@ -47,6 +47,26 @@
         </description>
     </globalProperty>
     <globalProperty>
+        <property>${project.parent.artifactId}.openmrs.uuid.concept.map</property>
+        <description>
+            Specifies the concept mapping for the internal OpenMRS Uuid identifier type and the concept
+            in the terminology system associated to the URI set via the global property named
+            ${project.parent.artifactId}.identifier.type.concept.source.uri
+        </description>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.patient.health.center.url</property>
+        <description>
+            Specifies the URL to use for the health center extension
+        </description>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.person.uuid.url</property>
+        <description>
+            Specifies the URL to use for the person uuid extension
+        </description>
+    </globalProperty>
+    <globalProperty>
         <property>${project.parent.artifactId}.person.attribute.type.mobile.phone</property>
         <description>
             Specifies the uuid of the person attribute type for mobile phone number
