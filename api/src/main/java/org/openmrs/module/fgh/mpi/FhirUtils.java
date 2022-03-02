@@ -228,8 +228,7 @@ public class FhirUtils {
 			Map idTypeResource = new HashMap();
 			idTypeResource.put(FIELD_CODING, singletonList(idCodingResource));
 			idTypeResource.put(FIELD_TEXT, concept.text);
-			Map<String, Object> resource = new HashMap();
-			resource.put(FIELD_TYPE, idTypeResource);
+			idResource.put(FIELD_TYPE, idTypeResource);
 			
 			identifiers.add(idResource);
 		});
