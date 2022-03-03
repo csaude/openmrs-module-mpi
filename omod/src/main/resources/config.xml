@@ -113,10 +113,10 @@
         </description>
     </globalProperty>
     <globalProperty>
-        <property>${project.parent.artifactId}.identifier.system</property>
+        <property>${project.parent.artifactId}.identifier.system.uri</property>
         <description>
             Specifies the URI of the namespace for the patient identifiers, this will be set as the value of the system property
-            for all the identifiers
+            for all the identifiers, MUST match one of the internalId URLs defined in the OpenCR config file
         </description>
     </globalProperty>
     <globalProperty>
@@ -127,7 +127,8 @@
             ${project.parent.artifactId}.identifier.type.concept.source.uri, should be of the form
             identifierTypeUuid-1:conceptCode1:conceptDisplay1,identifierTypeUuid-2:conceptCode2:conceptDisplay2
             e.g b6c97a9d-a77b-401f-b06e-81900e21ed1e:NID:National ID,c6c97a9d-a77b-401f-b06e-81900e21ed1e:SSN:Social
-            Security Number
+            Security Number. The code for the NID patient identifier type MUST match the values set in the docker config,
+            PatientRelationship.json and decisionRules.json files.
         </description>
     </globalProperty>
 

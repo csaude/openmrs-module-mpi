@@ -69,7 +69,7 @@ public class MpiHttpClient {
 		}
 		
 		if (idSystem == null) {
-			synchronized (FhirUtils.class) {
+			synchronized (MpiHttpClient.class) {
 				idSystem = MpiUtils.getGlobalPropertyValue(GP_IDENTIFIER_SYSTEM);
 			}
 		}
