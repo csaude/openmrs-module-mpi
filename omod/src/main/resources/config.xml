@@ -113,6 +113,13 @@
         </description>
     </globalProperty>
     <globalProperty>
+        <property>${project.parent.artifactId}.identifier.system</property>
+        <description>
+            Specifies the URI of the namespace for the patient identifiers, this will be set as the value of the system property
+            for all the identifiers
+        </description>
+    </globalProperty>
+    <globalProperty>
         <property>${project.parent.artifactId}.identifier.type.concept.mappings</property>
         <description>
             Comma-separated list of mappings between OpenMRS patient identifier type uuids and concepts

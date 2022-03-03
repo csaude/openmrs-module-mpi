@@ -30,6 +30,8 @@ public class MpiConstants {
 	
 	public final static String GP_PHONE_HOME = MODULE_ID + ".person.attribute.type.home.phone";
 	
+	public final static String GP_IDENTIFIER_SYSTEM = MODULE_ID + ".identifier.system.uri";
+	
 	public final static String GP_IDENTIFIER_TYPE_SYSTEM = MODULE_ID + ".identifier.type.terminology.system.uri";
 	
 	public final static String GP_IDENTIFIER_TYPE_CONCEPT_MAP = MODULE_ID + ".identifier.type.concept.mappings";

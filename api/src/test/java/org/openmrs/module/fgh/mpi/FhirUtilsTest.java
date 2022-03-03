@@ -44,6 +44,7 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_MALE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_OTHER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_UNKNOWN;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_HEALTH_CENTER_EXT_URL;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_IDENTIFIER_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_IDENTIFIER_TYPE_CONCEPT_MAP;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_IDENTIFIER_TYPE_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_OPENMRS_UUID_CONCEPT_MAP;
@@ -102,9 +103,11 @@ public class FhirUtilsTest {
 	@Mock
 	private LocationService mockLocationService;
 	
-	private static final String ID_TERMINOLOGY_SYSTEM = "http://test.id.com";
+	private static final String ID_TYPE_TERMINOLOGY_SYSTEM = "http://test.id.type.com";
 	
-	private static final String RELATIONSHIP_TERMINOLOGY_SYSTEM = "http://test.relationship.com";
+	private static final String ID_SYSTEM = "http://test.id.com";
+	
+	private static final String RELATIONSHIP_TERMINOLOGY_SYSTEM = "http://test.relationship.type.com";
 	
 	@Rule
 	public ExpectedException expectedException = ExpectedException.none();
@@ -137,7 +140,8 @@ public class FhirUtilsTest {
 		when(MpiUtils.getGlobalPropertyValue(GP_PHONE_MOBILE)).thenReturn("test-mobile-uuid");
 		when(MpiUtils.getGlobalPropertyValue(GP_PHONE_HOME)).thenReturn("test-home-uuid");
 		when(mockPersonService.getPersonAttributeTypeByUuid(anyString())).thenReturn(new PersonAttributeType(0));
-		when(MpiUtils.getGlobalPropertyValue(GP_IDENTIFIER_TYPE_SYSTEM)).thenReturn(ID_TERMINOLOGY_SYSTEM);
+		when(MpiUtils.getGlobalPropertyValue(GP_IDENTIFIER_TYPE_SYSTEM)).thenReturn(ID_TYPE_TERMINOLOGY_SYSTEM);
+		when(MpiUtils.getGlobalPropertyValue(GP_IDENTIFIER_SYSTEM)).thenReturn(ID_SYSTEM);
 		when(MpiUtils.getGlobalPropertyValue(GP_OPENMRS_UUID_CONCEPT_MAP))
 		        .thenReturn(OPENMRS_UUID_CODE + ":" + OPENMRS_UUID_DISPLAY);
 		when(MpiUtils.getGlobalPropertyValue(GP_HEALTH_CENTER_EXT_URL)).thenReturn(HC_EXT_URL);
@@ -274,24 +278,24 @@ public class FhirUtilsTest {
 		
 		List<Map> resourceIds = (List) resource.get(MpiConstants.FIELD_IDENTIFIER);
 		assertEquals(3, resourceIds.size());
-		assertEquals(ID_TERMINOLOGY_SYSTEM, resourceIds.get(0).get(MpiConstants.FIELD_SYSTEM));
+		assertEquals(ID_SYSTEM, resourceIds.get(0).get(FIELD_SYSTEM));
 		assertEquals(patientUuid, resourceIds.get(0).get(MpiConstants.FIELD_VALUE));
 		Map uuidCoding = (Map) ((List) ((Map) resourceIds.get(0).get(FIELD_TYPE)).get(FIELD_CODING)).get(0);
-		assertEquals(ID_TERMINOLOGY_SYSTEM, uuidCoding.get(FIELD_SYSTEM));
+		assertEquals(ID_TYPE_TERMINOLOGY_SYSTEM, uuidCoding.get(FIELD_SYSTEM));
 		assertEquals(OPENMRS_UUID_CODE, uuidCoding.get(FIELD_CODE));
 		assertEquals(OPENMRS_UUID_DISPLAY, uuidCoding.get(FIELD_DISPLAY));
-		assertEquals(MpiConstants.UUID_PREFIX + idTypeUuid1, resourceIds.get(1).get(MpiConstants.FIELD_SYSTEM));
+		assertEquals(ID_SYSTEM, resourceIds.get(1).get(MpiConstants.FIELD_SYSTEM));
 		assertEquals(identifier1, resourceIds.get(1).get(MpiConstants.FIELD_VALUE));
 		assertEquals(idUuid1, resourceIds.get(1).get(FIELD_ID));
 		Map idType1Coding = (Map) ((List) ((Map) resourceIds.get(1).get(FIELD_TYPE)).get(FIELD_CODING)).get(0);
-		assertEquals(ID_TERMINOLOGY_SYSTEM, idType1Coding.get(FIELD_SYSTEM));
+		assertEquals(ID_TYPE_TERMINOLOGY_SYSTEM, idType1Coding.get(FIELD_SYSTEM));
 		assertEquals(idTypeCode1, idType1Coding.get(FIELD_CODE));
 		assertEquals(idTypeDisplay1, idType1Coding.get(FIELD_DISPLAY));
-		assertEquals(MpiConstants.UUID_PREFIX + idTypeUuid2, resourceIds.get(2).get(MpiConstants.FIELD_SYSTEM));
+		assertEquals(ID_SYSTEM, resourceIds.get(2).get(MpiConstants.FIELD_SYSTEM));
 		assertEquals(identifier2, resourceIds.get(2).get(MpiConstants.FIELD_VALUE));
 		assertEquals(idUuid2, resourceIds.get(2).get(FIELD_ID));
 		Map idType2Coding = (Map) ((List) ((Map) resourceIds.get(2).get(FIELD_TYPE)).get(FIELD_CODING)).get(0);
-		assertEquals(ID_TERMINOLOGY_SYSTEM, idType2Coding.get(FIELD_SYSTEM));
+		assertEquals(ID_TYPE_TERMINOLOGY_SYSTEM, idType2Coding.get(FIELD_SYSTEM));
 		assertEquals(idTypeCode2, idType2Coding.get(FIELD_CODE));
 		assertEquals(idTypeDisplay2, idType2Coding.get(FIELD_DISPLAY));
 		

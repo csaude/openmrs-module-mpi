@@ -25,6 +25,7 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE_STR;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE_UUID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_HEALTH_CENTER_EXT_URL;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_IDENTIFIER_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_IDENTIFIER_TYPE_CONCEPT_MAP;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_IDENTIFIER_TYPE_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_OPENMRS_UUID_CONCEPT_MAP;
@@ -96,6 +97,8 @@ public class FhirUtils {
 	private static String relationshipTypeSystem;
 	
 	private static String idTypeSystem;
+	
+	private static String idSystem;
 	
 	private static String openmrsUuidCode;
 	
@@ -184,6 +187,12 @@ public class FhirUtils {
 			}
 		}
 		
+		if (idSystem == null) {
+			synchronized (FhirUtils.class) {
+				idSystem = MpiUtils.getGlobalPropertyValue(GP_IDENTIFIER_SYSTEM);
+			}
+		}
+		
 		if (openmrsUuidCode == null || openmrsUuidDisplay == null) {
 			synchronized (FhirUtils.class) {
 				String openmrsUuidConceptMap = MpiUtils.getGlobalPropertyValue(GP_OPENMRS_UUID_CONCEPT_MAP);
@@ -201,7 +210,7 @@ public class FhirUtils {
 		sourceIdTypeResource.put(FIELD_CODING, singletonList(codingResource));
 		sourceIdTypeResource.put(FIELD_TEXT, MpiConstants.OPENMRS_UUID);
 		Map<String, Object> sourceIdRes = new HashMap();
-		sourceIdRes.put(FIELD_SYSTEM, idTypeSystem);
+		sourceIdRes.put(FIELD_SYSTEM, idSystem);
 		sourceIdRes.put(FIELD_VALUE, person.get(4));
 		sourceIdRes.put(FIELD_TYPE, sourceIdTypeResource);
 		List<Map<String, Object>> identifiers = new ArrayList();
@@ -211,8 +220,7 @@ public class FhirUtils {
 		idRows.stream().forEach(idRow -> {
 			Map<String, Object> idResource = new HashMap();
 			idResource.put(FIELD_ID, idRow.get(2));
-			String system = UUID_PREFIX + idRow.get(1);
-			idResource.put(FIELD_SYSTEM, system);
+			idResource.put(FIELD_SYSTEM, idSystem);
 			idResource.put(FIELD_VALUE, idRow.get(0));
 			
 			final String identifierTypeUuid = idRow.get(1).toString();
