@@ -68,7 +68,7 @@ public class MpiIntegrationProcessor {
 		if (isPersonDeletedEvent) {
 			patientUud = e.getPreviousState().get("uuid").toString();
 		} else {
-			person = adminService.executeSQL(PERSON_QUERY.replace(ID_PLACEHOLDER, id), true);
+			person = MpiUtils.executeQuery(PERSON_QUERY.replace(ID_PLACEHOLDER, id));
 			if (person.isEmpty()) {
 				log.info("Ignoring event because no person was found with id: " + id);
 				return null;
@@ -106,7 +106,7 @@ public class MpiIntegrationProcessor {
 			fhirResource.put(FIELD_ACTIVE, false);
 			return fhirResource;
 		} else {
-			List<List<Object>> patient = adminService.executeSQL(PATIENT_QUERY.replace(ID_PLACEHOLDER, id), true);
+			List<List<Object>> patient = MpiUtils.executeQuery(PATIENT_QUERY.replace(ID_PLACEHOLDER, id));
 			if (patient.isEmpty()) {
 				if (mpiPatient == null || !isMpiPatientActive) {
 					log.info("Ignoring event because there is no patient record both in OpenMRS and MPI");

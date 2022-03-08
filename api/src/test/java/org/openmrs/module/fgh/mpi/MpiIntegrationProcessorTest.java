@@ -36,7 +36,6 @@ import org.mockito.ArgumentMatcher;
 import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.openmrs.api.AdministrationService;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.debezium.DatabaseEvent;
 import org.powermock.api.mockito.PowerMockito;
@@ -57,9 +56,6 @@ public class MpiIntegrationProcessorTest {
 	@Mock
 	private Logger mockLogger;
 	
-	@Mock
-	private AdministrationService mockAdminService;
-	
 	private MpiIntegrationProcessor processor = new MpiIntegrationProcessor();
 	
 	@Before
@@ -67,7 +63,6 @@ public class MpiIntegrationProcessorTest {
 		PowerMockito.mockStatic(Context.class);
 		PowerMockito.mockStatic(MpiUtils.class);
 		PowerMockito.mockStatic(FhirUtils.class);
-		when(Context.getAdministrationService()).thenReturn(mockAdminService);
 		Whitebox.setInternalState(MpiIntegrationProcessor.class, Logger.class, mockLogger);
 		Whitebox.setInternalState(processor, MpiHttpClient.class, mockMpiHttpClient);
 	}
@@ -106,7 +101,7 @@ public class MpiIntegrationProcessorTest {
 		final Integer patientId = 1;
 		final String patientUuid = "patient-uuid";
 		when(mockMpiHttpClient.getPatient(patientUuid)).thenReturn(null);
-		when(mockAdminService.executeSQL(PERSON_QUERY.replace(ID_PLACEHOLDER, patientId.toString()), true))
+		when(MpiUtils.executeQuery(PERSON_QUERY.replace(ID_PLACEHOLDER, patientId.toString())))
 		        .thenReturn(asList(asList(null, null, null, null, patientUuid, null)));
 		Map prevState = singletonMap("uuid", patientUuid);
 		assertNull(processor.process(patientId, new DatabaseEvent(null, "patient", DELETE, null, prevState, null)));
@@ -128,7 +123,7 @@ public class MpiIntegrationProcessorTest {
 		final Integer patientId = 1;
 		final String patientUuid = "patient-uuid";
 		when(mockMpiHttpClient.getPatient(patientUuid)).thenReturn(singletonMap(FIELD_ACTIVE, false));
-		when(mockAdminService.executeSQL(PERSON_QUERY.replace(ID_PLACEHOLDER, patientId.toString()), true))
+		when(MpiUtils.executeQuery(PERSON_QUERY.replace(ID_PLACEHOLDER, patientId.toString())))
 		        .thenReturn(asList(asList(null, null, null, null, patientUuid, null)));
 		Map prevState = singletonMap("uuid", patientUuid);
 		assertNull(processor.process(patientId, new DatabaseEvent(null, "patient", DELETE, null, prevState, null)));
@@ -156,7 +151,7 @@ public class MpiIntegrationProcessorTest {
 		Map mpiPatient = new HashMap();
 		mpiPatient.put(FIELD_ACTIVE, true);
 		when(mockMpiHttpClient.getPatient(patientUuid)).thenReturn(mpiPatient);
-		when(mockAdminService.executeSQL(PERSON_QUERY.replace(ID_PLACEHOLDER, patientId.toString()), true))
+		when(MpiUtils.executeQuery(PERSON_QUERY.replace(ID_PLACEHOLDER, patientId.toString())))
 		        .thenReturn(asList(asList(null, null, null, null, patientUuid, null)));
 		Map prevState = singletonMap("uuid", patientUuid);
 		
@@ -170,7 +165,7 @@ public class MpiIntegrationProcessorTest {
 		final Integer patientId = 1;
 		final String patientUuid = "patient-uuid";
 		when(mockMpiHttpClient.getPatient(patientUuid)).thenReturn(null);
-		when(mockAdminService.executeSQL(PERSON_QUERY.replace(ID_PLACEHOLDER, patientId.toString()), true))
+		when(MpiUtils.executeQuery(PERSON_QUERY.replace(ID_PLACEHOLDER, patientId.toString())))
 		        .thenReturn(asList(asList(null, null, null, null, patientUuid, null)));
 		
 		assertNull(processor.process(1, new DatabaseEvent(null, "patient", UPDATE, null, null, null)));
@@ -184,7 +179,7 @@ public class MpiIntegrationProcessorTest {
 		final Integer patientId = 1;
 		final String patientUuid = "patient-uuid";
 		when(mockMpiHttpClient.getPatient(patientUuid)).thenReturn(singletonMap(FIELD_ACTIVE, false));
-		when(mockAdminService.executeSQL(PERSON_QUERY.replace(ID_PLACEHOLDER, patientId.toString()), true))
+		when(MpiUtils.executeQuery(PERSON_QUERY.replace(ID_PLACEHOLDER, patientId.toString())))
 		        .thenReturn(asList(asList(null, null, null, null, patientUuid, null)));
 		
 		assertNull(processor.process(1, new DatabaseEvent(null, "patient", UPDATE, null, null, null)));
@@ -200,10 +195,9 @@ public class MpiIntegrationProcessorTest {
 		Map res = new HashMap();
 		res.put(FIELD_ACTIVE, true);
 		when(mockMpiHttpClient.getPatient(patientUuid)).thenReturn(res);
-		when(mockAdminService.executeSQL(PERSON_QUERY.replace(ID_PLACEHOLDER, patientId.toString()), true))
+		when(MpiUtils.executeQuery(PERSON_QUERY.replace(ID_PLACEHOLDER, patientId.toString())))
 		        .thenReturn(asList(asList(null, null, null, null, patientUuid, null)));
-		when(mockAdminService.executeSQL(PATIENT_QUERY.replace(ID_PLACEHOLDER, patientId.toString()), true))
-		        .thenReturn(emptyList());
+		when(MpiUtils.executeQuery(PATIENT_QUERY.replace(ID_PLACEHOLDER, patientId.toString()))).thenReturn(emptyList());
 		
 		res = processor.process(1, new DatabaseEvent(null, "patient", UPDATE, null, null, null));
 		
@@ -214,9 +208,9 @@ public class MpiIntegrationProcessorTest {
 	public void process_shouldClearTheRelationTypeForContactsToUpdateInTheMpi() throws Exception {
 		final Integer patientId = 1;
 		final String patientUuid = "patient-uuid";
-		when(mockAdminService.executeSQL(PERSON_QUERY.replace(ID_PLACEHOLDER, patientId.toString()), true))
+		when(MpiUtils.executeQuery(PERSON_QUERY.replace(ID_PLACEHOLDER, patientId.toString())))
 		        .thenReturn(asList(asList(null, null, false, null, patientUuid, false)));
-		when(mockAdminService.executeSQL(PATIENT_QUERY.replace(ID_PLACEHOLDER, patientId.toString()), true))
+		when(MpiUtils.executeQuery(PATIENT_QUERY.replace(ID_PLACEHOLDER, patientId.toString())))
 		        .thenReturn(singletonList(singletonList(false)));
 		
 		final String relationshipUuid1 = "relationship-uuid-1";
@@ -274,9 +268,9 @@ public class MpiIntegrationProcessorTest {
 	public void process_shouldNotClearTheRelationTypeIfThereAreNoContactsToUpdateInTheMpi() throws Exception {
 		final Integer patientId = 1;
 		final String patientUuid = "patient-uuid";
-		when(mockAdminService.executeSQL(PERSON_QUERY.replace(ID_PLACEHOLDER, patientId.toString()), true))
+		when(MpiUtils.executeQuery(PERSON_QUERY.replace(ID_PLACEHOLDER, patientId.toString())))
 		        .thenReturn(asList(asList(null, null, false, null, patientUuid, false)));
-		when(mockAdminService.executeSQL(PATIENT_QUERY.replace(ID_PLACEHOLDER, patientId.toString()), true))
+		when(MpiUtils.executeQuery(PATIENT_QUERY.replace(ID_PLACEHOLDER, patientId.toString())))
 		        .thenReturn(singletonList(singletonList(false)));
 		
 		final String relationshipUuid1 = "relationship-uuid-1";
@@ -311,9 +305,9 @@ public class MpiIntegrationProcessorTest {
 	public void process_shouldIgnoreContactsReplacedWithNull() throws Exception {
 		final Integer patientId = 1;
 		final String patientUuid = "patient-uuid";
-		when(mockAdminService.executeSQL(PERSON_QUERY.replace(ID_PLACEHOLDER, patientId.toString()), true))
+		when(MpiUtils.executeQuery(PERSON_QUERY.replace(ID_PLACEHOLDER, patientId.toString())))
 		        .thenReturn(asList(asList(null, null, false, null, patientUuid, false)));
-		when(mockAdminService.executeSQL(PATIENT_QUERY.replace(ID_PLACEHOLDER, patientId.toString()), true))
+		when(MpiUtils.executeQuery(PATIENT_QUERY.replace(ID_PLACEHOLDER, patientId.toString())))
 		        .thenReturn(singletonList(singletonList(false)));
 		
 		final String relationshipUuid1 = "relationship-uuid-1";
