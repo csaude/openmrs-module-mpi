@@ -148,6 +148,10 @@ public class MpiIntegrationProcessor {
 					if (generated.get(FIELD_CONTACT) != null && mpiPatient.get(FIELD_CONTACT) != null) {
 						List mpiContactsToUpdate = new ArrayList();
 						for (Map contact : (List<Map>) generated.get(FIELD_CONTACT)) {
+							if (contact == null) {
+								continue;
+							}
+							
 							for (Map mpiContact : (List<Map>) mpiPatient.get(FIELD_CONTACT)) {
 								Object i = mpiContact.get(FIELD_ID);
 								if (i != null && contact.get(FIELD_ID).toString().equalsIgnoreCase(i.toString())) {

@@ -308,6 +308,61 @@ public class MpiIntegrationProcessorTest {
 	}
 	
 	@Test
+	public void process_shouldIgnoreContactsReplacedWithNull() throws Exception {
+		final Integer patientId = 1;
+		final String patientUuid = "patient-uuid";
+		when(mockAdminService.executeSQL(PERSON_QUERY.replace(ID_PLACEHOLDER, patientId.toString()), true))
+		        .thenReturn(asList(asList(null, null, false, null, patientUuid, false)));
+		when(mockAdminService.executeSQL(PATIENT_QUERY.replace(ID_PLACEHOLDER, patientId.toString()), true))
+		        .thenReturn(singletonList(singletonList(false)));
+		
+		final String relationshipUuid1 = "relationship-uuid-1";
+		final String relationshipUuid2 = "relationship-uuid-2";
+		Map mpiContact1 = new HashMap();
+		mpiContact1.put(FIELD_ID, relationshipUuid1);
+		mpiContact1.put(FIELD_RELATIONSHIP, emptyMap());
+		Map mpiContact2 = new HashMap();
+		mpiContact2.put(FIELD_ID, relationshipUuid2);
+		mpiContact2.put(FIELD_RELATIONSHIP, emptyMap());
+		Map mpiPatient = new HashMap();
+		mpiPatient.put(FIELD_ACTIVE, true);
+		List mpiContacts = asList(mpiContact1, mpiContact2);
+		mpiPatient.put(FIELD_CONTACT, mpiContacts);
+		when(mockMpiHttpClient.getPatient(patientUuid)).thenReturn(mpiPatient);
+		
+		Map newContact1 = new HashMap();
+		newContact1.put(FIELD_ID, relationshipUuid1);
+		newContact1.put(FIELD_RELATIONSHIP, emptyMap());
+		Map newPatient = singletonMap(FIELD_CONTACT, asList(newContact1, null));
+		when(FhirUtils.buildPatient(anyString(), anyBoolean(), anyList(), anyMap())).thenReturn(newPatient);
+		
+		processor.process(1, new DatabaseEvent(null, "patient", UPDATE, null, null, null));
+		
+		Mockito.verify(mockMpiHttpClient).submitPatient(Matchers.argThat(new ArgumentMatcher<String>() {
+			
+			@Override
+			public boolean matches(Object json) {
+				try {
+					Map updatedContact1 = new HashMap();
+					updatedContact1.put(FIELD_ID, relationshipUuid1);
+					updatedContact1.put(FIELD_RELATIONSHIP, null);
+					Map updatedContact2 = new HashMap();
+					updatedContact2.put(FIELD_ID, relationshipUuid2);
+					updatedContact2.put(FIELD_RELATIONSHIP, emptyMap());
+					Map expectedMpiPatient = new HashMap();
+					expectedMpiPatient.put(FIELD_ACTIVE, true);
+					expectedMpiPatient.put(FIELD_CONTACT, asList(updatedContact1, updatedContact2));
+					
+					return expectedMpiPatient.equals(new ObjectMapper().readValue(json.toString(), Map.class));
+				}
+				catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}));
+	}
+	
+	@Test
 	public void process_shouldProcessAPatientThatDoesNotExistInTheMpi() throws Exception {
 		processor.process(1, new DatabaseEvent(null, null, null, null, null, null));
 	}
