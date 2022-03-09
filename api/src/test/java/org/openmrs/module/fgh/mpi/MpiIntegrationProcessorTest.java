@@ -36,7 +36,6 @@ import org.mockito.ArgumentMatcher;
 import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.openmrs.api.context.Context;
 import org.openmrs.module.debezium.DatabaseEvent;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
@@ -47,7 +46,7 @@ import org.slf4j.Logger;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({ Context.class, MpiUtils.class, FhirUtils.class })
+@PrepareForTest({ MpiUtils.class, FhirUtils.class })
 public class MpiIntegrationProcessorTest {
 	
 	@Mock
@@ -60,7 +59,6 @@ public class MpiIntegrationProcessorTest {
 	
 	@Before
 	public void setup() {
-		PowerMockito.mockStatic(Context.class);
 		PowerMockito.mockStatic(MpiUtils.class);
 		PowerMockito.mockStatic(FhirUtils.class);
 		Whitebox.setInternalState(MpiIntegrationProcessor.class, Logger.class, mockLogger);

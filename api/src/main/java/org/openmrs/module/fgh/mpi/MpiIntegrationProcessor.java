@@ -12,8 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.openmrs.api.AdministrationService;
-import org.openmrs.api.context.Context;
 import org.openmrs.module.debezium.DatabaseEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +59,6 @@ public class MpiIntegrationProcessor {
 		}
 		
 		String id = patientId.toString();
-		AdministrationService adminService = Context.getAdministrationService();
 		boolean isPersonDeletedEvent = "person".equalsIgnoreCase(e.getTableName()) && e.getOperation() == DELETE;
 		List<List<Object>> person = null;
 		String patientUud;
