@@ -124,6 +124,7 @@ public class FhirUtils {
 	public static Map<String, Object> buildPatient(String id, boolean patientVoided, List<Object> person,
 	        Map<String, Object> mpiPatient) {
 		
+		initializeCachesIfNecessary();
 		Map<String, Object> fhirRes = new HashMap();
 		fhirRes.put(MpiConstants.FIELD_RESOURCE_TYPE, MpiConstants.PATIENT);
 		fhirRes.put(MpiConstants.FIELD_ACTIVE, !patientVoided);
@@ -181,27 +182,6 @@ public class FhirUtils {
 	 * @return list of the patient identifiers
 	 */
 	private static List<Map<String, Object>> getIds(String patientId, List<Object> person, Map<String, Object> mpiPatient) {
-		if (idTypeSystem == null) {
-			synchronized (FhirUtils.class) {
-				idTypeSystem = MpiUtils.getGlobalPropertyValue(GP_IDENTIFIER_TYPE_SYSTEM);
-			}
-		}
-		
-		if (idSystem == null) {
-			synchronized (FhirUtils.class) {
-				idSystem = MpiUtils.getGlobalPropertyValue(GP_IDENTIFIER_SYSTEM);
-			}
-		}
-		
-		if (openmrsUuidCode == null || openmrsUuidDisplay == null) {
-			synchronized (FhirUtils.class) {
-				String openmrsUuidConceptMap = MpiUtils.getGlobalPropertyValue(GP_OPENMRS_UUID_CONCEPT_MAP);
-				String[] mapDetails = openmrsUuidConceptMap.trim().split(":");
-				openmrsUuidCode = mapDetails[0];
-				openmrsUuidDisplay = mapDetails[1];
-			}
-		}
-		
 		Map codingResource = new HashMap();
 		codingResource.put(FIELD_SYSTEM, idTypeSystem);
 		codingResource.put(FIELD_CODE, openmrsUuidCode);
@@ -224,7 +204,7 @@ public class FhirUtils {
 			idResource.put(FIELD_VALUE, idRow.get(0));
 			
 			final String identifierTypeUuid = idRow.get(1).toString();
-			TypeConcept concept = getIdentifierTypeConcept(identifierTypeUuid);
+			TypeConcept concept = uuidIdentifierTypeMap.get(identifierTypeUuid);
 			if (concept == null) {
 				throw new APIException("No concept mapped to patient identifier type with uuid: " + identifierTypeUuid);
 			}
@@ -395,12 +375,6 @@ public class FhirUtils {
 	 * @return list of extensions containing only the patient's health center
 	 */
 	private static List<Map<String, Object>> getHealthCenter(String patientId, Map<String, Object> mpiPatient) {
-		if (healthCenterExtUrl == null) {
-			synchronized (FhirUtils.class) {
-				healthCenterExtUrl = MpiUtils.getGlobalPropertyValue(GP_HEALTH_CENTER_EXT_URL);
-			}
-		}
-		
 		String attTypeId = Context.getPersonService().getPersonAttributeTypeByUuid(HEALTH_CENTER_ATTRIB_TYPE_UUID).getId()
 		        .toString();
 		String phoneQuery = ATTR_QUERY.replace(ID_PLACEHOLDER, patientId).replace(ATTR_TYPE_ID_PLACEHOLDER, attTypeId);
@@ -481,21 +455,9 @@ public class FhirUtils {
 	 * @return list of the patient relationships
 	 */
 	private static List<Map> getRelationships(String patientId, Map<String, Object> mpiPatient) {
-		if (personUuidExtUrl == null) {
-			synchronized (FhirUtils.class) {
-				personUuidExtUrl = MpiUtils.getGlobalPropertyValue(GP_PERSON_UUID_EXT_URL);
-			}
-		}
-		
 		List<List<Object>> relationshipRows = executeQuery(RELATIONSHIP_QUERY.replace(ID_PLACEHOLDER, patientId));
 		List<Map> relationships = new ArrayList();
 		for (List<Object> relationshipRow : relationshipRows) {
-			if (relationshipTypeSystem == null) {
-				synchronized (FhirUtils.class) {
-					relationshipTypeSystem = MpiUtils.getGlobalPropertyValue(GP_RELATIONSHIP_TYPE_SYSTEM);
-				}
-			}
-			
 			final String relationshipTypeUuid = relationshipRow.get(5).toString();
 			Integer otherPersonId;
 			boolean isPersonA = false;
@@ -617,30 +579,25 @@ public class FhirUtils {
 	 * @param isPersonA specifies the person's side of the relationship type the concept maps to
 	 * @return FhirRelationshipType object
 	 */
-	private static TypeConcept getRelationshipTypeConcept(String relationshipTypeUuid, boolean isPersonA) {
+	private synchronized static TypeConcept getRelationshipTypeConcept(String relationshipTypeUuid, boolean isPersonA) {
 		Map<String, TypeConcept> relMap = isPersonA ? uuidRelationshipTypePersonAConceptMap
 		        : uuidRelationshipTypePersonBConceptMap;
 		
 		if (relMap == null) {
-			synchronized (FhirUtils.class) {
-				if (relMap == null) {
-					relMap = new HashMap();
-					final String gpName = isPersonA ? GP_RELATIONSHIP_TYPE_CONCEPT_MAP_A
-					        : GP_RELATIONSHIP_TYPE_CONCEPT_MAP_B;
-					String maps = MpiUtils.getGlobalPropertyValue(gpName);
-					if (StringUtils.isNotBlank(maps)) {
-						for (String map : maps.trim().split(",")) {
-							String[] details = map.trim().split(":");
-							final String uuid = details[0].trim();
-							RelationshipType type = Context.getPersonService().getRelationshipTypeByUuid(uuid);
-							if (type == null) {
-								throw new APIException("No relationship type found with uuid: " + uuid);
-							}
-							
-							final String text = isPersonA ? type.getaIsToB() : type.getbIsToA();
-							relMap.put(uuid, new TypeConcept(details[1].trim(), details[2].trim(), text));
-						}
+			relMap = new HashMap();
+			final String gpName = isPersonA ? GP_RELATIONSHIP_TYPE_CONCEPT_MAP_A : GP_RELATIONSHIP_TYPE_CONCEPT_MAP_B;
+			String maps = MpiUtils.getGlobalPropertyValue(gpName);
+			if (StringUtils.isNotBlank(maps)) {
+				for (String map : maps.trim().split(",")) {
+					String[] details = map.trim().split(":");
+					final String uuid = details[0].trim();
+					RelationshipType type = Context.getPersonService().getRelationshipTypeByUuid(uuid);
+					if (type == null) {
+						throw new APIException("No relationship type found with uuid: " + uuid);
 					}
+					
+					final String text = isPersonA ? type.getaIsToB() : type.getbIsToA();
+					relMap.put(uuid, new TypeConcept(details[1].trim(), details[2].trim(), text));
 				}
 			}
 		}
@@ -649,35 +606,52 @@ public class FhirUtils {
 	}
 	
 	/**
-	 * Gets the {@link TypeConcept} associated to the OpenMRS TypeConcept with the specified uuid
-	 *
-	 * @param identifierTypeUuid the relationship type uuid to match
-	 * @return TypeConcept object
+	 * Loads and caches the necessary global property values
 	 */
-	private static TypeConcept getIdentifierTypeConcept(String identifierTypeUuid) {
+	private synchronized static void initializeCachesIfNecessary() {
+		if (idTypeSystem == null) {
+			idTypeSystem = MpiUtils.getGlobalPropertyValue(GP_IDENTIFIER_TYPE_SYSTEM);
+		}
+		
+		if (idSystem == null) {
+			idSystem = MpiUtils.getGlobalPropertyValue(GP_IDENTIFIER_SYSTEM);
+		}
+		
+		if (healthCenterExtUrl == null) {
+			healthCenterExtUrl = MpiUtils.getGlobalPropertyValue(GP_HEALTH_CENTER_EXT_URL);
+		}
+		
+		if (personUuidExtUrl == null) {
+			personUuidExtUrl = MpiUtils.getGlobalPropertyValue(GP_PERSON_UUID_EXT_URL);
+		}
+		
+		if (relationshipTypeSystem == null) {
+			relationshipTypeSystem = MpiUtils.getGlobalPropertyValue(GP_RELATIONSHIP_TYPE_SYSTEM);
+		}
+		
+		if (openmrsUuidCode == null || openmrsUuidDisplay == null) {
+			String openmrsUuidConceptMap = MpiUtils.getGlobalPropertyValue(GP_OPENMRS_UUID_CONCEPT_MAP);
+			String[] mapDetails = openmrsUuidConceptMap.trim().split(":");
+			openmrsUuidCode = mapDetails[0];
+			openmrsUuidDisplay = mapDetails[1];
+		}
+		
 		if (uuidIdentifierTypeMap == null) {
-			synchronized (FhirUtils.class) {
-				if (uuidIdentifierTypeMap == null) {
-					uuidIdentifierTypeMap = new HashMap();
-					String maps = MpiUtils.getGlobalPropertyValue(GP_IDENTIFIER_TYPE_CONCEPT_MAP);
-					if (StringUtils.isNotBlank(maps)) {
-						for (String map : maps.trim().split(",")) {
-							String[] details = map.trim().split(":");
-							final String uuid = details[0].trim();
-							PatientIdentifierType type = Context.getPatientService().getPatientIdentifierTypeByUuid(uuid);
-							if (type == null) {
-								throw new APIException("No patient identifier type found with uuid: " + uuid);
-							}
-							
-							uuidIdentifierTypeMap.put(uuid,
-							    new TypeConcept(details[1].trim(), details[2].trim(), type.getName()));
-						}
+			uuidIdentifierTypeMap = new HashMap();
+			String maps = MpiUtils.getGlobalPropertyValue(GP_IDENTIFIER_TYPE_CONCEPT_MAP);
+			if (StringUtils.isNotBlank(maps)) {
+				for (String map : maps.trim().split(",")) {
+					String[] details = map.trim().split(":");
+					final String uuid = details[0].trim();
+					PatientIdentifierType type = Context.getPatientService().getPatientIdentifierTypeByUuid(uuid);
+					if (type == null) {
+						throw new APIException("No patient identifier type found with uuid: " + uuid);
 					}
+					
+					uuidIdentifierTypeMap.put(uuid, new TypeConcept(details[1].trim(), details[2].trim(), type.getName()));
 				}
 			}
 		}
-		
-		return uuidIdentifierTypeMap.get(identifierTypeUuid);
 	}
 	
 	private static class TypeConcept {
