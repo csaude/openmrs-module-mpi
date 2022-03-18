@@ -25,14 +25,15 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE_STR;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE_UUID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_HEALTH_CENTER_EXT_URL;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_IDENTIFIER_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_IDENTIFIER_TYPE_CONCEPT_MAP;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_IDENTIFIER_TYPE_SYSTEM;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_ID_TYPE_SYSTEM_MAP;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_OPENMRS_UUID_CONCEPT_MAP;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_PERSON_UUID_EXT_URL;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_CONCEPT_MAP_A;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_CONCEPT_MAP_B;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_SYSTEM;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_UUID_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.HEALTH_CENTER_ATTRIB_TYPE_UUID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.IDENTIFIER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.NAME;
@@ -98,7 +99,9 @@ public class FhirUtils {
 	
 	private static String idTypeSystem;
 	
-	private static String idSystem;
+	private static String openmrsUuidSystem;
+	
+	private static Map<String, String> idSystemMap;
 	
 	private static String openmrsUuidCode;
 	
@@ -190,7 +193,7 @@ public class FhirUtils {
 		sourceIdTypeResource.put(FIELD_CODING, singletonList(codingResource));
 		sourceIdTypeResource.put(FIELD_TEXT, MpiConstants.OPENMRS_UUID);
 		Map<String, Object> sourceIdRes = new HashMap();
-		sourceIdRes.put(FIELD_SYSTEM, idSystem);
+		sourceIdRes.put(FIELD_SYSTEM, openmrsUuidSystem);
 		sourceIdRes.put(FIELD_VALUE, person.get(4));
 		sourceIdRes.put(FIELD_TYPE, sourceIdTypeResource);
 		List<Map<String, Object>> identifiers = new ArrayList();
@@ -200,10 +203,14 @@ public class FhirUtils {
 		idRows.stream().forEach(idRow -> {
 			Map<String, Object> idResource = new HashMap();
 			idResource.put(FIELD_ID, idRow.get(2));
-			idResource.put(FIELD_SYSTEM, idSystem);
+			final String identifierTypeUuid = idRow.get(1).toString();
+			if (StringUtils.isBlank(idSystemMap.get(identifierTypeUuid))) {
+				throw new APIException("No id system uri defined for identifier type with uuid: " + identifierTypeUuid);
+			}
+			
+			idResource.put(FIELD_SYSTEM, idSystemMap.get(identifierTypeUuid));
 			idResource.put(FIELD_VALUE, idRow.get(0));
 			
-			final String identifierTypeUuid = idRow.get(1).toString();
 			TypeConcept concept = uuidIdentifierTypeMap.get(identifierTypeUuid);
 			if (concept == null) {
 				throw new APIException("No concept mapped to patient identifier type with uuid: " + identifierTypeUuid);
@@ -613,8 +620,8 @@ public class FhirUtils {
 			idTypeSystem = MpiUtils.getGlobalPropertyValue(GP_IDENTIFIER_TYPE_SYSTEM);
 		}
 		
-		if (idSystem == null) {
-			idSystem = MpiUtils.getGlobalPropertyValue(GP_IDENTIFIER_SYSTEM);
+		if (openmrsUuidSystem == null) {
+			openmrsUuidSystem = MpiUtils.getGlobalPropertyValue(GP_UUID_SYSTEM);
 		}
 		
 		if (healthCenterExtUrl == null) {
@@ -634,6 +641,17 @@ public class FhirUtils {
 			String[] mapDetails = openmrsUuidConceptMap.trim().split(":");
 			openmrsUuidCode = mapDetails[0];
 			openmrsUuidDisplay = mapDetails[1];
+		}
+		
+		if (idSystemMap == null) {
+			idSystemMap = new HashMap();
+			String maps = MpiUtils.getGlobalPropertyValue(GP_ID_TYPE_SYSTEM_MAP);
+			if (StringUtils.isNotBlank(maps)) {
+				for (String map : maps.trim().split(",")) {
+					String[] details = map.trim().split("\\^");
+					idSystemMap.put(details[0].trim(), details[1].trim());
+				}
+			}
 		}
 		
 		if (uuidIdentifierTypeMap == null) {

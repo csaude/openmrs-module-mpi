@@ -30,7 +30,9 @@ public class MpiConstants {
 	
 	public final static String GP_PHONE_HOME = MODULE_ID + ".person.attribute.type.home.phone";
 	
-	public final static String GP_IDENTIFIER_SYSTEM = MODULE_ID + ".identifier.system.uri";
+	public final static String GP_UUID_SYSTEM = MODULE_ID + ".patient.uuid.system.uri";
+	
+	public final static String GP_ID_TYPE_SYSTEM_MAP = MODULE_ID + ".identifier.type.system.uri.mappings";
 	
 	public final static String GP_IDENTIFIER_TYPE_SYSTEM = MODULE_ID + ".identifier.type.terminology.system.uri";
 	
@@ -44,7 +46,7 @@ public class MpiConstants {
 	public final static String GP_RELATIONSHIP_TYPE_CONCEPT_MAP_B = MODULE_ID
 	        + ".relationship.type.personB.concept.mappings";
 	
-	public final static String GP_OPENMRS_UUID_CONCEPT_MAP = MODULE_ID + ".openmrs.uuid.concept.map";
+	public final static String GP_OPENMRS_UUID_CONCEPT_MAP = MODULE_ID + ".patient.uuid.concept.map";
 	
 	public final static String OPENMRS_UUID = "OpenMRS Internal UUID";
 	

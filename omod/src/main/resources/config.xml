@@ -47,9 +47,9 @@
         </description>
     </globalProperty>
     <globalProperty>
-        <property>${project.parent.artifactId}.openmrs.uuid.concept.map</property>
+        <property>${project.parent.artifactId}.patient.uuid.concept.map</property>
         <description>
-            Specifies the concept mapping for the internal OpenMRS Uuid identifier type and the concept
+            Specifies the concept mapping for the internal OpenMRS patient uuid identifier type and the concept
             in the terminology system associated to the URI set via the global property named
             ${project.parent.artifactId}.identifier.type.concept.source.uri
         </description>
@@ -113,10 +113,21 @@
         </description>
     </globalProperty>
     <globalProperty>
-        <property>${project.parent.artifactId}.identifier.system.uri</property>
+        <property>${project.parent.artifactId}.patient.uuid.system.uri</property>
         <description>
-            Specifies the URI of the namespace for the patient identifiers, this will be set as the value of the system property
-            for all the identifiers, MUST match one of the internalId URLs defined in the OpenCR config file
+            Specifies the URI of the namespace for the patient uuids, this will be set as the value of the system
+            property for the patient uuid identifier, the value MUST match the internalId URL value defined in the
+            OpenCR config file under the systems section.
+        </description>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.identifier.type.system.uri.mappings</property>
+        <description>
+            Comma-separated list of mappings between OpenMRS patient identifier type uuids and system URIs
+            (identifier type namespaces), should be of the form identifierTypeUuid-1^systemUri1,identifierTypeUuid-2^systemUri2.
+            The system URI values MUST match the URI values defined for the respective patient identifier types in the
+            OpenCR config file under the systems section. The system URI for the NID patient identifier type MUST also
+            match the values used in the OpenCR PatientRelationship.json and decisionRules.json files.
         </description>
     </globalProperty>
     <globalProperty>
@@ -127,8 +138,7 @@
             ${project.parent.artifactId}.identifier.type.concept.source.uri, should be of the form
             identifierTypeUuid-1:conceptCode1:conceptDisplay1,identifierTypeUuid-2:conceptCode2:conceptDisplay2
             e.g b6c97a9d-a77b-401f-b06e-81900e21ed1e:NID:National ID,c6c97a9d-a77b-401f-b06e-81900e21ed1e:SSN:Social
-            Security Number. The code for the NID patient identifier type MUST match the values set in the docker config,
-            PatientRelationship.json and decisionRules.json files.
+            Security Number.
         </description>
     </globalProperty>
 

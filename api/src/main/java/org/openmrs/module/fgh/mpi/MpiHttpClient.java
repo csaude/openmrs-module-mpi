@@ -1,10 +1,10 @@
 package org.openmrs.module.fgh.mpi;
 
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_IDENTIFIER_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PASS;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PATH;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_TYPE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_BASE_URL;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_UUID_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.REQ_PARAM_SOURCE_ID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_PARAM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_VALUE_REF;
@@ -50,7 +50,7 @@ public class MpiHttpClient {
 	
 	private static final String SUBPATH_PATIENT = SUBPATH_FHIR + "/Patient";
 	
-	private static String idSystem;
+	private static String openmrsUuidSystem;
 	
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 	
@@ -68,13 +68,13 @@ public class MpiHttpClient {
 			log.debug("Searching for patient from MPI with OpenMRS uuid: " + patientUuid);
 		}
 		
-		if (idSystem == null) {
+		if (openmrsUuidSystem == null) {
 			synchronized (MpiHttpClient.class) {
-				idSystem = MpiUtils.getGlobalPropertyValue(GP_IDENTIFIER_SYSTEM);
+				openmrsUuidSystem = MpiUtils.getGlobalPropertyValue(GP_UUID_SYSTEM);
 			}
 		}
 		
-		String query = REQ_PARAM_SOURCE_ID + "=" + idSystem + "|" + patientUuid;
+		String query = REQ_PARAM_SOURCE_ID + "=" + openmrsUuidSystem + "|" + patientUuid;
 		Map<String, Object> pixResponse = submitRequest(SUBPATH_PATIENT + "/$ihe-pix?" + query, null, Map.class);
 		List<Map<String, Object>> ids = (List<Map<String, Object>>) pixResponse.get(RESPONSE_FIELD_PARAM);
 		if (ids.isEmpty()) {

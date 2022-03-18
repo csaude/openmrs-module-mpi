@@ -44,9 +44,9 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_MALE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_OTHER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_UNKNOWN;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_HEALTH_CENTER_EXT_URL;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_IDENTIFIER_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_IDENTIFIER_TYPE_CONCEPT_MAP;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_IDENTIFIER_TYPE_SYSTEM;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_ID_TYPE_SYSTEM_MAP;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_OPENMRS_UUID_CONCEPT_MAP;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_PERSON_UUID_EXT_URL;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_PHONE_HOME;
@@ -54,6 +54,7 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.GP_PHONE_MOBILE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_CONCEPT_MAP_A;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_CONCEPT_MAP_B;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_SYSTEM;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_UUID_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.HEALTH_CENTER_ATTRIB_TYPE_UUID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.IDENTIFIER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.NAME;
@@ -105,7 +106,7 @@ public class FhirUtilsTest {
 	
 	private static final String ID_TYPE_TERMINOLOGY_SYSTEM = "http://test.id.type.com";
 	
-	private static final String ID_SYSTEM = "http://test.id.com";
+	private static final String UUID_SYSTEM = "http://test.openmrs.id/uuid";
 	
 	private static final String RELATIONSHIP_TERMINOLOGY_SYSTEM = "http://test.relationship.type.com";
 	
@@ -129,6 +130,8 @@ public class FhirUtilsTest {
 		Whitebox.setInternalState(FhirUtils.class, "personUuidExtUrl", (Object) null);
 		Whitebox.setInternalState(FhirUtils.class, "relationshipTypeSystem", (Object) null);
 		Whitebox.setInternalState(FhirUtils.class, "idTypeSystem", (Object) null);
+		Whitebox.setInternalState(FhirUtils.class, "idSystemMap", (Object) null);
+		Whitebox.setInternalState(FhirUtils.class, "openmrsUuidSystem", (Object) null);
 		Whitebox.setInternalState(FhirUtils.class, "uuidRelationshipTypePersonAConceptMap", (Object) null);
 		Whitebox.setInternalState(FhirUtils.class, "uuidRelationshipTypePersonBConceptMap", (Object) null);
 		Whitebox.setInternalState(FhirUtils.class, "openmrsUuidCode", (Object) null);
@@ -141,7 +144,7 @@ public class FhirUtilsTest {
 		when(MpiUtils.getGlobalPropertyValue(GP_PHONE_HOME)).thenReturn("test-home-uuid");
 		when(mockPersonService.getPersonAttributeTypeByUuid(anyString())).thenReturn(new PersonAttributeType(0));
 		when(MpiUtils.getGlobalPropertyValue(GP_IDENTIFIER_TYPE_SYSTEM)).thenReturn(ID_TYPE_TERMINOLOGY_SYSTEM);
-		when(MpiUtils.getGlobalPropertyValue(GP_IDENTIFIER_SYSTEM)).thenReturn(ID_SYSTEM);
+		when(MpiUtils.getGlobalPropertyValue(GP_UUID_SYSTEM)).thenReturn(UUID_SYSTEM);
 		when(MpiUtils.getGlobalPropertyValue(GP_OPENMRS_UUID_CONCEPT_MAP))
 		        .thenReturn(OPENMRS_UUID_CODE + ":" + OPENMRS_UUID_DISPLAY);
 		when(MpiUtils.getGlobalPropertyValue(GP_HEALTH_CENTER_EXT_URL)).thenReturn(HC_EXT_URL);
@@ -163,6 +166,7 @@ public class FhirUtilsTest {
 		final String idUuid1 = "id-uuid-1";
 		final String idTypeCode1 = "id-type-code-1";
 		final String idTypeDisplay1 = "id-type-display-1";
+		final String idTypeSystem1 = "id-type-system-1";
 		List<Object> id1 = asList(identifier1, idTypeUuid1, idUuid1);
 		final String identifier2 = "qwerty";
 		final String idTypeName2 = "id-type-name-2";
@@ -170,11 +174,15 @@ public class FhirUtilsTest {
 		final String idUuid2 = "id-uuid-2";
 		final String idTypeCode2 = "id-type-code-2";
 		final String idTypeDisplay2 = "id-type-display-2";
+		final String idTypeSystem2 = "id-type-system-2";
 		List<Object> id2 = asList(identifier2, idTypeUuid2, idUuid2);
 		List<List<Object>> ids = asList(id1, id2);
 		final String idType1Map = idTypeUuid1 + ":" + idTypeCode1 + ":" + idTypeDisplay1;
 		final String idType2Map = idTypeUuid2 + ":" + idTypeCode2 + ":" + idTypeDisplay2;
+		final String idType1SystemMap = idTypeUuid1 + "^" + idTypeSystem1;
+		final String idType2SystemMap = idTypeUuid2 + "^" + idTypeSystem2;
 		when(MpiUtils.getGlobalPropertyValue(GP_IDENTIFIER_TYPE_CONCEPT_MAP)).thenReturn(idType1Map + "," + idType2Map);
+		when(MpiUtils.getGlobalPropertyValue(GP_ID_TYPE_SYSTEM_MAP)).thenReturn(idType1SystemMap + "," + idType2SystemMap);
 		PatientIdentifierType idType1 = new PatientIdentifierType();
 		idType1.setName(idTypeName1);
 		when(mockPatientService.getPatientIdentifierTypeByUuid(idTypeUuid1)).thenReturn(idType1);
@@ -278,20 +286,20 @@ public class FhirUtilsTest {
 		
 		List<Map> resourceIds = (List) resource.get(MpiConstants.FIELD_IDENTIFIER);
 		assertEquals(3, resourceIds.size());
-		assertEquals(ID_SYSTEM, resourceIds.get(0).get(FIELD_SYSTEM));
+		assertEquals(UUID_SYSTEM, resourceIds.get(0).get(FIELD_SYSTEM));
 		assertEquals(patientUuid, resourceIds.get(0).get(MpiConstants.FIELD_VALUE));
 		Map uuidCoding = (Map) ((List) ((Map) resourceIds.get(0).get(FIELD_TYPE)).get(FIELD_CODING)).get(0);
 		assertEquals(ID_TYPE_TERMINOLOGY_SYSTEM, uuidCoding.get(FIELD_SYSTEM));
 		assertEquals(OPENMRS_UUID_CODE, uuidCoding.get(FIELD_CODE));
 		assertEquals(OPENMRS_UUID_DISPLAY, uuidCoding.get(FIELD_DISPLAY));
-		assertEquals(ID_SYSTEM, resourceIds.get(1).get(MpiConstants.FIELD_SYSTEM));
+		assertEquals(idTypeSystem1, resourceIds.get(1).get(MpiConstants.FIELD_SYSTEM));
 		assertEquals(identifier1, resourceIds.get(1).get(MpiConstants.FIELD_VALUE));
 		assertEquals(idUuid1, resourceIds.get(1).get(FIELD_ID));
 		Map idType1Coding = (Map) ((List) ((Map) resourceIds.get(1).get(FIELD_TYPE)).get(FIELD_CODING)).get(0);
 		assertEquals(ID_TYPE_TERMINOLOGY_SYSTEM, idType1Coding.get(FIELD_SYSTEM));
 		assertEquals(idTypeCode1, idType1Coding.get(FIELD_CODE));
 		assertEquals(idTypeDisplay1, idType1Coding.get(FIELD_DISPLAY));
-		assertEquals(ID_SYSTEM, resourceIds.get(2).get(MpiConstants.FIELD_SYSTEM));
+		assertEquals(idTypeSystem2, resourceIds.get(2).get(MpiConstants.FIELD_SYSTEM));
 		assertEquals(identifier2, resourceIds.get(2).get(MpiConstants.FIELD_VALUE));
 		assertEquals(idUuid2, resourceIds.get(2).get(FIELD_ID));
 		Map idType2Coding = (Map) ((List) ((Map) resourceIds.get(2).get(FIELD_TYPE)).get(FIELD_CODING)).get(0);
@@ -440,12 +448,14 @@ public class FhirUtilsTest {
 		final String idUuid = "id-uuid";
 		final String idTypeCode = "id-type-code";
 		final String idTypeDisplay = "id-type-display";
+		final String idTypeSystem = "id-type-system";
 		List<List<Object>> ids = asList(asList(identifier, idTypeUuid, idUuid));
 		when(executeQuery(FhirUtils.ID_QUERY.replace(ID_PLACEHOLDER, patientId))).thenReturn(ids);
 		Map<String, Object> mpiPatient = singletonMap(IDENTIFIER, asList(null, null, null, null));
 		final String idTypeMap = idTypeUuid + ":" + idTypeCode + ":" + idTypeDisplay;
 		when(MpiUtils.getGlobalPropertyValue(GP_IDENTIFIER_TYPE_CONCEPT_MAP)).thenReturn(idTypeMap);
 		when(mockPatientService.getPatientIdentifierTypeByUuid(idTypeUuid)).thenReturn(new PatientIdentifierType());
+		when(MpiUtils.getGlobalPropertyValue(GP_ID_TYPE_SYSTEM_MAP)).thenReturn(idTypeUuid + "^" + idTypeSystem);
 		
 		Map<String, Object> res = FhirUtils.buildPatient(patientId, false, personDetails, mpiPatient);
 		
