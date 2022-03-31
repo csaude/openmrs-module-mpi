@@ -1,7 +1,6 @@
 package org.openmrs.module.fgh.mpi;
 
 import static java.util.Collections.synchronizedList;
-import static org.openmrs.module.fgh.mpi.MpiConstants.DEFAULT_THREAD_COUNT;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -13,15 +12,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.junit.Test;
+import org.openmrs.api.APIException;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
-import org.openmrs.api.APIException;
 
 public class InsertPatients {
 	
-	private final ExecutorService executor = Executors.newFixedThreadPool(DEFAULT_THREAD_COUNT);
+	private final int SIZE = 50;
 	
-	private final List<CompletableFuture<Void>> futures = synchronizedList(new ArrayList(DEFAULT_THREAD_COUNT));
+	private final List<CompletableFuture<Void>> futures = synchronizedList(new ArrayList(SIZE));
+	
+	private final ExecutorService executor = Executors.newFixedThreadPool(SIZE);
 	
 	@Test
 	public void addPatients() throws Exception {
@@ -48,8 +49,8 @@ public class InsertPatients {
 		ds.setJdbcUrl("jdbc:mysql://localhost:3310/openmrs");
 		ds.setUser("root");
 		ds.setPassword("root");
-		ds.setInitialPoolSize(DEFAULT_THREAD_COUNT);
-		ds.setMaxPoolSize(DEFAULT_THREAD_COUNT);
+		ds.setInitialPoolSize(SIZE);
+		ds.setMaxPoolSize(SIZE);
 		
 		for (int i = start; i < (count + start); i++) {
 			String gender = i % 2 == 0 ? "M" : "F";
@@ -86,7 +87,7 @@ public class InsertPatients {
 				
 			}, executor));
 			
-			if (futures.size() == DEFAULT_THREAD_COUNT || i == (count + start - 1)) {
+			if (futures.size() == SIZE || i == (count + start - 1)) {
 				CompletableFuture<Void> allFuture = CompletableFuture
 				        .allOf(futures.toArray(new CompletableFuture[futures.size()]));
 				

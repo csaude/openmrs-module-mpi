@@ -7,8 +7,6 @@ public class MpiConstants {
 	
 	public final static String MODULE_ID = "mpi";
 	
-	public final static int DEFAULT_THREAD_COUNT = 50;
-	
 	public final static String[] WATCHED_TABLES = new String[] { "person", "patient", "person_name", "person_address",
 	        "patient_identifier", "person_attribute", "relationship" };
 	
@@ -47,6 +45,8 @@ public class MpiConstants {
 	        + ".relationship.type.personB.concept.mappings";
 	
 	public final static String GP_OPENMRS_UUID_CONCEPT_MAP = MODULE_ID + ".patient.uuid.concept.map";
+	
+	public final static String GP_INITIAL_BATCH_SIZE = MODULE_ID + ".initial.loading.batch.size";
 	
 	public final static String OPENMRS_UUID = "OpenMRS Internal UUID";
 	

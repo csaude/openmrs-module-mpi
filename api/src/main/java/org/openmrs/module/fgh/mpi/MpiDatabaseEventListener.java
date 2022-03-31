@@ -5,6 +5,8 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
+import org.openmrs.api.context.Context;
 import org.openmrs.module.debezium.DatabaseEvent;
 import org.openmrs.module.debezium.DatabaseEventListener;
 import org.openmrs.module.debezium.DebeziumConstants;
@@ -25,7 +27,15 @@ public class MpiDatabaseEventListener implements DatabaseEventListener {
 	public void init(boolean snapshotOnly) {
 		this.snapshotOnly = snapshotOnly;
 		if (snapshotOnly) {
-			eventProcessor = new SnapshotEventProcessor();
+			String num = Context.getAdministrationService().getGlobalProperty(MpiConstants.GP_INITIAL_BATCH_SIZE);
+			int threadCount;
+			if (StringUtils.isNotBlank(num)) {
+				threadCount = Integer.valueOf(num);
+			} else {
+				threadCount = 10;
+			}
+			
+			eventProcessor = new SnapshotEventProcessor(threadCount);
 		} else {
 			eventProcessor = new IncrementalEventProcessor();
 		}

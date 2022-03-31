@@ -118,6 +118,9 @@ public class MpiHttpClient {
 	 */
 	public void submitPatient(String patientData) throws Exception {
 		log.info("Submitting patient record to the MPI");
+		if (log.isDebugEnabled()) {
+			log.debug("Patient data -> " + patientData);
+		}
 		
 		List<Map<String, Object>> mpiIdsResp = submitRequest(SUBPATH_PATIENT, patientData, List.class);
 		

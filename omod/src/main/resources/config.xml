@@ -141,6 +141,12 @@
             Security Number.
         </description>
     </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.initial.loading.batch.size</property>
+        <description>
+            Specifies the number of patients to process and submit in parallel to the MPI. Defaults to 10
+        </description>
+    </globalProperty>
 
 </module>
 

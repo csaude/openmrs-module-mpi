@@ -2,7 +2,6 @@ package org.openmrs.module.fgh.mpi;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.Collections.synchronizedList;
-import static org.openmrs.module.fgh.mpi.MpiConstants.DEFAULT_THREAD_COUNT;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,11 +37,13 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 	
 	private Integer lastSubmittedPatientId;
 	
-	public SnapshotEventProcessor() {
+	private int threadCount;
+	
+	public SnapshotEventProcessor(int threadCount) {
 		super(true);
-		//TODO make the thread pool count and futures size configurable, they must be equal
-		executor = Executors.newFixedThreadPool(DEFAULT_THREAD_COUNT);
-		futures = synchronizedList(new ArrayList(DEFAULT_THREAD_COUNT));
+		this.threadCount = threadCount;
+		executor = Executors.newFixedThreadPool(threadCount);
+		futures = synchronizedList(new ArrayList(threadCount));
 		successCount = new AtomicInteger();
 		start = null;
 		lastSubmittedPatientId = MpiUtils.getLastSubmittedPatientId();
@@ -94,7 +95,7 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 			
 		}, executor));
 		
-		if (futures.size() == DEFAULT_THREAD_COUNT || isLastPatient) {
+		if (futures.size() == threadCount || isLastPatient) {
 			try {
 				if (log.isDebugEnabled()) {
 					log.debug("Waiting for " + futures.size() + " event processor thread(s) to terminate");
