@@ -168,10 +168,10 @@ public class FhirUtils {
 		fhirRes.put(FIELD_ADDRESS, getAddresses(id, existingAddressCount, true));
 		fhirRes.put(FIELD_TELECOM, getPhones(id, mpiPatient));
 		fhirRes.put(FIELD_CONTACT, getRelationships(id, mpiPatient));
-		List<Map<String, Object>> heathCenter = getHealthCenter(id, mpiPatient);
+		/*List<Map<String, Object>> heathCenter = getHealthCenter(id, mpiPatient);
 		if (heathCenter != null) {
 			fhirRes.put(MpiConstants.FIELD_EXTENSION, heathCenter);
-		}
+		}*/
 		
 		return fhirRes;
 	}
