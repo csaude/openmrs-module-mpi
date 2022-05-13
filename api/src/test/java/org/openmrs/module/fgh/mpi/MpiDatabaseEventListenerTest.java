@@ -10,12 +10,12 @@ import org.openmrs.module.debezium.DatabaseOperation;
 
 public class MpiDatabaseEventListenerTest {
 	
-	private MpiDatabaseEventListener listener;
+	private MpiDebeziumEngineConfig config;
 	
 	@Before
 	public void setup() {
 		MockitoAnnotations.initMocks(this);
-		listener = new MpiDatabaseEventListener();
+		config = new MpiDebeziumEngineConfig();
 	}
 	
 	//@Test

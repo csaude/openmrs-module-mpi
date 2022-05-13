@@ -85,7 +85,7 @@ public class MpiUtils {
 	/**
 	 * Gets the patient id of the last submitted patient id
 	 *
-	 * @return patient id
+	 * @param patientId patient id
 	 */
 	public static void saveLastSubmittedPatientId(Integer patientId) {
 		log.info("Saving the id of the patient that was last submitted to the MPI as: " + patientId);

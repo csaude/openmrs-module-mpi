@@ -147,6 +147,12 @@
             Specifies the number of patients to process and submit in parallel to the MPI. Defaults to 10
         </description>
     </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.initial.loading</property>
+        <description>
+            Specifies whether the module should perform initial loading.
+        </description>
+    </globalProperty>
 
 </module>
 

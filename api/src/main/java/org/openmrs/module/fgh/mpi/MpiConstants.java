@@ -10,6 +10,8 @@ public class MpiConstants {
 	public final static String[] WATCHED_TABLES = new String[] { "person", "patient", "person_name", "person_address",
 	        "patient_identifier", "person_attribute", "relationship" };
 	
+	public final static String GP_INITIAL = MODULE_ID + ".initial.loading";
+	
 	public final static String GP_HEALTH_CENTER_EXT_URL = MODULE_ID + ".patient.health.center.url";
 	
 	public final static String GP_PERSON_UUID_EXT_URL = MODULE_ID + ".person.uuid.url";

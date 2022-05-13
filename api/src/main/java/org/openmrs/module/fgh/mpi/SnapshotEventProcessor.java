@@ -60,9 +60,10 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 		Integer curPatientId = Integer.valueOf(event.getPrimaryKeyId().toString());
 		if (lastSubmittedPatientId != null && lastSubmittedPatientId >= curPatientId) {
 			if (log.isDebugEnabled()) {
-				log.debug("Skipping patient with id: " + curPatientId + " that they were already submitted to the MPI");
+				log.debug("Skipping patient with id: " + curPatientId + " that was already submitted to the MPI");
 			}
 			
+			//TODO test this logic in a deployed env
 			if (isLastPatient) {
 				MpiUtils.deletePatientIdOffsetFile();
 			}
