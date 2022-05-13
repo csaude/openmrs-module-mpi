@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.openmrs.api.APIException;
 import org.openmrs.module.debezium.DatabaseEvent;
+import org.openmrs.module.debezium.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -169,7 +170,14 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 				log.info("Duration          : " + DurationFormatUtils.formatDuration(duration, "HH:mm:ss", true));
 				log.info("======================================================================");
 				
-				MpiUtils.deletePatientIdOffsetFile();
+				try {
+					MpiUtils.deletePatientIdOffsetFile();
+				}
+				finally {
+					log.info("Switching to incremental loading");
+					
+					Utils.updateGlobalProperty(MpiConstants.GP_INITIAL, "false");
+				}
 			}
 		}
 	}
