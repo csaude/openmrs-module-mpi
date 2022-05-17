@@ -148,16 +148,11 @@ useful when debugging any issues that may arise with the module.
 ### Initial Loading Of Existing Patients
 At the time of deploying the MPI integration for an implementation, it's very likely that there is already existing 
 patients in the OpenMRS central database that need to be loaded and pushed to OpenCR, to load these patients you need to 
-start the central OpenMRS instance by passing a JVM property named `org.openmrs.module.debezium.snapshotOnly`. You 
-typically set this property via tomcat's `sevenv.sh` file as shown [here](https://github.com/FriendsInGlobalHealth/centralization-docker-setup/blob/main/openmrs-central/setenv.sh).
-**Note** that voided patient's are skipped during initial loading
-
-**IMPORTANT:**
-
-Remember to remove the system property after initial loading completes so that incremental loading takes place after that.
+set to true the value of the global property named `mpi.initial.loading`. **Note** that voided patient's are skipped 
+during initial loading.
 
 ### Incremental Integration
 As mentioned in the section above, you can load all existing patients and pushed to OpenCR, to process incremental 
-changes to patient records from OpenMRS to OpenCR, you need ensure the system property set during [Initial Loading Of Existing Patients](#initial-loading-of-existing-patients) 
-has been removed and should stay this way unless you need to re-run the initial loading.
+changes to patient records from OpenMRS to OpenCR, you need set to false the value of the global property named 
+`mpi.initial.loading`.
 
