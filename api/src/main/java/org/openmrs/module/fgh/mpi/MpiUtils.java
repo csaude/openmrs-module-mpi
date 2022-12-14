@@ -82,6 +82,12 @@ public class MpiUtils {
 		}
 	}
 	
+	public static void main(String[] args) throws IOException {
+		Path path = Paths.get("D:\\JEE\\Workspace\\FGH", PATIENT_ID_OFFSET_FILE);
+		
+		FileUtils.writeStringToFile(path.toFile(), "585803", StandardCharsets.UTF_8);
+	}
+	
 	/**
 	 * Gets the patient id of the last submitted patient id
 	 *
