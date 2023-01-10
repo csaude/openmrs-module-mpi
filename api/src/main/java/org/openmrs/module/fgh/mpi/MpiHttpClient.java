@@ -15,7 +15,6 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.security.SecureRandom;
 import java.util.HashMap;
@@ -28,7 +27,6 @@ import javax.net.ssl.SSLContext;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.codehaus.plexus.util.Base64;
 import org.openmrs.api.APIException;
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.context.Context;
@@ -166,7 +164,7 @@ public class MpiHttpClient {
 		
 		HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
 		
-		String data = "grant_type=client_credentials&scope=*&client_secret=bu7tcLwT-p6GlN4T7E~AsWxC5R4W4m2H7v0m&client_id=openmrs_mpi_testing";
+		String data = "grant_type=client_credentials&scope=*&client_secret=8p0AlC0m~A0KsK4V5J~s5w4W5J8T8Q7i2N2I&client_id=openmrs_mpi_testing";
 		
 		try {
 			connection.setRequestProperty("Content-type", "application/x-www-form-urlencoded");
@@ -224,13 +222,10 @@ public class MpiHttpClient {
 		//HttpsURLConnection connection = (HttpsURLConnection) new URL(url).openConnection();
 		
 		HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
-		String auth = "administrator" + ":" + "Mohawk123";
-		byte[] encodedAuth = Base64.encodeBase64(auth.getBytes(StandardCharsets.UTF_8));
-		String authHeaderValue = "Basic " + new String(encodedAuth);
-		authHeaderValue = "bearer " + this.tokenInfo.getAccess_token();
+		
+		String authHeaderValue = "bearer " + this.tokenInfo.getAccess_token();
 		
 		try {
-			
 			connection.setRequestProperty("Authorization", authHeaderValue);
 			connection.setRequestProperty("Accept", "application/fhir+json");
 			connection.setDoInput(true);
@@ -238,15 +233,7 @@ public class MpiHttpClient {
 			connection.setUseCaches(false);
 			
 			if (data != null) {
-				
-				String[] fhirParts = url.split("fhir/Patient");
-				
-				if (fhirParts != null && fhirParts.length > 1) {
-					connection.setRequestMethod("PUT");
-				} else {
-					connection.setRequestMethod("POST");
-				}
-				
+				connection.setRequestMethod("POST");
 				connection.setRequestProperty("Content-Type", "application/fhir+json");
 				connection.setDoOutput(true);
 			} else {
