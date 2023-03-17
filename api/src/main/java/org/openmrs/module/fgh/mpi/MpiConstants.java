@@ -164,4 +164,18 @@ public class MpiConstants {
 	
 	public final static String RESPONSE_FIELD_VALUE_REF = "valueReference";
 	
+	public final static String GP_SANTE_CLIENT_ID = MODULE_ID + ".sante.db.client.id";
+	
+	public final static String GP_SANTE_CLIENT_SECRET = MODULE_ID + ".sante.db.client.secret";
+	
+	public final static String GP_SANTE_LOGIN_TYPE = MODULE_ID + ".sante.db.login.type";
+	
+	public final static String GP_SANTE_SCOPE = MODULE_ID + ".sante.db.scope";
+	
+	public final static String GP_SANTE_USERNAME = MODULE_ID + ".sante.db.username";
+	
+	public final static String GP_SANTE_PASSWORD = MODULE_ID + ".sante.db.password";
+	
+	public final static String GP_LOAD_SYSTEM = MODULE_ID + ".load.system";
+	
 }
