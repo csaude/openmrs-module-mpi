@@ -4,7 +4,9 @@ import static java.lang.System.currentTimeMillis;
 import static java.util.Collections.synchronizedList;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -13,6 +15,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang3.time.DurationFormatUtils;
+import org.openmrs.api.APIException;
 import org.openmrs.module.debezium.DatabaseEvent;
 import org.openmrs.module.debezium.Utils;
 import org.slf4j.Logger;
@@ -69,57 +72,117 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 			return;
 		}
 		
-		try {
-			log.info("Processing database event -> " + event);
+		futures.add(CompletableFuture.supplyAsync(() -> {
+			try {
+				Thread.currentThread().setName(event.getTableName() + "-" + event.getPrimaryKeyId());
+				log.info("Processing database event -> " + event);
+				final long startSingle = System.currentTimeMillis();
+				
+				Map<String, Object> fhirPatient = createFhirResource(event);
+				
+				log.info("Done generating fhir patient for database event -> " + event);
+				
+				if (log.isDebugEnabled()) {
+					log.debug("Duration: " + (currentTimeMillis() - startSingle) + "ms");
+				}
+				
+				return fhirPatient;
+			}
+			catch (Throwable e) {
+				log.error("An error occurred while processing event -> " + event);
+				throw new APIException(e);
+				//TODO We should record the failed patient details and generate a report so that when we have a way to
+				// sync a single patient, we sync only the failed patients instead of all
+			}
 			
-			final long start = System.currentTimeMillis();
-			
-			Map<String, Object> fhirResource = createFhirResource(event);
-			if (fhirResource != null) {
-				//Because a relationship references 2 persons, process all
-				if (MpiConstants.BUNDLE.equals(fhirResource.get((MpiConstants.FIELD_RESOURCE_TYPE)))) {
-					for (Map<String, Object> fhirPatient : (List<Map>) fhirResource.get(MpiConstants.FIELD_ENTRY)) {
-						mpiHttpClient.submitPatient(mapper.writeValueAsString(fhirPatient));
+		}, executor));
+		
+		if (futures.size() == threadCount || isLastPatient) {
+			try {
+				if (log.isDebugEnabled()) {
+					log.debug("Waiting for " + futures.size() + " event processor thread(s) to terminate");
+				}
+				
+				CompletableFuture<Void> allFuture = CompletableFuture
+				        .allOf(futures.toArray(new CompletableFuture[futures.size()]));
+				
+				allFuture.get();
+				
+				if (log.isDebugEnabled()) {
+					log.debug("Processor event thread(s) terminated");
+				}
+				
+				List<Map<String, Object>> fhirPatients = Collections.synchronizedList(new ArrayList(futures.size()));
+				futures.parallelStream().forEach(p -> {
+					if (p != null) {
+						try {
+							Map<String, Object> returnedPatient = p.get();
+							if (returnedPatient != null) {
+								fhirPatients.add(Collections.singletonMap(MpiConstants.FIELD_RESOURCE, returnedPatient));
+							}
+						}
+						catch (Exception e) {
+							throw new APIException("Failed to get patient resource from future", e);
+						}
 					}
-				} else {
-					mpiHttpClient.submitPatient(mapper.writeValueAsString(fhirResource));
+				});
+				
+				if (!fhirPatients.isEmpty()) {
+					Map<String, Object> fhirBundle = new HashMap(3);
+					fhirBundle.put(MpiConstants.FIELD_RESOURCE_TYPE, MpiConstants.BUNDLE);
+					//fhirBundle.put(MpiConstants.FIELD_TYPE, MpiConstants.BATCH);
+					fhirBundle.put(MpiConstants.FIELD_TYPE, "message");
+					fhirBundle.put(MpiConstants.FIELD_ENTRY, fhirPatients);
+					
+					List<Object> response = mpiHttpClient.submitBundle(mapper.writeValueAsString(fhirBundle));
+					//The response is a list of 2 MPI identifiers for each patient
+					int successPatientCount = response.size() / 2;
+					if (fhirPatients.size() == successPatientCount) {
+						if (log.isDebugEnabled()) {
+							log.debug("All patients in the batch were successfully processed by the MPI");
+						}
+						
+						successCount.addAndGet(fhirPatients.size());
+						
+						MpiUtils.saveLastSubmittedPatientId(Integer.valueOf(event.getPrimaryKeyId().toString()));
+					} else {
+						//TODO Loop through all patients in the batch and check which records were problematic
+						throw new APIException((fhirPatients.size() - successPatientCount)
+						        + " patient(s) in the batch were not successfully processed by the MPI");
+					}
 				}
 			}
-			
-			log.info("Done processing database event -> " + event);
-			
-			if (log.isDebugEnabled()) {
-				log.debug("Duration: " + (currentTimeMillis() - start) + "ms");
-			}
-		}
-		catch (Throwable t) {
-			log.error("An error occurred while processing event -> " + event, t);
-			//throw new APIException(t);
-		}
-		
-		MpiUtils.saveLastSubmittedPatientId(Integer.valueOf(event.getPrimaryKeyId().toString()));
-		
-		if (isLastPatient) {
-			log.info("============================= Statistics =============================");
-			log.info("Patients submitted: " + successCount.get());
-			log.info("Started at        : " + new Date(start));
-			log.info("Ended at          : " + new Date());
-			
-			long duration = currentTimeMillis() - start;
-			
-			log.info("Duration          : " + DurationFormatUtils.formatDuration(duration, "HH:mm:ss", true));
-			log.info("======================================================================");
-			
-			try {
-				MpiUtils.deletePatientIdOffsetFile();
+			catch (Exception e) {
+				//TODO We should record the failed patients in this batch and generate a report
+				//throw new APIException("An error occurred while processing patient batch", e);
+				
+				log.debug("An error ocurred...");
 			}
 			finally {
-				log.info("Switching to incremental loading");
+				futures.clear();
+			}
+			
+			if (isLastPatient) {
+				log.info("============================= Statistics =============================");
+				log.info("Patients submitted: " + successCount.get());
+				log.info("Started at        : " + new Date(start));
+				log.info("Ended at          : " + new Date());
 				
-				Utils.updateGlobalProperty(MpiConstants.GP_INITIAL, "false");
+				long duration = currentTimeMillis() - start;
+				
+				log.info("Duration          : " + DurationFormatUtils.formatDuration(duration, "HH:mm:ss", true));
+				log.info("======================================================================");
+				
+				try {
+					MpiUtils.deletePatientIdOffsetFile();
+				}
+				finally {
+					log.info("Switching to incremental loading");
+					
+					Utils.updateGlobalProperty(MpiConstants.GP_INITIAL, "false");
+				}
 			}
 		}
-		
 	}
 	
 }

@@ -184,4 +184,12 @@ public class MpiUtils {
 		return ((SessionFactoryImpl) sf).getConnectionProvider().unwrap(DataSource.class);
 	}
 	
+	public static boolean isSanteMPI(String mpiSystem) {
+		return mpiSystem.equalsIgnoreCase("SanteMPI");
+	}
+	
+	public static boolean isOpenCrMPI(String mpiSystem) {
+		return mpiSystem.equalsIgnoreCase("OpenCR");
+	}
+	
 }

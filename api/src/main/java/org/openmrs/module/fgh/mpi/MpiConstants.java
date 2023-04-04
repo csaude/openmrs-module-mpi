@@ -3,6 +3,8 @@ package org.openmrs.module.fgh.mpi;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
+import org.apache.commons.lang3.Range;
+
 public class MpiConstants {
 	
 	public final static String MODULE_ID = "mpi";
@@ -178,4 +180,13 @@ public class MpiConstants {
 	
 	public final static String GP_LOAD_SYSTEM = MODULE_ID + ".load.system";
 	
+	public final static String GP_MPI_APP_CONTENT_TYPE = MODULE_ID + ".application.content.type";
+	
+	public final static String GP_AUTHENTICATION_TYPE = MODULE_ID + ".authentication.type";
+	
+	public final static String AUTHENTICATION_OUTH_TYPE = "outh";
+	
+	public final static String AUTHENTICATION_SSL_TYPE = "ssl";
+	
+	public final static Range<Integer> HTTP_REQUEST_SUCCESS_RANGE = Range.between(200, 299);
 }

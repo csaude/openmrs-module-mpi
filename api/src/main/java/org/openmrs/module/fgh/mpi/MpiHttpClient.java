@@ -1,18 +1,25 @@
 package org.openmrs.module.fgh.mpi;
 
+import static org.openmrs.module.fgh.mpi.MpiConstants.AUTHENTICATION_OUTH_TYPE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.AUTHENTICATION_SSL_TYPE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_AUTHENTICATION_TYPE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PASS;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PATH;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_TYPE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_LOAD_SYSTEM;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_APP_CONTENT_TYPE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_BASE_URL;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_UUID_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_CLIENT_ID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_CLIENT_SECRET;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_LOGIN_TYPE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_SCOPE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_LOAD_SYSTEM;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_UUID_SYSTEM;
+import static org.openmrs.module.fgh.mpi.MpiConstants.HTTP_REQUEST_SUCCESS_RANGE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.REQ_PARAM_SOURCE_ID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_PARAM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_VALUE_REF;
+import static org.openmrs.module.fgh.mpi.MpiUtils.isOpenCrMPI;
+import static org.openmrs.module.fgh.mpi.MpiUtils.isSanteMPI;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -42,6 +49,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 /**
  * Http client that posts patient data to the MPI
  */
@@ -80,6 +88,10 @@ public class MpiHttpClient {
 			log.debug("Searching for patient from MPI with OpenMRS uuid: " + patientUuid);
 		}
 		
+		AdministrationService adminService = Context.getAdministrationService();
+		
+		String mpiSystem = adminService.getGlobalProperty(GP_LOAD_SYSTEM);
+		
 		if (openmrsUuidSystem == null) {
 			synchronized (MpiHttpClient.class) {
 				openmrsUuidSystem = MpiUtils.getGlobalPropertyValue(GP_UUID_SYSTEM);
@@ -87,7 +99,19 @@ public class MpiHttpClient {
 		}
 		
 		String query = REQ_PARAM_SOURCE_ID + "=" + openmrsUuidSystem + "|" + patientUuid;
-		Map<String, Object> pixResponse = submitRequest(SUBPATH_PATIENT + "/$ihe-pix?" + query, null, Map.class);
+		
+		Map<String, Object> pixResponse = null;
+		
+		try {
+			pixResponse = submitRequest(SUBPATH_PATIENT + "/$ihe-pix?" + query, null, Map.class);
+		}
+		catch (APIException e) {
+			if (e.getLocalizedMessage().contains("404") && isSanteMPI(mpiSystem)) {
+				pixResponse = new HashMap<String, Object>();
+			} else
+				throw e;
+		}
+		
 		List<Map<String, Object>> ids = (List<Map<String, Object>>) pixResponse.get(RESPONSE_FIELD_PARAM);
 		if (ids == null || ids.isEmpty()) {
 			return null;
@@ -97,22 +121,19 @@ public class MpiHttpClient {
 			log.debug("Fetching actual patient record from MPI");
 		}
 		
-		String remoteRef = getTryToGetRemotePatientRefOnOpenSanteDB(ids);
+		String remoteRef = null;
 		
-		if (remoteRef == null)
-			remoteRef = getTryToGetRemotePatientRefOnOpenCR(ids);
+		if (isSanteMPI(mpiSystem)) {
+			remoteRef = (ids.get(ids.size() - 1).get(RESPONSE_FIELD_VALUE_REF).toString().split("/")[1]).split(",")[0];
+		} else if (isOpenCrMPI(mpiSystem)) {
+			String[] patientUrlParts = ids.get(0).get(RESPONSE_FIELD_VALUE_REF).toString().split("/");
+			
+			remoteRef = patientUrlParts[patientUrlParts.length - 1];
+		} else
+			throw new APIException("Unsupported MPI System!!! [" + mpiSystem + "]");
 		
 		return submitRequest(SUBPATH_PATIENT + "/" + remoteRef, null, Map.class);
-	}
-	
-	private String getTryToGetRemotePatientRefOnOpenCR(List<Map<String, Object>> ids) {
-		String[] patientUrlParts = ids.get(0).get(RESPONSE_FIELD_VALUE_REF).toString().split("/");
 		
-		return patientUrlParts[patientUrlParts.length - 1];
-	}
-	
-	private String getTryToGetRemotePatientRefOnOpenSanteDB(List<Map<String, Object>> ids) {
-		return (ids.get(ids.size() - 1).get(RESPONSE_FIELD_VALUE_REF).toString().split("/")[1]).split(",")[0];
 	}
 	
 	/**
@@ -124,7 +145,7 @@ public class MpiHttpClient {
 	public List<Object> submitBundle(String bundleData) throws Exception {
 		log.info("Submitting patient bundle to the MPI");
 		
-		List<Object> response = submitRequest(SUBPATH_FHIR, bundleData, List.class);
+		List<Object> response = submitRequest(SUBPATH_FHIR + "/Bundle", bundleData, List.class);
 		
 		if (log.isDebugEnabled()) {
 			log.debug("MPI patient bundle submission response: " + response);
@@ -195,7 +216,7 @@ public class MpiHttpClient {
 				//Implement a refresh token method
 				data = "grant_type=refresh_token&refresh_token=" + this.tokenInfo.getRefresh_token() + "&" + "client_secret="
 				        + clientSecret + "&" + "client_id=" + clientId;
-				this.genericHttRequest(data);
+				this.doAuthentication(data);
 				
 				return;
 				
@@ -204,10 +225,10 @@ public class MpiHttpClient {
 		}
 		
 		// Normal Login 
-		this.genericHttRequest(data);
+		this.doAuthentication(data);
 	}
 	
-	private void genericHttRequest(String data) throws MalformedURLException, IOException {
+	private void doAuthentication(String data) throws MalformedURLException, IOException {
 		AdministrationService adminService = Context.getAdministrationService();
 		
 		String uri = "/auth/oauth2_token";
@@ -268,28 +289,42 @@ public class MpiHttpClient {
 	private <T> T submitRequest(String requestPath, String data, Class<T> responseType) throws Exception {
 		AdministrationService adminService = Context.getAdministrationService();
 		
-		retriveAccessToken(responseType);
-		
-		//initIfNecessary();
 		serverBaseUrl = adminService.getGlobalProperty(GP_MPI_BASE_URL);
 		String url = serverBaseUrl + "/" + requestPath;
 		
-		HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+		String contentType = adminService.getGlobalProperty(GP_MPI_APP_CONTENT_TYPE);
+		String authenticationType = adminService.getGlobalProperty(GP_AUTHENTICATION_TYPE);
 		
-		String authHeaderValue = "bearer " + this.tokenInfo.getAccess_token();
+		HttpURLConnection connection = null;
 		
-		Range<Integer> successRange = Range.between(200, 299);
+		if (authenticationType.equals(AUTHENTICATION_OUTH_TYPE)) {
+			retriveAccessToken(responseType);
+			
+			connection = (HttpURLConnection) new URL(url).openConnection();
+			
+			String authHeaderValue = "bearer " + this.tokenInfo.getAccess_token();
+			
+			connection.setRequestProperty("Authorization", authHeaderValue);
+		} else if (authenticationType.equals(AUTHENTICATION_SSL_TYPE)) {
+			initIfNecessary();
+			
+			connection = (HttpsURLConnection) new URL(url).openConnection();
+			
+			((HttpsURLConnection) connection).setSSLSocketFactory(sslContext.getSocketFactory());
+			
+		} else {
+			throw new APIException("Unsupported Authentication type");
+		}
 		
 		try {
-			connection.setRequestProperty("Authorization", authHeaderValue);
-			connection.setRequestProperty("Accept", "application/fhir+json");
+			connection.setRequestProperty("Accept", contentType);
 			connection.setDoInput(true);
 			connection.setConnectTimeout(30000);
 			connection.setUseCaches(false);
 			
 			if (data != null) {
 				connection.setRequestMethod("POST");
-				connection.setRequestProperty("Content-Type", "application/fhir+json");
+				connection.setRequestProperty("Content-Type", contentType);
 				connection.setDoOutput(true);
 			} else {
 				connection.setRequestMethod("GET");
@@ -308,20 +343,13 @@ public class MpiHttpClient {
 				out.close();
 			}
 			
-			if (connection.getResponseCode() == 404) {
-				return (T) new HashMap<String, Object>();
-			} else if (!successRange.contains(connection.getResponseCode())) {
+			if (!HTTP_REQUEST_SUCCESS_RANGE.contains(connection.getResponseCode())) {
 				final String error = connection.getResponseCode() + " " + connection.getResponseMessage();
 				
 				throw new APIException("Unexpected response " + error + " from MPI");
 			}
 			
 			return MAPPER.readValue(connection.getInputStream(), responseType);
-		}
-		catch (Exception e) {
-			e.printStackTrace();
-			
-			return (T) new HashMap<String, Object>();
 		}
 		finally {
 			if (connection != null) {
