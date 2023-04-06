@@ -204,9 +204,9 @@ public class MpiHttpClient {
 		String clientId = adminService.getGlobalProperty(GP_SANTE_CLIENT_ID);
 		String clientSecret = adminService.getGlobalProperty(GP_SANTE_CLIENT_SECRET);
 		//String loginType = adminService.getGlobalProperty(GP_SANTE_LOGIN_TYPE);
-		String scope = adminService.getGlobalProperty(GP_SANTE_SCOPE);
+		//String scope = adminService.getGlobalProperty(GP_SANTE_SCOPE);
 		
-		String data = "grant_type=" + loginType + "&" + "scope=" + scope + "&" + "client_secret=" + clientSecret + "&"
+		String data = "grant_type=client_credentials" + "&" + "scope=*" + "&" + "client_secret=" + clientSecret + "&"
 		        + "client_id=" + clientId;
 		
 		// Request a Refresh token in case it expires 
