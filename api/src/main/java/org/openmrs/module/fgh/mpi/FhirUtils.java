@@ -672,6 +672,53 @@ public class FhirUtils {
 		}
 	}
 	
+	public static Map<String, Object> generateMessageHeader() {
+		Map<String, Object> messageHeader = new HashMap<String, Object>();
+		
+		messageHeader.put("fullUrl", "http://metadata.epts.e-saude.net/fhir/bundle");
+		
+		List<Map<String, Object>> focus = new ArrayList<Map<String, Object>>();
+		focus.add(fastCreateMap("reference", "metadata.epts.e-saude.net/bundle"));
+		
+		List<Map<String, Object>> destination = new ArrayList<Map<String, Object>>();
+		destination.add(fastCreateMap("endpoint", "http://metadata.epts.e-saude.net/santempi/bundle"));
+		
+		Map<String, Object> resourceMap = fastCreateMap("resourceType", "MessageHeader", "id", "1", "eventUri",
+		    "urn:ihe:iti:pmir:2019:patient-feed", "source",
+		    fastCreateMap("endpoint", "http://metadata.epts.e-saude.net/moz/openmrs"), "focus", focus, "destination",
+		    destination);
+		
+		messageHeader.put("resource", resourceMap);
+		
+		return messageHeader;
+	}
+	
+	public static Map<String, Object> fastCreateMap(Object... params) {
+		if (params.length % 2 != 0)
+			throw new APIException("The parameters for fastCreatMap must be pars <K1, V1>, <K2, V2>");
+		
+		Map<String, Object> map = new HashMap<>();
+		
+		int paramsSize = params.length / 2;
+		
+		for (int set = 1; set <= paramsSize; set++) {
+			int pos = set * 2 - 1;
+			
+			map.put(((String) params[pos - 1]), params[pos]);
+		}
+		
+		return map;
+	}
+	
+	public static Map<String, Object> getObjectOnMapAsMap(String key, Map<String, Object> map) {
+		return (Map<String, Object>) map.get(key);
+		
+	}
+	
+	public static List<Map<String, Object>> getObjectOnMapAsListOfMap(String key, Map<String, Object> map) {
+		return (List<Map<String, Object>>) map.get(key);
+	}
+	
 	private static class TypeConcept {
 		
 		private String code;

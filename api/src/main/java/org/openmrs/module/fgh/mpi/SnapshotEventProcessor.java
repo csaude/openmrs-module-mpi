@@ -2,6 +2,14 @@ package org.openmrs.module.fgh.mpi;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.Collections.synchronizedList;
+import static org.openmrs.module.fgh.mpi.FhirUtils.fastCreateMap;
+import static org.openmrs.module.fgh.mpi.FhirUtils.generateMessageHeader;
+import static org.openmrs.module.fgh.mpi.FhirUtils.getObjectOnMapAsListOfMap;
+import static org.openmrs.module.fgh.mpi.FhirUtils.getObjectOnMapAsMap;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_SYSTEM;
+import static org.openmrs.module.fgh.mpi.MpiUtils.getGlobalPropertyValue;
+import static org.openmrs.module.fgh.mpi.MpiUtils.isOpenCrMPI;
+import static org.openmrs.module.fgh.mpi.MpiUtils.isSanteMPI;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -52,6 +60,8 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 	
 	@Override
 	public void process(DatabaseEvent event) {
+		String mpiSystem = getGlobalPropertyValue(GP_MPI_SYSTEM);
+		
 		if (start == null) {
 			start = currentTimeMillis();
 			log.info("Patient full sync started at: " + new Date());
@@ -128,15 +138,70 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 				});
 				
 				if (!fhirPatients.isEmpty()) {
-					Map<String, Object> fhirBundle = new HashMap(3);
-					fhirBundle.put(MpiConstants.FIELD_RESOURCE_TYPE, MpiConstants.BUNDLE);
-					//fhirBundle.put(MpiConstants.FIELD_TYPE, MpiConstants.BATCH);
-					fhirBundle.put(MpiConstants.FIELD_TYPE, "message");
-					fhirBundle.put(MpiConstants.FIELD_ENTRY, fhirPatients);
+					int successPatientCount = 0;
 					
-					List<Object> response = mpiHttpClient.submitBundle(mapper.writeValueAsString(fhirBundle));
-					//The response is a list of 2 MPI identifiers for each patient
-					int successPatientCount = response.size() / 2;
+					if (isOpenCrMPI(mpiSystem)) {
+						Map<String, Object> fhirBundle = new HashMap(3);
+						fhirBundle.put(MpiConstants.FIELD_RESOURCE_TYPE, MpiConstants.BUNDLE);
+						fhirBundle.put(MpiConstants.FIELD_TYPE, MpiConstants.BATCH);
+						fhirBundle.put(MpiConstants.FIELD_ENTRY, fhirPatients);
+						
+						List<Object> response = mpiHttpClient.submitBundle("fhir", mapper.writeValueAsString(fhirBundle),
+						    List.class);
+						
+						successPatientCount = response.size() / 2;
+					} else if (isSanteMPI(mpiSystem)) {
+						Map<String, Object> fhirMessageHeaderEntry = generateMessageHeader();
+						
+						//The entry of resource in message bundle message
+						Map<String, Object> fhirResourceEntry = new HashMap<>(2);
+						
+						fhirResourceEntry.put("fullUrl", "metadata.epts.e-saude.net/bundle");
+						fhirResourceEntry.put("resource", new HashMap<>(3));
+						
+						getObjectOnMapAsMap("resource", fhirResourceEntry).put(MpiConstants.FIELD_RESOURCE_TYPE,
+						    MpiConstants.BUNDLE);
+						
+						getObjectOnMapAsMap("resource", fhirResourceEntry).put(MpiConstants.FIELD_TYPE,
+						    MpiConstants.FIELD_TYPE_HISTORY);
+						
+						List<Map<String, Object>> fhirPatintsPlusRequest = new ArrayList<Map<String, Object>>(
+						        fhirPatients.size());
+						
+						for (Map<String, Object> fhirPatient : fhirPatients) {
+							Map<String, Object> resourceEntry = getObjectOnMapAsMap(MpiConstants.FIELD_RESOURCE,
+							    fhirPatient);
+							
+							Object patientUuid = getObjectOnMapAsListOfMap(MpiConstants.FIELD_IDENTIFIER, resourceEntry)
+							        .get(0).get("value");
+							
+							Map<String, Object> patientEntry = fastCreateMap(MpiConstants.FIELD_RESOURCE, resourceEntry,
+							    "request", fastCreateMap("method", "POST", "url", "Parient/" + patientUuid), "fullUrl",
+							    "Parient/" + patientUuid);
+							
+							fhirPatintsPlusRequest.add(patientEntry);
+						}
+						
+						getObjectOnMapAsMap("resource", fhirResourceEntry).put(MpiConstants.FIELD_ENTRY,
+						    fhirPatintsPlusRequest);
+						
+						Map<String, Object> messageBundle = new HashMap<String, Object>();
+						messageBundle.put("resourceType", "Bundle");
+						messageBundle.put("type", "message");
+						messageBundle.put(MpiConstants.FIELD_ENTRY, new ArrayList<Map<String, Object>>(2));
+						
+						getObjectOnMapAsListOfMap(MpiConstants.FIELD_ENTRY, messageBundle).add(fhirMessageHeaderEntry);
+						getObjectOnMapAsListOfMap(MpiConstants.FIELD_ENTRY, messageBundle).add(fhirResourceEntry);
+						
+						Map<String, Object> response = mpiHttpClient.submitBundle("fhir/Bundle",
+						    mapper.writeValueAsString(messageBundle), Map.class);
+						
+						//Sante doen't return the amount of pacients successifuly received but if there is any error in one patient Sante throws Exception
+						//Force successPatientCount to be equal fhirPatients.size()
+						successPatientCount = fhirPatients.size();
+					} else
+						throw new APIException("Unkown MPISystem [" + mpiSystem + "]");
+					
 					if (fhirPatients.size() == successPatientCount) {
 						if (log.isDebugEnabled()) {
 							log.debug("All patients in the batch were successfully processed by the MPI");
@@ -154,9 +219,7 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 			}
 			catch (Exception e) {
 				//TODO We should record the failed patients in this batch and generate a report
-				//throw new APIException("An error occurred while processing patient batch", e);
-				
-				log.debug("An error ocurred...");
+				throw new APIException("An error occurred while processing patient batch", e);
 			}
 			finally {
 				futures.clear();

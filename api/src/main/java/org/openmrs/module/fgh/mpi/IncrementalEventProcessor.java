@@ -5,6 +5,7 @@ import static java.lang.System.currentTimeMillis;
 import java.util.List;
 import java.util.Map;
 
+import org.openmrs.api.APIException;
 import org.openmrs.module.debezium.DatabaseEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +30,6 @@ public class IncrementalEventProcessor extends BaseEventProcessor {
 			final long start = System.currentTimeMillis();
 			
 			Map<String, Object> fhirResource = createFhirResource(event);
-			
 			if (fhirResource != null) {
 				//Because a relationship references 2 persons, process all
 				if (MpiConstants.BUNDLE.equals(fhirResource.get((MpiConstants.FIELD_RESOURCE_TYPE)))) {
@@ -49,7 +49,7 @@ public class IncrementalEventProcessor extends BaseEventProcessor {
 		}
 		catch (Throwable t) {
 			log.error("An error occurred while processing event -> " + event, t);
-			//throw new APIException(t);
+			throw new APIException(t);
 		}
 		
 	}

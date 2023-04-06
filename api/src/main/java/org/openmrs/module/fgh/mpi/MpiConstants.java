@@ -174,11 +174,7 @@ public class MpiConstants {
 	
 	public final static String GP_SANTE_SCOPE = MODULE_ID + ".sante.db.scope";
 	
-	public final static String GP_SANTE_USERNAME = MODULE_ID + ".sante.db.username";
-	
-	public final static String GP_SANTE_PASSWORD = MODULE_ID + ".sante.db.password";
-	
-	public final static String GP_LOAD_SYSTEM = MODULE_ID + ".load.system";
+	public final static String GP_MPI_SYSTEM = MODULE_ID + ".system";
 	
 	public final static String GP_MPI_APP_CONTENT_TYPE = MODULE_ID + ".application.content.type";
 	
@@ -187,6 +183,8 @@ public class MpiConstants {
 	public final static String AUTHENTICATION_OUTH_TYPE = "outh";
 	
 	public final static String AUTHENTICATION_SSL_TYPE = "ssl";
+	
+	public final static String FIELD_TYPE_HISTORY = "history";
 	
 	public final static Range<Integer> HTTP_REQUEST_SUCCESS_RANGE = Range.between(200, 299);
 }

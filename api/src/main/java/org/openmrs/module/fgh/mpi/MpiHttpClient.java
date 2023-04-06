@@ -6,18 +6,18 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.GP_AUTHENTICATION_TYPE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PASS;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PATH;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_TYPE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_LOAD_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_APP_CONTENT_TYPE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_BASE_URL;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_CLIENT_ID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_CLIENT_SECRET;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_LOGIN_TYPE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_SCOPE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_UUID_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.HTTP_REQUEST_SUCCESS_RANGE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.REQ_PARAM_SOURCE_ID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_PARAM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_VALUE_REF;
+import static org.openmrs.module.fgh.mpi.MpiUtils.getGlobalPropertyValue;
 import static org.openmrs.module.fgh.mpi.MpiUtils.isOpenCrMPI;
 import static org.openmrs.module.fgh.mpi.MpiUtils.isSanteMPI;
 
@@ -88,9 +88,7 @@ public class MpiHttpClient {
 			log.debug("Searching for patient from MPI with OpenMRS uuid: " + patientUuid);
 		}
 		
-		AdministrationService adminService = Context.getAdministrationService();
-		
-		String mpiSystem = adminService.getGlobalProperty(GP_LOAD_SYSTEM);
+		String mpiSystem = getGlobalPropertyValue(GP_MPI_SYSTEM);
 		
 		if (openmrsUuidSystem == null) {
 			synchronized (MpiHttpClient.class) {
@@ -106,6 +104,8 @@ public class MpiHttpClient {
 			pixResponse = submitRequest(SUBPATH_PATIENT + "/$ihe-pix?" + query, null, Map.class);
 		}
 		catch (APIException e) {
+			//When a queried patient is not present in Sante DB it throws an Exception.
+			//This actualy is not any error,so bellow the exception is caught 
 			if (e.getLocalizedMessage().contains("404") && isSanteMPI(mpiSystem)) {
 				pixResponse = new HashMap<String, Object>();
 			} else
@@ -142,10 +142,10 @@ public class MpiHttpClient {
 	 * @param bundleData the bundle fhir json payload
 	 * @throws Exception
 	 */
-	public List<Object> submitBundle(String bundleData) throws Exception {
+	public <T> T submitBundle(String fhirURL, String bundleData, Class<T> responseType) throws Exception {
 		log.info("Submitting patient bundle to the MPI");
 		
-		List<Object> response = submitRequest(SUBPATH_FHIR + "/Bundle", bundleData, List.class);
+		T response = submitRequest(fhirURL, bundleData, responseType);
 		
 		if (log.isDebugEnabled()) {
 			log.debug("MPI patient bundle submission response: " + response);
@@ -170,16 +170,16 @@ public class MpiHttpClient {
 		
 		AdministrationService adminService = Context.getAdministrationService();
 		
-		String loadedSystem = adminService.getGlobalProperty(GP_LOAD_SYSTEM);
+		String mpiSystem = adminService.getGlobalProperty(GP_MPI_SYSTEM);
 		
-		if (loadedSystem.equalsIgnoreCase("santeMPI")) {
-			Map santeResponse = submitRequest(SUBPATH_PATIENT, patientData, Map.class);
+		if (MpiUtils.isSanteMPI(mpiSystem)) {
+			Map<String, Object> santeResponse = submitRequest(SUBPATH_PATIENT, patientData, Map.class);
 			
 			if (log.isDebugEnabled()) {
 				log.debug("MPI patient submission response: " + santeResponse);
 			}
 			
-			if (santeResponse == null) {
+			if (santeResponse == null || santeResponse.isEmpty()) {
 				throw new APIException("An empty response was received when the patient was submitted");
 			}
 		} else {
@@ -203,7 +203,7 @@ public class MpiHttpClient {
 		
 		String clientId = adminService.getGlobalProperty(GP_SANTE_CLIENT_ID);
 		String clientSecret = adminService.getGlobalProperty(GP_SANTE_CLIENT_SECRET);
-		String loginType = adminService.getGlobalProperty(GP_SANTE_LOGIN_TYPE);
+		//String loginType = adminService.getGlobalProperty(GP_SANTE_LOGIN_TYPE);
 		String scope = adminService.getGlobalProperty(GP_SANTE_SCOPE);
 		
 		String data = "grant_type=" + loginType + "&" + "scope=" + scope + "&" + "client_secret=" + clientSecret + "&"
@@ -217,22 +217,18 @@ public class MpiHttpClient {
 				data = "grant_type=refresh_token&refresh_token=" + this.tokenInfo.getRefresh_token() + "&" + "client_secret="
 				        + clientSecret + "&" + "client_id=" + clientId;
 				this.doAuthentication(data);
-				
-				return;
-				
 			}
-			return;
+		} else {
+			// Normal Login 
+			this.doAuthentication(data);
 		}
-		
-		// Normal Login 
-		this.doAuthentication(data);
 	}
 	
 	private void doAuthentication(String data) throws MalformedURLException, IOException {
 		AdministrationService adminService = Context.getAdministrationService();
 		
 		String uri = "/auth/oauth2_token";
-		serverBaseUrl = adminService.getGlobalProperty(GP_MPI_BASE_URL);
+		this.serverBaseUrl = adminService.getGlobalProperty(GP_MPI_BASE_URL);
 		String url = serverBaseUrl + uri;
 		
 		HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
@@ -407,7 +403,5 @@ public class MpiHttpClient {
 				}
 			}
 		}
-		
 	}
-	
 }

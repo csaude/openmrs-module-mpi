@@ -75,7 +75,6 @@ public class MpiIntegrationProcessor {
 		}
 		
 		Map<String, Object> mpiPatient = mpiHttpClient.getPatient(patientUud);
-		
 		if (mpiPatient != null) {
 			log.info("Found existing patient record in the MPI");
 		} else {
