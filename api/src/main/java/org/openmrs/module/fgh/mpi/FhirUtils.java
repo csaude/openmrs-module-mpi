@@ -33,6 +33,8 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.GP_PERSON_UUID_EXT_URL;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_CONCEPT_MAP_A;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_CONCEPT_MAP_B;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_SYSTEM;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_MESSAGE_HEADER_EVENT_URI;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_MESSAGE_HEADER_FOCUS_REFERENCE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_UUID_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.HEALTH_CENTER_ATTRIB_TYPE_UUID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.IDENTIFIER;
@@ -113,6 +115,10 @@ public class FhirUtils {
 	
 	private static Map<String, TypeConcept> uuidIdentifierTypeMap;
 	
+	public static String santeMessageHeaderFocusReference;
+	
+	public static String santeMessageHeaderEventUri;
+	
 	/**
 	 * Builds a map of fields and values with patient details that can be serialized as a fhir json
 	 * message. This method looks up the up to date patient details from the DB bypassing any hibernate
@@ -168,6 +174,7 @@ public class FhirUtils {
 		fhirRes.put(FIELD_ADDRESS, getAddresses(id, existingAddressCount, true));
 		fhirRes.put(FIELD_TELECOM, getPhones(id, mpiPatient));
 		fhirRes.put(FIELD_CONTACT, getRelationships(id, mpiPatient));
+		
 		/*List<Map<String, Object>> heathCenter = getHealthCenter(id, mpiPatient);
 		if (heathCenter != null) {
 			fhirRes.put(MpiConstants.FIELD_EXTENSION, heathCenter);
@@ -670,30 +677,44 @@ public class FhirUtils {
 				}
 			}
 		}
+		
+		if (santeMessageHeaderEventUri == null) {
+			santeMessageHeaderEventUri = MpiUtils.getGlobalPropertyValue(GP_SANTE_MESSAGE_HEADER_EVENT_URI);
+		}
+		
+		if (santeMessageHeaderFocusReference == null) {
+			santeMessageHeaderFocusReference = MpiUtils.getGlobalPropertyValue(GP_SANTE_MESSAGE_HEADER_FOCUS_REFERENCE);
+		}
 	}
 	
+	/**
+	 * Generates a fhir map for Message Header needed by santeMPI when submit a bundle
+	 * 
+	 * @return a map containing the the message header objects
+	 */
 	public static Map<String, Object> generateMessageHeader() {
 		Map<String, Object> messageHeader = new HashMap<String, Object>();
 		
-		messageHeader.put("fullUrl", "http://metadata.epts.e-saude.net/fhir/bundle");
-		
 		List<Map<String, Object>> focus = new ArrayList<Map<String, Object>>();
-		focus.add(fastCreateMap("reference", "metadata.epts.e-saude.net/bundle"));
-		
-		List<Map<String, Object>> destination = new ArrayList<Map<String, Object>>();
-		destination.add(fastCreateMap("endpoint", "http://metadata.epts.e-saude.net/santempi/bundle"));
+		focus.add(fastCreateMap("reference", santeMessageHeaderFocusReference));
 		
 		Map<String, Object> resourceMap = fastCreateMap("resourceType", "MessageHeader", "id", "1", "eventUri",
-		    "urn:ihe:iti:pmir:2019:patient-feed", "source",
-		    fastCreateMap("endpoint", "http://metadata.epts.e-saude.net/moz/openmrs"), "focus", focus, "destination",
-		    destination);
+		    santeMessageHeaderEventUri, "focus", focus);
 		
 		messageHeader.put("resource", resourceMap);
 		
 		return messageHeader;
 	}
 	
-	public static Map<String, Object> fastCreateMap(Object... params) {
+	/**
+	 * Create a map populated with an initial entries passed by parameter
+	 * 
+	 * @param params the entries which will populate the map. It's an array which emulate a map entries
+	 *            in this format [key1, val1, key2, val2, key3, val3, ..]
+	 * @return the generated map
+	 * @throws APIException when the params array length is not odd
+	 */
+	public static Map<String, Object> fastCreateMap(Object... params) throws APIException {
 		if (params.length % 2 != 0)
 			throw new APIException("The parameters for fastCreatMap must be pars <K1, V1>, <K2, V2>");
 		
@@ -710,12 +731,29 @@ public class FhirUtils {
 		return map;
 	}
 	
-	public static Map<String, Object> getObjectOnMapAsMap(String key, Map<String, Object> map) {
+	/**
+	 * Retrieves an object from a map as a {@link Map}
+	 * 
+	 * @param key the key of the map object which is being retrieved
+	 * @param map the map from where the object will be retrieved from
+	 * @return the map object retrieved
+	 * @throws ClassCastException if the correspondent object for key is not a map
+	 */
+	public static Map<String, Object> getObjectOnMapAsMap(String key, Map<String, Object> map) throws ClassCastException {
 		return (Map<String, Object>) map.get(key);
 		
 	}
 	
-	public static List<Map<String, Object>> getObjectOnMapAsListOfMap(String key, Map<String, Object> map) {
+	/**
+	 * Retrieves an object from a map as a {@link List}
+	 * 
+	 * @param key the key of the object which is being retrieved
+	 * @param map the map from where the object will be retrieved from
+	 * @return the list object retrieved
+	 * @throws ClassCastException if the correspondent object for key is not a list
+	 */
+	public static List<Map<String, Object>> getObjectOnMapAsListOfMap(String key, Map<String, Object> map)
+	        throws ClassCastException {
 		return (List<Map<String, Object>>) map.get(key);
 	}
 	

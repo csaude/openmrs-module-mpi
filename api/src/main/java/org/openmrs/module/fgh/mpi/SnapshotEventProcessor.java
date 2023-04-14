@@ -6,10 +6,6 @@ import static org.openmrs.module.fgh.mpi.FhirUtils.fastCreateMap;
 import static org.openmrs.module.fgh.mpi.FhirUtils.generateMessageHeader;
 import static org.openmrs.module.fgh.mpi.FhirUtils.getObjectOnMapAsListOfMap;
 import static org.openmrs.module.fgh.mpi.FhirUtils.getObjectOnMapAsMap;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_SYSTEM;
-import static org.openmrs.module.fgh.mpi.MpiUtils.getGlobalPropertyValue;
-import static org.openmrs.module.fgh.mpi.MpiUtils.isOpenCrMPI;
-import static org.openmrs.module.fgh.mpi.MpiUtils.isSanteMPI;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,9 +19,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang3.time.DurationFormatUtils;
+import org.apache.kafka.common.errors.ApiException;
 import org.openmrs.api.APIException;
 import org.openmrs.module.debezium.DatabaseEvent;
 import org.openmrs.module.debezium.Utils;
+import org.openmrs.module.fgh.mpi.miscellaneous.MpiContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +58,14 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 	
 	@Override
 	public void process(DatabaseEvent event) {
-		String mpiSystem = getGlobalPropertyValue(GP_MPI_SYSTEM);
+		MpiContext mpiContext = null;
+		
+		try {
+			mpiContext = MpiContext.initIfNecessary();
+		}
+		catch (Exception e) {
+			throw new ApiException(e);
+		}
 		
 		if (start == null) {
 			start = currentTimeMillis();
@@ -140,7 +145,7 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 				if (!fhirPatients.isEmpty()) {
 					int successPatientCount = 0;
 					
-					if (isOpenCrMPI(mpiSystem)) {
+					if (mpiContext.getMpiSystem().isOpenCr()) {
 						Map<String, Object> fhirBundle = new HashMap(3);
 						fhirBundle.put(MpiConstants.FIELD_RESOURCE_TYPE, MpiConstants.BUNDLE);
 						fhirBundle.put(MpiConstants.FIELD_TYPE, MpiConstants.BATCH);
@@ -150,13 +155,28 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 						    List.class);
 						
 						successPatientCount = response.size() / 2;
-					} else if (isSanteMPI(mpiSystem)) {
+						
+						if (fhirPatients.size() == successPatientCount) {
+							if (log.isDebugEnabled()) {
+								log.debug("All patients in the batch were successfully processed by the MPI");
+							}
+							
+							successCount.addAndGet(fhirPatients.size());
+							
+							MpiUtils.saveLastSubmittedPatientId(Integer.valueOf(event.getPrimaryKeyId().toString()));
+						} else {
+							//TODO Loop through all patients in the batch and check which records were problematic
+							throw new APIException((fhirPatients.size() - successPatientCount)
+							        + " patient(s) in the batch were not successfully processed by the MPI");
+						}
+						
+					} else if (mpiContext.getMpiSystem().isSanteMPI()) {
 						Map<String, Object> fhirMessageHeaderEntry = generateMessageHeader();
 						
 						//The entry of resource in message bundle message
 						Map<String, Object> fhirResourceEntry = new HashMap<>(2);
 						
-						fhirResourceEntry.put("fullUrl", "metadata.epts.e-saude.net/bundle");
+						fhirResourceEntry.put("fullUrl", FhirUtils.santeMessageHeaderFocusReference);
 						fhirResourceEntry.put("resource", new HashMap<>(3));
 						
 						getObjectOnMapAsMap("resource", fhirResourceEntry).put(MpiConstants.FIELD_RESOURCE_TYPE,
@@ -195,31 +215,15 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 						
 						Map<String, Object> response = mpiHttpClient.submitBundle("fhir/Bundle",
 						    mapper.writeValueAsString(messageBundle), Map.class);
-						
-						//Sante doen't return the amount of pacients successifuly received but if there is any error in one patient Sante throws Exception
-						//Force successPatientCount to be equal fhirPatients.size()
-						successPatientCount = fhirPatients.size();
 					} else
-						throw new APIException("Unkown MPISystem [" + mpiSystem + "]");
+						throw new APIException("Unkown MPISystem [" + mpiContext.getMpiSystem() + "]");
 					
-					if (fhirPatients.size() == successPatientCount) {
-						if (log.isDebugEnabled()) {
-							log.debug("All patients in the batch were successfully processed by the MPI");
-						}
-						
-						successCount.addAndGet(fhirPatients.size());
-						
-						MpiUtils.saveLastSubmittedPatientId(Integer.valueOf(event.getPrimaryKeyId().toString()));
-					} else {
-						//TODO Loop through all patients in the batch and check which records were problematic
-						throw new APIException((fhirPatients.size() - successPatientCount)
-						        + " patient(s) in the batch were not successfully processed by the MPI");
-					}
 				}
 			}
 			catch (Exception e) {
+				log.error("An error ocurred " + e.getLocalizedMessage());
 				//TODO We should record the failed patients in this batch and generate a report
-				throw new APIException("An error occurred while processing patient batch", e);
+				//throw new APIException("An error occurred while processing patient batch", e);
 			}
 			finally {
 				futures.clear();
@@ -247,5 +251,4 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 			}
 		}
 	}
-	
 }

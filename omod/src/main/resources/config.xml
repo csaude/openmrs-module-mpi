@@ -216,17 +216,17 @@
 		<property>${project.parent.artifactId}.authentication.type
 		</property>
 		<description>
-			Specify the authentication type used to authenticate to the mpi system. OpenCR: ssl, SanteDB: outh
+			Specify the authentication type used to authenticate to the mpi system. OpenCR: SSL, SanteDB: OAUTH
 		</description>
-		<defaultValue>outh</defaultValue>
+		<defaultValue>OAUTH</defaultValue>
 	</globalProperty>
 	<globalProperty>
 		<property>${project.parent.artifactId}.system
 		</property>
 		<description>
-			The MPI System. Could be "santeMPI" or "OpenCR"
+			The MPI System. Could be "SANTEMPI" or "OPENCR"
 		</description>
-		<defaultValue>santeMPI</defaultValue>
+		<defaultValue>SANTEMPI</defaultValue>
 	</globalProperty>
 	<globalProperty>
 		<property>${project.parent.artifactId}.sante.db.client.id
@@ -241,5 +241,20 @@
 			The secret of the client which will be used to connect to the SanteMPI system
 		</description>
 	</globalProperty>
+	<globalProperty>
+		<property>${project.parent.artifactId}.sante.message.header.focus.reference</property>
+		<defaultValue>metadata.epts.e-saude.net/bundle</defaultValue>
+		<description>
+			The reference for Sante Message Header Bundle
+		</description>
+	</globalProperty>	
+	<globalProperty>
+		<property>${project.parent.artifactId}.sante.message.header.event.uri</property>
+		<defaultValue>urn:ihe:iti:pmir:2019:patient-feed</defaultValue>
+		<description>
+			The event URI for Sante Message Header Bundle
+		</description>
+	</globalProperty>	
+	
 </module>
 

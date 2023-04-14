@@ -1,49 +1,24 @@
 package org.openmrs.module.fgh.mpi;
 
-import static org.openmrs.module.fgh.mpi.MpiConstants.AUTHENTICATION_OUTH_TYPE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.AUTHENTICATION_SSL_TYPE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_AUTHENTICATION_TYPE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PASS;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PATH;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_TYPE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_APP_CONTENT_TYPE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_BASE_URL;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_SYSTEM;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_CLIENT_ID;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_CLIENT_SECRET;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_SCOPE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_UUID_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.HTTP_REQUEST_SUCCESS_RANGE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.REQ_PARAM_SOURCE_ID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_PARAM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_VALUE_REF;
-import static org.openmrs.module.fgh.mpi.MpiUtils.getGlobalPropertyValue;
-import static org.openmrs.module.fgh.mpi.MpiUtils.isOpenCrMPI;
-import static org.openmrs.module.fgh.mpi.MpiUtils.isSanteMPI;
 
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.security.KeyStore;
-import java.security.SecureRandom;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.Range;
-import org.apache.commons.lang3.StringUtils;
 import org.openmrs.api.APIException;
-import org.openmrs.api.AdministrationService;
-import org.openmrs.api.context.Context;
-import org.openmrs.module.fgh.mpi.model.TokenInfo;
+import org.openmrs.module.fgh.mpi.miscellaneous.MpiContext;
+import org.openmrs.module.fgh.mpi.miscellaneous.TokenInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -58,21 +33,11 @@ public class MpiHttpClient {
 	
 	private static final Logger log = LoggerFactory.getLogger(MpiHttpClient.class);
 	
-	public final static String CONTENT_TYPE = "application/json";
-	
-	private SSLContext sslContext;
-	
-	private String serverBaseUrl;
-	
 	private static final String SUBPATH_FHIR = "fhir";
 	
 	private static final String SUBPATH_PATIENT = SUBPATH_FHIR + "/Patient";
 	
-	private static String openmrsUuidSystem;
-	
 	private static final ObjectMapper MAPPER = new ObjectMapper();
-	
-	private TokenInfo tokenInfo;
 	
 	/**
 	 * Looks up the patient with the specified OpenMRS uuid from the MPI
@@ -82,35 +47,19 @@ public class MpiHttpClient {
 	 * @throws Exception
 	 */
 	public Map<String, Object> getPatient(String patientUuid) throws Exception {
+		MpiContext mpiContext = MpiContext.initIfNecessary();
+		
 		log.info("Looking up patient record from MPI with OpenMRS uuid: " + patientUuid);
 		
 		if (log.isDebugEnabled()) {
 			log.debug("Searching for patient from MPI with OpenMRS uuid: " + patientUuid);
 		}
 		
-		String mpiSystem = getGlobalPropertyValue(GP_MPI_SYSTEM);
-		
-		if (openmrsUuidSystem == null) {
-			synchronized (MpiHttpClient.class) {
-				openmrsUuidSystem = MpiUtils.getGlobalPropertyValue(GP_UUID_SYSTEM);
-			}
-		}
-		
-		String query = REQ_PARAM_SOURCE_ID + "=" + openmrsUuidSystem + "|" + patientUuid;
+		String query = REQ_PARAM_SOURCE_ID + "=" + mpiContext.getOpenmrsUuidSystem() + "|" + patientUuid;
 		
 		Map<String, Object> pixResponse = null;
 		
-		try {
-			pixResponse = submitRequest(SUBPATH_PATIENT + "/$ihe-pix?" + query, null, Map.class);
-		}
-		catch (APIException e) {
-			//When a queried patient is not present in Sante DB it throws an Exception.
-			//This actualy is not any error,so bellow the exception is caught 
-			if (e.getLocalizedMessage().contains("404") && isSanteMPI(mpiSystem)) {
-				pixResponse = new HashMap<String, Object>();
-			} else
-				throw e;
-		}
+		pixResponse = submitRequest(SUBPATH_PATIENT + "/$ihe-pix?" + query, null, Map.class);
 		
 		List<Map<String, Object>> ids = (List<Map<String, Object>>) pixResponse.get(RESPONSE_FIELD_PARAM);
 		if (ids == null || ids.isEmpty()) {
@@ -123,14 +72,14 @@ public class MpiHttpClient {
 		
 		String remoteRef = null;
 		
-		if (isSanteMPI(mpiSystem)) {
+		if (mpiContext.getMpiSystem().isSanteMPI()) {
 			remoteRef = (ids.get(ids.size() - 1).get(RESPONSE_FIELD_VALUE_REF).toString().split("/")[1]).split(",")[0];
-		} else if (isOpenCrMPI(mpiSystem)) {
+		} else if (mpiContext.getMpiSystem().isOpenCr()) {
 			String[] patientUrlParts = ids.get(0).get(RESPONSE_FIELD_VALUE_REF).toString().split("/");
 			
 			remoteRef = patientUrlParts[patientUrlParts.length - 1];
 		} else
-			throw new APIException("Unsupported MPI System!!! [" + mpiSystem + "]");
+			throw new APIException("Unsupported MPI System!!! [" + mpiContext.getMpiSystem() + "]");
 		
 		return submitRequest(SUBPATH_PATIENT + "/" + remoteRef, null, Map.class);
 		
@@ -163,23 +112,21 @@ public class MpiHttpClient {
 	 * @throws Exception
 	 */
 	public void submitPatient(String patientData) throws Exception {
+		MpiContext mpiContext = MpiContext.initIfNecessary();
+		
 		log.info("Submitting patient record to the MPI");
 		if (log.isDebugEnabled()) {
 			log.debug("Patient data -> " + patientData);
 		}
 		
-		AdministrationService adminService = Context.getAdministrationService();
-		
-		String mpiSystem = adminService.getGlobalProperty(GP_MPI_SYSTEM);
-		
-		if (MpiUtils.isSanteMPI(mpiSystem)) {
+		if (mpiContext.getMpiSystem().isSanteMPI()) {
 			Map<String, Object> santeResponse = submitRequest(SUBPATH_PATIENT, patientData, Map.class);
 			
 			if (log.isDebugEnabled()) {
 				log.debug("MPI patient submission response: " + santeResponse);
 			}
 			
-			if (santeResponse == null || santeResponse.isEmpty()) {
+			if (MapUtils.isEmpty(santeResponse)) {
 				throw new APIException("An empty response was received when the patient was submitted");
 			}
 		} else {
@@ -197,25 +144,19 @@ public class MpiHttpClient {
 		log.info("Successfully submitted the patient record to the MPI");
 	}
 	
-	private <T> void retriveAccessToken(Class<T> responseType) throws MalformedURLException, IOException {
+	private <T> void retriveAccessToken(Class<T> responseType) throws Exception {
+		MpiContext mpiContext = MpiContext.initIfNecessary();
 		
-		AdministrationService adminService = Context.getAdministrationService();
-		
-		String clientId = adminService.getGlobalProperty(GP_SANTE_CLIENT_ID);
-		String clientSecret = adminService.getGlobalProperty(GP_SANTE_CLIENT_SECRET);
-		//String loginType = adminService.getGlobalProperty(GP_SANTE_LOGIN_TYPE);
-		//String scope = adminService.getGlobalProperty(GP_SANTE_SCOPE);
-		
-		String data = "grant_type=client_credentials" + "&" + "scope=*" + "&" + "client_secret=" + clientSecret + "&"
-		        + "client_id=" + clientId;
+		String data = "grant_type=client_credentials" + "&" + "scope=*" + "&" + "client_secret="
+		        + mpiContext.getClientSecret() + "&" + "client_id=" + mpiContext.getClientId();
 		
 		// Request a Refresh token in case it expires 
-		if (this.tokenInfo != null) {
+		if (mpiContext.getTokenInfo() != null) {
 			
-			if (!this.tokenInfo.isValid()) {
+			if (!mpiContext.getTokenInfo().isValid()) {
 				//Implement a refresh token method
-				data = "grant_type=refresh_token&refresh_token=" + this.tokenInfo.getRefresh_token() + "&" + "client_secret="
-				        + clientSecret + "&" + "client_id=" + clientId;
+				data = "grant_type=refresh_token&refresh_token=" + mpiContext.getTokenInfo().getRefresh_token() + "&"
+				        + "client_secret=" + mpiContext.getClientSecret() + "&" + "client_id=" + mpiContext.getClientId();
 				this.doAuthentication(data);
 			}
 		} else {
@@ -224,12 +165,11 @@ public class MpiHttpClient {
 		}
 	}
 	
-	private void doAuthentication(String data) throws MalformedURLException, IOException {
-		AdministrationService adminService = Context.getAdministrationService();
+	private void doAuthentication(String data) throws Exception {
+		MpiContext mpiContext = MpiContext.initIfNecessary();
 		
 		String uri = "/auth/oauth2_token";
-		this.serverBaseUrl = adminService.getGlobalProperty(GP_MPI_BASE_URL);
-		String url = serverBaseUrl + uri;
+		String url = mpiContext.getServerBaseUrl() + uri;
 		
 		HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
 		
@@ -257,13 +197,7 @@ public class MpiHttpClient {
 				throw new APIException("Unexpected response " + error + " from MPI");
 			}
 			
-			this.tokenInfo = MAPPER.readValue(connection.getInputStream(), TokenInfo.class);
-			this.tokenInfo.timeCountDown();
-		}
-		catch (Exception e) {
-			e.printStackTrace();
-			
-			throw e;
+			mpiContext.initToken(MAPPER.readValue(connection.getInputStream(), TokenInfo.class));
 		}
 		finally {
 			if (connection != null) {
@@ -283,44 +217,39 @@ public class MpiHttpClient {
 	 * @throws Exception
 	 */
 	private <T> T submitRequest(String requestPath, String data, Class<T> responseType) throws Exception {
-		AdministrationService adminService = Context.getAdministrationService();
+		MpiContext mpiContext = MpiContext.initIfNecessary();
 		
-		serverBaseUrl = adminService.getGlobalProperty(GP_MPI_BASE_URL);
-		String url = serverBaseUrl + "/" + requestPath;
-		
-		String contentType = adminService.getGlobalProperty(GP_MPI_APP_CONTENT_TYPE);
-		String authenticationType = adminService.getGlobalProperty(GP_AUTHENTICATION_TYPE);
+		String url = mpiContext.getServerBaseUrl() + "/" + requestPath;
 		
 		HttpURLConnection connection = null;
 		
-		if (authenticationType.equals(AUTHENTICATION_OUTH_TYPE)) {
+		if (mpiContext.getAuthenticationType().isOuath()) {
 			retriveAccessToken(responseType);
 			
 			connection = (HttpURLConnection) new URL(url).openConnection();
 			
-			String authHeaderValue = "bearer " + this.tokenInfo.getAccess_token();
+			String authHeaderValue = "bearer " + mpiContext.getTokenInfo().getAccess_token();
 			
 			connection.setRequestProperty("Authorization", authHeaderValue);
-		} else if (authenticationType.equals(AUTHENTICATION_SSL_TYPE)) {
-			initIfNecessary();
+		} else if (mpiContext.getAuthenticationType().isSsl()) {
 			
 			connection = (HttpsURLConnection) new URL(url).openConnection();
 			
-			((HttpsURLConnection) connection).setSSLSocketFactory(sslContext.getSocketFactory());
+			((HttpsURLConnection) connection).setSSLSocketFactory(mpiContext.getSslContext().getSocketFactory());
 			
 		} else {
 			throw new APIException("Unsupported Authentication type");
 		}
 		
 		try {
-			connection.setRequestProperty("Accept", contentType);
+			connection.setRequestProperty("Accept", mpiContext.getContentType());
 			connection.setDoInput(true);
 			connection.setConnectTimeout(30000);
 			connection.setUseCaches(false);
 			
 			if (data != null) {
 				connection.setRequestMethod("POST");
-				connection.setRequestProperty("Content-Type", contentType);
+				connection.setRequestProperty("Content-Type", mpiContext.getContentType());
 				connection.setDoOutput(true);
 			} else {
 				connection.setRequestMethod("GET");
@@ -340,6 +269,11 @@ public class MpiHttpClient {
 			}
 			
 			if (!HTTP_REQUEST_SUCCESS_RANGE.contains(connection.getResponseCode())) {
+				//Sante returns NOT FOUND when you query for not existing Patient 
+				if (connection.getResponseCode() == 404 && mpiContext.getMpiSystem().isSanteMPI()) {
+					return (T) MapUtils.EMPTY_MAP;
+				}
+				
 				final String error = connection.getResponseCode() + " " + connection.getResponseMessage();
 				
 				throw new APIException("Unexpected response " + error + " from MPI");
@@ -350,57 +284,6 @@ public class MpiHttpClient {
 		finally {
 			if (connection != null) {
 				connection.disconnect();
-			}
-		}
-	}
-	
-	private void initIfNecessary() throws Exception {
-		
-		synchronized (this) {
-			//Add global property listener to rebuild the SSL contexte when the GP values change
-			if (sslContext == null || serverBaseUrl == null) {
-				log.info("Setting up SSL context using configured client certificate and MPI server base URL");
-				AdministrationService adminService = Context.getAdministrationService();
-				
-				String keyStorePath = adminService.getGlobalProperty(GP_KEYSTORE_PATH);
-				if (StringUtils.isBlank(keyStorePath)) {
-					throw new APIException(GP_KEYSTORE_PATH + " global property value is not set");
-				}
-				
-				String keyStorePass = adminService.getGlobalProperty(GP_KEYSTORE_PASS);
-				char[] keyStorePassArray = "".toCharArray();
-				if (keyStorePass != null) {
-					keyStorePassArray = keyStorePass.toCharArray();
-				}
-				
-				String keyStoreType = adminService.getGlobalProperty(GP_KEYSTORE_TYPE);
-				if (StringUtils.isBlank(keyStoreType)) {
-					throw new APIException(GP_KEYSTORE_TYPE + " global property value is not set");
-				}
-				
-				log.info("Keystore path: " + keyStorePath);
-				log.info("Keystore Type: " + keyStoreType);
-				
-				KeyStore ks = KeyStore.getInstance(keyStoreType);
-				ks.load(new FileInputStream(keyStorePath), keyStorePassArray);
-				
-				KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
-				kmf.init(ks, keyStorePassArray);
-				sslContext = SSLContext.getInstance("TLSv1.2");
-				sslContext.init(kmf.getKeyManagers(), null, new SecureRandom());
-				
-				//We are communicating wih our own service that uses a self signed certificate so no need for
-				//host name verification
-				HttpsURLConnection.setDefaultHostnameVerifier((host, session) -> true);
-				
-				serverBaseUrl = adminService.getGlobalProperty(GP_MPI_BASE_URL);
-				if (StringUtils.isBlank(serverBaseUrl)) {
-					throw new APIException(GP_MPI_BASE_URL + " global property value is not set");
-				}
-				
-				if (log.isDebugEnabled()) {
-					log.debug("OpenCR base server URL: " + serverBaseUrl);
-				}
 			}
 		}
 	}
