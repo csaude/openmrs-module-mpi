@@ -49,7 +49,8 @@ public class IncrementalEventProcessor extends BaseEventProcessor {
 		}
 		catch (Throwable t) {
 			log.error("An error occurred while processing event -> " + event, t);
-			//throw new APIException(t);
+			
+			throw new APIException(t);
 		}
 		
 	}

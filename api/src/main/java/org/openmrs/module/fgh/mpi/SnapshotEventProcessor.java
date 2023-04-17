@@ -221,9 +221,8 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 				}
 			}
 			catch (Exception e) {
-				log.error("An error ocurred " + e.getLocalizedMessage());
 				//TODO We should record the failed patients in this batch and generate a report
-				//throw new APIException("An error occurred while processing patient batch", e);
+				throw new APIException("An error occurred while processing patient batch", e);
 			}
 			finally {
 				futures.clear();
