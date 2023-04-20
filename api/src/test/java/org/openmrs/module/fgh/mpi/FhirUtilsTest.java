@@ -7,8 +7,10 @@ import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.openmrs.module.fgh.mpi.FhirUtils.ADDRESS_QUERY;
@@ -57,9 +59,10 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_SYSTE
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_UUID_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.HEALTH_CENTER_ATTRIB_TYPE_UUID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.IDENTIFIER;
-import static org.openmrs.module.fgh.mpi.MpiConstants.NAME;
 import static org.openmrs.module.fgh.mpi.MpiConstants.UUID_PREFIX;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.ID_PLACEHOLDER;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_MESSAGE_HEADER_EVENT_URI;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_MESSAGE_HEADER_FOCUS_REFERENCE;
 import static org.openmrs.module.fgh.mpi.MpiUtils.executeQuery;
 
 import java.io.IOException;
@@ -122,6 +125,14 @@ public class FhirUtilsTest {
 	
 	private static final String PERSON_EXT_URL = "http://test.com/person-uuid";
 	
+	private static final String MESSAGE_HEADER_REFERENCE = "metadata.epts.e-saude.net/bundle";
+	
+	private static final String MESSAGE_HEADER_EVENT_URI = "urn:ihe:iti:pmir:2019:patient-feed";
+	
+	private static final String NAME = "JAVA 8";
+	
+	private static final String PHONE = "+12345678909";
+	
 	@Before
 	public void setup() {
 		PowerMockito.mockStatic(Context.class);
@@ -150,6 +161,9 @@ public class FhirUtilsTest {
 		        .thenReturn(OPENMRS_UUID_CODE + ":" + OPENMRS_UUID_DISPLAY);
 		when(MpiUtils.getGlobalPropertyValue(GP_HEALTH_CENTER_EXT_URL)).thenReturn(HC_EXT_URL);
 		when(MpiUtils.getGlobalPropertyValue(GP_PERSON_UUID_EXT_URL)).thenReturn(PERSON_EXT_URL);
+		when(MpiUtils.getGlobalPropertyValue(GP_SANTE_MESSAGE_HEADER_FOCUS_REFERENCE)).thenReturn(MESSAGE_HEADER_REFERENCE);
+		when(MpiUtils.getGlobalPropertyValue(GP_SANTE_MESSAGE_HEADER_EVENT_URI)).thenReturn(MESSAGE_HEADER_EVENT_URI);
+		
 	}
 	
 	@Test
@@ -841,6 +855,67 @@ public class FhirUtilsTest {
 		assertEquals(MpiConstants.HOME, resourceTelecoms.get(3).get(FIELD_USE));
 		assertEquals(home2, resourceTelecoms.get(3).get(MpiConstants.FIELD_VALUE));
 		assertEquals(homeAttributeUuid2, resourceTelecoms.get(3).get(FIELD_ID));
+	}
+	
+	@Test
+	public void shouldGenerateMessageHeader() {
+		Map<String, Object> messageHeader = FhirUtils.generateMessageHeader();
+		
+		@SuppressWarnings("unchecked")
+		Map<String, Object> resourceMap = (Map<String, Object>) messageHeader.get("resource");
+		
+		assertFalse(messageHeader.isEmpty());
+		assertEquals(1, messageHeader.size());
+		assertFalse(resourceMap.isEmpty());
+		assertEquals(resourceMap.get("eventUri"), MESSAGE_HEADER_EVENT_URI);
+		assertEquals(Integer.parseInt((String) resourceMap.get("id")), 1);
+		@SuppressWarnings("unchecked")
+		List<Map<String, Object>> focus = (List<Map<String, Object>>) resourceMap.get("focus");
+		assertEquals(focus.get(0).get("reference"), MESSAGE_HEADER_REFERENCE);
+		
+	}
+	
+	@Test
+	public void shouldDoFasterCreateMap() {
+		Map<String, Object> fasterCreatedMap = FhirUtils.fastCreateMap("name", NAME, "phone", PHONE);
+		
+		assertTrue(!fasterCreatedMap.isEmpty());
+		assertEquals(2, fasterCreatedMap.size());
+		assertEquals(fasterCreatedMap.get("name"), NAME);
+		assertEquals(fasterCreatedMap.get("phone"), PHONE);
+		
+	}
+	
+	@Test
+	public void shouldGetObjectInMapAsMap() {
+		Map<String, Object> messageHeader = FhirUtils.generateMessageHeader();
+		
+		Map<String, Object> resource = FhirUtils.getObjectInMapAsMap("resource", messageHeader);
+		
+		assertFalse(resource.isEmpty());
+		assertEquals(resource.get("eventUri"), MESSAGE_HEADER_EVENT_URI);
+		assertEquals(Integer.parseInt((String) resource.get("id")), 1);
+		
+		@SuppressWarnings("unchecked")
+		List<Map<String, Object>> focus = (List<Map<String, Object>>) resource.get("focus");
+		assertTrue(!focus.isEmpty());
+		assertEquals(focus.get(0).get("reference"), MESSAGE_HEADER_REFERENCE);
+	}
+	
+	@Test
+	public void shouldGetObjectInMapAsListMap() {
+		Map<String, Object> messageHeader = FhirUtils.generateMessageHeader();
+		
+		Map<String, Object> resource = FhirUtils.getObjectInMapAsMap("resource", messageHeader);
+		
+		assertFalse(resource.isEmpty());
+		assertEquals(resource.get("eventUri"), MESSAGE_HEADER_EVENT_URI);
+		assertEquals(Integer.parseInt((String) resource.get("id")), 1);
+		
+		@SuppressWarnings("unchecked")
+		List<Map<String, Object>> focus = (List<Map<String, Object>>) FhirUtils.getObjectOnMapAsListOfMap("focus", resource);
+		assertTrue(!focus.isEmpty());
+		assertEquals(focus.get(0).get("reference"), MESSAGE_HEADER_REFERENCE);
 	}
 	
 }

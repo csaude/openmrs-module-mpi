@@ -739,7 +739,7 @@ public class FhirUtils {
 	 * @return the map object retrieved
 	 * @throws ClassCastException if the correspondent object for key is not a map
 	 */
-	public static Map<String, Object> getObjectOnMapAsMap(String key, Map<String, Object> map) throws ClassCastException {
+	public static Map<String, Object> getObjectInMapAsMap(String key, Map<String, Object> map) throws ClassCastException {
 		return (Map<String, Object>) map.get(key);
 		
 	}

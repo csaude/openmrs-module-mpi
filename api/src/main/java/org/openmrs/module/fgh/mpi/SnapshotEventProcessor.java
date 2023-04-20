@@ -5,7 +5,7 @@ import static java.util.Collections.synchronizedList;
 import static org.openmrs.module.fgh.mpi.FhirUtils.fastCreateMap;
 import static org.openmrs.module.fgh.mpi.FhirUtils.generateMessageHeader;
 import static org.openmrs.module.fgh.mpi.FhirUtils.getObjectOnMapAsListOfMap;
-import static org.openmrs.module.fgh.mpi.FhirUtils.getObjectOnMapAsMap;
+import static org.openmrs.module.fgh.mpi.FhirUtils.getObjectInMapAsMap;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -179,17 +179,17 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 						fhirResourceEntry.put("fullUrl", FhirUtils.santeMessageHeaderFocusReference);
 						fhirResourceEntry.put("resource", new HashMap<>(3));
 						
-						getObjectOnMapAsMap("resource", fhirResourceEntry).put(MpiConstants.FIELD_RESOURCE_TYPE,
+						getObjectInMapAsMap("resource", fhirResourceEntry).put(MpiConstants.FIELD_RESOURCE_TYPE,
 						    MpiConstants.BUNDLE);
 						
-						getObjectOnMapAsMap("resource", fhirResourceEntry).put(MpiConstants.FIELD_TYPE,
+						getObjectInMapAsMap("resource", fhirResourceEntry).put(MpiConstants.FIELD_TYPE,
 						    MpiConstants.FIELD_TYPE_HISTORY);
 						
 						List<Map<String, Object>> fhirPatintsPlusRequest = new ArrayList<Map<String, Object>>(
 						        fhirPatients.size());
 						
 						for (Map<String, Object> fhirPatient : fhirPatients) {
-							Map<String, Object> resourceEntry = getObjectOnMapAsMap(MpiConstants.FIELD_RESOURCE,
+							Map<String, Object> resourceEntry = getObjectInMapAsMap(MpiConstants.FIELD_RESOURCE,
 							    fhirPatient);
 							
 							Object patientUuid = getObjectOnMapAsListOfMap(MpiConstants.FIELD_IDENTIFIER, resourceEntry)
@@ -202,7 +202,7 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 							fhirPatintsPlusRequest.add(patientEntry);
 						}
 						
-						getObjectOnMapAsMap("resource", fhirResourceEntry).put(MpiConstants.FIELD_ENTRY,
+						getObjectInMapAsMap("resource", fhirResourceEntry).put(MpiConstants.FIELD_ENTRY,
 						    fhirPatintsPlusRequest);
 						
 						Map<String, Object> messageBundle = new HashMap<String, Object>();
