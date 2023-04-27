@@ -215,6 +215,8 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 						
 						Map<String, Object> response = mpiHttpClient.submitBundle("fhir/Bundle",
 						    mapper.writeValueAsString(messageBundle), Map.class);
+
+						MpiUtils.saveLastSubmittedPatientId(Integer.valueOf(event.getPrimaryKeyId().toString()));
 					} else
 						throw new APIException("Unkown MPISystem [" + mpiContext.getMpiSystem() + "]");
 					
