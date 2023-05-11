@@ -132,7 +132,7 @@ public class FhirUtilsTest {
 	private static final String NAME = "JAVA 8";
 	
 	private static final String PHONE = "+12345678909";
-	
+
 	@Before
 	public void setup() {
 		PowerMockito.mockStatic(Context.class);
@@ -198,6 +198,8 @@ public class FhirUtilsTest {
 		final String idType2SystemMap = idTypeUuid2 + "^" + idTypeSystem2;
 		when(MpiUtils.getGlobalPropertyValue(GP_IDENTIFIER_TYPE_CONCEPT_MAP)).thenReturn(idType1Map + "," + idType2Map);
 		when(MpiUtils.getGlobalPropertyValue(GP_ID_TYPE_SYSTEM_MAP)).thenReturn(idType1SystemMap + "," + idType2SystemMap);
+		when(MpiUtils.getGlobalPropertyValue(GP_SANTE_MESSAGE_HEADER_EVENT_URI)).thenReturn(MESSAGE_HEADER_EVENT_URI);
+		when(MpiUtils.getGlobalPropertyValue(GP_SANTE_MESSAGE_HEADER_FOCUS_REFERENCE)).thenReturn(MESSAGE_HEADER_REFERENCE);
 		PatientIdentifierType idType1 = new PatientIdentifierType();
 		idType1.setName(idTypeName1);
 		when(mockPatientService.getPatientIdentifierTypeByUuid(idTypeUuid1)).thenReturn(idType1);

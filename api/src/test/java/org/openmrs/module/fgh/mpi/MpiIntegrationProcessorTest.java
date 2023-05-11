@@ -5,14 +5,12 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyList;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.openmrs.module.debezium.DatabaseOperation.CREATE;
 import static org.openmrs.module.debezium.DatabaseOperation.DELETE;
 import static org.openmrs.module.debezium.DatabaseOperation.READ;
@@ -58,9 +56,10 @@ import org.powermock.reflect.Whitebox;
 import org.slf4j.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.context.ApplicationContext;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({ MpiUtils.class, FhirUtils.class, Context.class, MpiContext.class})
+@PrepareForTest({ MpiUtils.class, FhirUtils.class, Context.class, MpiContext.class, ApplicationContext.class, PatientAndPersonEventHandler.class})
 public class MpiIntegrationProcessorTest {
 	
 	@Mock
@@ -70,6 +69,11 @@ public class MpiIntegrationProcessorTest {
 	private Logger mockLogger;
 	
 	private MpiIntegrationProcessor processor = new MpiIntegrationProcessor();
+
+	@Mock
+	private SnapshotEventProcessor snapshotEventProcessor;
+
+	private ApplicationContext context;
 	
 	@Mock
 	private AdministrationService adminService;
@@ -87,18 +91,22 @@ public class MpiIntegrationProcessorTest {
 	private static final String MPI_APP_CONTENT_TYPE = "application/fhir+json";
 	
 	private static final MpiSystemType MPI_SYSTEM = MpiSystemType.SANTEMPI;
-	
+	private static final MpiSystemType MPI_SYSTEM_AS_OPENCR = MpiSystemType.SANTEMPI;
+
+
 	private static final String SANTE_CLIENT_ID = "client_credentials";
 	
 	private static final String SANTE_CLIENT_SECRET = "bG6TuS3X-H1MsT4ctW!CxXjK9J4l1QpK8B0Q";
-	
+
 	@Before
 	public void setup() {
 		PowerMockito.mockStatic(Context.class);
 		PowerMockito.mockStatic(MpiUtils.class);
 		PowerMockito.mockStatic(FhirUtils.class);
 		PowerMockito.mockStatic(MpiContext.class);
+		PowerMockito.mockStatic(ApplicationContext.class);
 		Whitebox.setInternalState(MpiIntegrationProcessor.class, Logger.class, mockLogger);
+		Whitebox.setInternalState(PatientAndPersonEventHandler.class, Logger.class, mockLogger);
 		Whitebox.setInternalState(processor, MpiHttpClient.class, mockMpiHttpClient);
 		when(Context.getAdministrationService()).thenReturn(adminService);
 		when(adminService.getGlobalProperty(GP_AUTHENTICATION_TYPE)).thenReturn(AUTHENTICATION_TYPE.toString());
@@ -416,11 +424,48 @@ public class MpiIntegrationProcessorTest {
 	}
 
 	@Test
-	public void process_shouldInitTheContextWithoutSSL() throws Exception {
+	public void process_shouldProcessAPatientThatDoesNotExistInTheMpi() throws Exception {
+
 	}
 
 	@Test
-	public void process_shouldProcessAPatientThatDoesNotExistInTheMpi() throws Exception {
+	public void process_shouldInitTheContextWithoutSSL() throws Exception {
+		when(adminService.getGlobalProperty(GP_AUTHENTICATION_TYPE)).thenReturn(AUTHENTICATION_TYPE.toString());
+		Mockito.verify(snapshotEventProcessor, times(0))
+				.process(new DatabaseEvent(1234, "patient", UPDATE, null, null, null));
 	}
 
+	@Test
+	public void process_shouldInitTheContextWithtSSL() throws Exception {
+		AuthenticationType SSL = AuthenticationType.SSL;
+		when(adminService.getGlobalProperty(GP_AUTHENTICATION_TYPE)).thenReturn(SSL.toString());
+		Mockito.verify(snapshotEventProcessor, times(0))
+				.process(new DatabaseEvent(12345, "patient", UPDATE, null, null, null));
+	}
+
+	@Test
+	public void process_shouldgetPatientInRemoteMasterPatientIndexAsSanteMPI() throws Exception {
+		when(adminService.getGlobalProperty(GP_MPI_SYSTEM)).thenReturn(MPI_SYSTEM.toString());
+		final String patientUuid = "patient-uuid-for-sante";
+		Map res = new HashMap();
+		res.put("active", true );
+		when(mockMpiHttpClient.getPatient(patientUuid)).thenReturn(res);
+		Map prevState = singletonMap("uuid", patientUuid);
+		assertNotNull(processor.process(1, new DatabaseEvent(null, "person", DELETE, null, prevState, null)));
+		Mockito.verify(mockMpiHttpClient, times(1))
+				.getPatient(patientUuid);
+	}
+
+	@Test
+	public void process_shouldgetPatientInRemoteMasterPatientIndexAsOpenCR() throws Exception {
+		when(adminService.getGlobalProperty(GP_MPI_SYSTEM)).thenReturn(MPI_SYSTEM_AS_OPENCR.toString());
+		final String patientUuid = "patient-uuid-for-openCR";
+		Map res = new HashMap();
+		res.put("active", true );
+		when(mockMpiHttpClient.getPatient(patientUuid)).thenReturn(res);
+		Map prevState = singletonMap("uuid", patientUuid);
+		assertNotNull(processor.process(1, new DatabaseEvent(null, "person", DELETE, null, prevState, null)));
+		Mockito.verify(mockMpiHttpClient, times(1))
+				.getPatient(patientUuid);
+	}
 }
