@@ -32,6 +32,7 @@ import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.ID_PLACEHOLDER;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.PATIENT_QUERY;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.PERSON_QUERY;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,10 +40,7 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentMatcher;
-import org.mockito.Matchers;
-import org.mockito.Mock;
-import org.mockito.Mockito;
+import org.mockito.*;
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.debezium.DatabaseEvent;
@@ -59,7 +57,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.ApplicationContext;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({ MpiUtils.class, FhirUtils.class, Context.class, MpiContext.class, ApplicationContext.class, PatientAndPersonEventHandler.class})
+@PrepareForTest({ MpiUtils.class, FhirUtils.class, Context.class, MpiContext.class, ApplicationContext.class,
+        PatientAndPersonEventHandler.class })
 public class MpiIntegrationProcessorTest {
 	
 	@Mock
@@ -69,15 +68,15 @@ public class MpiIntegrationProcessorTest {
 	private Logger mockLogger;
 	
 	private MpiIntegrationProcessor processor = new MpiIntegrationProcessor();
-
+	
 	@Mock
 	private SnapshotEventProcessor snapshotEventProcessor;
-
+	
 	private ApplicationContext context;
 	
 	@Mock
 	private AdministrationService adminService;
-
+	
 	private static final String UUID_SYSTEM = "http://test.openmrs.id/uuid";
 	
 	private static final String MESSAGE_HEADER_REFERENCE = "metadata.epts.e-saude.net/bundle";
@@ -91,15 +90,17 @@ public class MpiIntegrationProcessorTest {
 	private static final String MPI_APP_CONTENT_TYPE = "application/fhir+json";
 	
 	private static final MpiSystemType MPI_SYSTEM = MpiSystemType.SANTEMPI;
+	
 	private static final MpiSystemType MPI_SYSTEM_AS_OPENCR = MpiSystemType.SANTEMPI;
-
-
+	
 	private static final String SANTE_CLIENT_ID = "client_credentials";
 	
 	private static final String SANTE_CLIENT_SECRET = "bG6TuS3X-H1MsT4ctW!CxXjK9J4l1QpK8B0Q";
-
+	
+	private MpiContext mpiContext = new MpiContext();
+	
 	@Before
-	public void setup() {
+	public void setup() throws Exception {
 		PowerMockito.mockStatic(Context.class);
 		PowerMockito.mockStatic(MpiUtils.class);
 		PowerMockito.mockStatic(FhirUtils.class);
@@ -119,7 +120,8 @@ public class MpiIntegrationProcessorTest {
 		when(adminService.getGlobalProperty(GP_SANTE_CLIENT_ID)).thenReturn(SANTE_CLIENT_ID);
 		when(adminService.getGlobalProperty(GP_SANTE_CLIENT_SECRET)).thenReturn(SANTE_CLIENT_SECRET);
 		when(MpiUtils.getGlobalPropertyValue(GP_UUID_SYSTEM)).thenReturn(UUID_SYSTEM);
-
+		when(MpiContext.initIfNecessary()).thenReturn(mpiContext);
+		mpiContext.setAuthenticationType(AUTHENTICATION_TYPE);
 	}
 	
 	@Test
@@ -164,7 +166,8 @@ public class MpiIntegrationProcessorTest {
 	}
 	
 	@Test
-	public void process_shouldIgnoreAPersonDeleteEventIfTsnapshotEventProcessorheTheMpiPatientRecordIsInactive() throws Exception {
+	public void process_shouldIgnoreAPersonDeleteEventIfTsnapshotEventProcessorheTheMpiPatientRecordIsInactive()
+	        throws Exception {
 		final String patientUuid = "patient-uuid";
 		when(mockMpiHttpClient.getPatient(patientUuid)).thenReturn(singletonMap(FIELD_ACTIVE, false));
 		Map prevState = singletonMap("uuid", patientUuid);
@@ -410,7 +413,7 @@ public class MpiIntegrationProcessorTest {
 			}
 		}));
 	}
-
+	
 	@Test
 	public void process_shouldProcessAPatientThatAlreadyExistsInTheMpi() throws Exception {
 	}
@@ -422,50 +425,95 @@ public class MpiIntegrationProcessorTest {
 	@Test
 	public void process_shouldProcessAPatientDeleteEvent() throws Exception {
 	}
-
-	@Test
-	public void process_shouldProcessAPatientThatDoesNotExistInTheMpi() throws Exception {
-
-	}
-
+	
 	@Test
 	public void process_shouldInitTheContextWithoutSSL() throws Exception {
 		when(adminService.getGlobalProperty(GP_AUTHENTICATION_TYPE)).thenReturn(AUTHENTICATION_TYPE.toString());
 		Mockito.verify(snapshotEventProcessor, times(0))
-				.process(new DatabaseEvent(1234, "patient", UPDATE, null, null, null));
+		        .process(new DatabaseEvent(1234, "patient", UPDATE, null, null, null));
 	}
-
+	
 	@Test
 	public void process_shouldInitTheContextWithtSSL() throws Exception {
 		AuthenticationType SSL = AuthenticationType.SSL;
 		when(adminService.getGlobalProperty(GP_AUTHENTICATION_TYPE)).thenReturn(SSL.toString());
 		Mockito.verify(snapshotEventProcessor, times(0))
-				.process(new DatabaseEvent(12345, "patient", UPDATE, null, null, null));
+		        .process(new DatabaseEvent(12345, "patient", UPDATE, null, null, null));
 	}
-
+	
 	@Test
 	public void process_shouldgetPatientInRemoteMasterPatientIndexAsSanteMPI() throws Exception {
 		when(adminService.getGlobalProperty(GP_MPI_SYSTEM)).thenReturn(MPI_SYSTEM.toString());
 		final String patientUuid = "patient-uuid-for-sante";
 		Map res = new HashMap();
-		res.put("active", true );
+		res.put("active", true);
 		when(mockMpiHttpClient.getPatient(patientUuid)).thenReturn(res);
 		Map prevState = singletonMap("uuid", patientUuid);
 		assertNotNull(processor.process(1, new DatabaseEvent(null, "person", DELETE, null, prevState, null)));
-		Mockito.verify(mockMpiHttpClient, times(1))
-				.getPatient(patientUuid);
+		Mockito.verify(mockMpiHttpClient, times(1)).getPatient(patientUuid);
 	}
-
+	
 	@Test
 	public void process_shouldgetPatientInRemoteMasterPatientIndexAsOpenCR() throws Exception {
 		when(adminService.getGlobalProperty(GP_MPI_SYSTEM)).thenReturn(MPI_SYSTEM_AS_OPENCR.toString());
 		final String patientUuid = "patient-uuid-for-openCR";
 		Map res = new HashMap();
-		res.put("active", true );
+		res.put("active", true);
 		when(mockMpiHttpClient.getPatient(patientUuid)).thenReturn(res);
 		Map prevState = singletonMap("uuid", patientUuid);
 		assertNotNull(processor.process(1, new DatabaseEvent(null, "person", DELETE, null, prevState, null)));
-		Mockito.verify(mockMpiHttpClient, times(1))
-				.getPatient(patientUuid);
+		Mockito.verify(mockMpiHttpClient, times(1)).getPatient(patientUuid);
+	}
+	
+	@Test
+	public void shouldProcessBundleData() throws Exception {
+		List<Object> response = new ArrayList<>();
+		Map<String, Object> messageHeader = FhirUtils.generateMessageHeader();
+		List<Map<String, Object>> entryList = new ArrayList<>();
+		entryList.add(messageHeader);
+		Map<String, Object> data = new HashMap<>();
+		Map<String, Object> resourceData = new HashMap<>();
+		resourceData.put("resourceType", "Bundle");
+		resourceData.put("resource", resourceData);
+		data.put("entry", entryList);
+		
+		String bundleData = data.toString();
+		when(mockMpiHttpClient.submitBundle("/fhiir-url/test", bundleData, List.class)).thenReturn(response);
+		Mockito.verify(mockMpiHttpClient, times(0)).submitBundle("/fhir-url/test", bundleData, List.class);
+		assertFalse(response == null);
+		
+	}
+	
+	@Test
+	public void shouldRetrieveAccessTokenAndProcessBundleData() throws Exception {
+		final String patientUuid = "patient-uuid";
+		when(mockMpiHttpClient.getPatient(patientUuid)).thenReturn(singletonMap(FIELD_ACTIVE, false));
+		
+		List<Object> response = new ArrayList<>();
+		Map<String, Object> messageHeader = FhirUtils.generateMessageHeader();
+		List<Map<String, Object>> entryList = new ArrayList<>();
+		entryList.add(messageHeader);
+		Map<String, Object> data = new HashMap<>();
+		Map<String, Object> resourceData = new HashMap<>();
+		resourceData.put("resourceType", "Bundle");
+		resourceData.put("resource", resourceData);
+		data.put("entry", entryList);
+		
+		String bundleData = data.toString();
+		when(mockMpiHttpClient.submitBundle("/fhiir-url/test", bundleData, List.class)).thenReturn(response);
+		assertFalse(response == null);
+	}
+	
+	@Test
+	public void should_processDataAndSubmitPatient() throws Exception {
+		final String patientUuid = "patient-uuid";
+		Mockito.verify(mockMpiHttpClient, times(0)).submitPatient(patientUuid);
+		
+		doAnswer(invocation -> {
+			Object firstArgument = invocation.getArguments()[0];
+			assertEquals(patientUuid, firstArgument);
+			return null;
+		}).when(mockMpiHttpClient).submitPatient(patientUuid);
+		
 	}
 }

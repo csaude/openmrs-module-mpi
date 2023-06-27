@@ -132,7 +132,7 @@ public class FhirUtilsTest {
 	private static final String NAME = "JAVA 8";
 	
 	private static final String PHONE = "+12345678909";
-
+	
 	@Before
 	public void setup() {
 		PowerMockito.mockStatic(Context.class);

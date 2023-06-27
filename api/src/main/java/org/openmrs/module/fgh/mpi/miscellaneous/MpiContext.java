@@ -60,7 +60,7 @@ public class MpiContext {
 	
 	public static MpiContext mpiContext;
 	
-	private MpiContext() {
+	public MpiContext() {
 	}
 	
 	public static synchronized MpiContext initIfNecessary() throws Exception {
@@ -215,6 +215,10 @@ public class MpiContext {
 		return authenticationType;
 	}
 	
+	public void setAuthenticationType(AuthenticationType authenticationType) {
+		this.authenticationType = authenticationType;
+	}
+	
 	public boolean isContextInitialized() {
 		return contextInitialized;
 	}
@@ -225,6 +229,10 @@ public class MpiContext {
 	
 	public String getServerBaseUrl() {
 		return serverBaseUrl;
+	}
+	
+	public void setServerBaseUrl(String serverBaseUrl) {
+		this.serverBaseUrl = serverBaseUrl;
 	}
 	
 	public MpiSystemType getMpiSystem() {
