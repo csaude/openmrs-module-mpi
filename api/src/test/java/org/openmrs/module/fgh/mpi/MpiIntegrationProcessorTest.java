@@ -44,9 +44,6 @@ import org.mockito.*;
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.debezium.DatabaseEvent;
-import org.openmrs.module.fgh.mpi.miscellaneous.AuthenticationType;
-import org.openmrs.module.fgh.mpi.miscellaneous.MpiContext;
-import org.openmrs.module.fgh.mpi.miscellaneous.MpiSystemType;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
@@ -435,8 +432,8 @@ public class MpiIntegrationProcessorTest {
 	
 	@Test
 	public void process_shouldInitTheContextWithtSSL() throws Exception {
-		AuthenticationType SSL = AuthenticationType.SSL;
-		when(adminService.getGlobalProperty(GP_AUTHENTICATION_TYPE)).thenReturn(SSL.toString());
+		AuthenticationType CERTIFICATE = AuthenticationType.CERTIFICATE;
+		when(adminService.getGlobalProperty(GP_AUTHENTICATION_TYPE)).thenReturn(CERTIFICATE.toString());
 		Mockito.verify(snapshotEventProcessor, times(0))
 		        .process(new DatabaseEvent(12345, "patient", UPDATE, null, null, null));
 	}

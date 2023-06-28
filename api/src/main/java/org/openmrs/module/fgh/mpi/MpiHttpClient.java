@@ -17,8 +17,6 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.Range;
 import org.openmrs.api.APIException;
-import org.openmrs.module.fgh.mpi.miscellaneous.MpiContext;
-import org.openmrs.module.fgh.mpi.miscellaneous.TokenInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -62,7 +60,7 @@ public class MpiHttpClient {
 		pixResponse = submitRequest(SUBPATH_PATIENT + "/$ihe-pix?" + query, null, Map.class);
 		
 		List<Map<String, Object>> ids = (List<Map<String, Object>>) pixResponse.get(RESPONSE_FIELD_PARAM);
-		if (ids == null || ids.isEmpty()) {
+		if (CollectionUtils.isEmpty(ids)) {
 			return null;
 		}
 		
@@ -231,7 +229,7 @@ public class MpiHttpClient {
 			String authHeaderValue = "bearer " + mpiContext.getTokenInfo().getAccess_token();
 			
 			connection.setRequestProperty("Authorization", authHeaderValue);
-		} else if (mpiContext.getAuthenticationType().isSsl()) {
+		} else if (mpiContext.getAuthenticationType().isCertificate()) {
 			
 			connection = (HttpsURLConnection) new URL(url).openConnection();
 			

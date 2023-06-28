@@ -4,7 +4,6 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
 import org.apache.commons.lang3.Range;
-import org.apache.kafka.common.protocol.types.Field.Str;
 
 public class MpiConstants {
 	
@@ -183,7 +182,7 @@ public class MpiConstants {
 	
 	public final static String AUTHENTICATION_OAUTH_TYPE = "OAUTH";
 	
-	public final static String AUTHENTICATION_SSL_TYPE = "SSL";
+	public final static String CERTIFICATE_SSL_TYPE = "SSL";
 	
 	public final static String FIELD_TYPE_HISTORY = "history";
 	

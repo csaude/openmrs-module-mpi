@@ -23,7 +23,6 @@ import org.apache.kafka.common.errors.ApiException;
 import org.openmrs.api.APIException;
 import org.openmrs.module.debezium.DatabaseEvent;
 import org.openmrs.module.debezium.Utils;
-import org.openmrs.module.fgh.mpi.miscellaneous.MpiContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -215,7 +214,7 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 						
 						Map<String, Object> response = mpiHttpClient.submitBundle("fhir/Bundle",
 						    mapper.writeValueAsString(messageBundle), Map.class);
-
+						
 						MpiUtils.saveLastSubmittedPatientId(Integer.valueOf(event.getPrimaryKeyId().toString()));
 					} else
 						throw new APIException("Unkown MPISystem [" + mpiContext.getMpiSystem() + "]");

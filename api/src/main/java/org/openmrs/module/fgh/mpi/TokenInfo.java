@@ -1,4 +1,4 @@
-package org.openmrs.module.fgh.mpi.miscellaneous;
+package org.openmrs.module.fgh.mpi;
 
 import org.apache.commons.lang.time.StopWatch;
 

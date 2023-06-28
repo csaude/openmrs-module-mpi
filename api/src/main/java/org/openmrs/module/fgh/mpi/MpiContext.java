@@ -1,4 +1,4 @@
-package org.openmrs.module.fgh.mpi.miscellaneous;
+package org.openmrs.module.fgh.mpi;
 
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_AUTHENTICATION_TYPE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PASS;
@@ -30,7 +30,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.openmrs.api.APIException;
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.context.Context;
-import org.openmrs.module.fgh.mpi.MpiUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,8 +85,7 @@ public class MpiContext {
 					throw new APIException(GP_AUTHENTICATION_TYPE + " global property value is not set");
 				}
 				
-				this.authenticationType = org.openmrs.module.fgh.mpi.miscellaneous.AuthenticationType
-				        .valueOf(gpAuthenticationType);
+				this.authenticationType = AuthenticationType.valueOf(gpAuthenticationType);
 				
 				if (log.isDebugEnabled()) {
 					log.debug("Authentication Type: " + this.authenticationType);
@@ -133,7 +131,7 @@ public class MpiContext {
 					log.debug("Content Type: " + this.contentType);
 				}
 				
-				if (this.authenticationType.isSsl()) {
+				if (this.authenticationType.isCertificate()) {
 					initSSL();
 				} else if (this.authenticationType.isOuath()) {
 					initOauth();
