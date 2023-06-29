@@ -69,8 +69,6 @@ public class MpiIntegrationProcessorTest {
 	@Mock
 	private SnapshotEventProcessor snapshotEventProcessor;
 	
-	private ApplicationContext context;
-	
 	@Mock
 	private AdministrationService adminService;
 	
@@ -96,6 +94,9 @@ public class MpiIntegrationProcessorTest {
 	
 	private MpiContext mpiContext = new MpiContext();
 	
+	@Mock
+	private Context context = new Context();
+	
 	@Before
 	public void setup() throws Exception {
 		PowerMockito.mockStatic(Context.class);
@@ -119,6 +120,7 @@ public class MpiIntegrationProcessorTest {
 		when(MpiUtils.getGlobalPropertyValue(GP_UUID_SYSTEM)).thenReturn(UUID_SYSTEM);
 		when(MpiContext.initIfNecessary()).thenReturn(mpiContext);
 		mpiContext.setAuthenticationType(AUTHENTICATION_TYPE);
+		when(Context.getRegisteredComponents(any())).thenReturn(null);
 	}
 	
 	@Test
@@ -425,17 +427,56 @@ public class MpiIntegrationProcessorTest {
 	
 	@Test
 	public void process_shouldInitTheContextWithoutSSL() throws Exception {
-		when(adminService.getGlobalProperty(GP_AUTHENTICATION_TYPE)).thenReturn(AUTHENTICATION_TYPE.toString());
-		Mockito.verify(snapshotEventProcessor, times(0))
-		        .process(new DatabaseEvent(1234, "patient", UPDATE, null, null, null));
+		AuthenticationType OUAUTH = AuthenticationType.OAUTH;
+		when(adminService.getGlobalProperty(GP_AUTHENTICATION_TYPE)).thenReturn(OUAUTH.toString());
+		mpiContext.setAuthenticationType(AUTHENTICATION_TYPE);
+		when(context.getRegisteredComponents(PatientAndPersonEventHandler.class)).thenReturn(null);
+		when(context.getRegisteredComponents(MpiHttpClient.class)).thenReturn(null);
+		final String patientUuid = "patient-uuid-for-openCR";
+		Map res = new HashMap();
+		res.put("active", true);
+		when(mockMpiHttpClient.getPatient(patientUuid)).thenReturn(res);
+		Map prevState = singletonMap("uuid", patientUuid);
+		final Integer patientId = 1;
+		
+		when(MpiUtils.executeQuery(PERSON_QUERY.replace(ID_PLACEHOLDER, patientId.toString())))
+		        .thenReturn(asList(asList(null, null, null, null, patientUuid, null)));
+		
+		List<List<Object>> expectedPatient = new ArrayList<>();
+		expectedPatient.add(asList(patientUuid));
+		when(MpiUtils.executeQuery(PATIENT_QUERY.replace(ID_PLACEHOLDER, patientId.toString()))).thenReturn(expectedPatient);
+		Map<String, Object> patinetGeneratedPayload = new HashMap<>();
+		patinetGeneratedPayload.put("name", "mpi");
+		when(FhirUtils.buildPatient(patientId.toString(), false, expectedPatient.get(0), patinetGeneratedPayload))
+		        .thenReturn(patinetGeneratedPayload);
+		processor.process(1, new DatabaseEvent(null, "person", UPDATE, null, prevState, null));
+		
 	}
 	
 	@Test
 	public void process_shouldInitTheContextWithtSSL() throws Exception {
+		
 		AuthenticationType CERTIFICATE = AuthenticationType.CERTIFICATE;
 		when(adminService.getGlobalProperty(GP_AUTHENTICATION_TYPE)).thenReturn(CERTIFICATE.toString());
-		Mockito.verify(snapshotEventProcessor, times(0))
-		        .process(new DatabaseEvent(12345, "patient", UPDATE, null, null, null));
+		final String patientUuid = "patient-uuid-for-openCR";
+		Map res = new HashMap();
+		res.put("active", true);
+		when(mockMpiHttpClient.getPatient(patientUuid)).thenReturn(res);
+		Map prevState = singletonMap("uuid", patientUuid);
+		final Integer patientId = 1;
+		
+		when(MpiUtils.executeQuery(PERSON_QUERY.replace(ID_PLACEHOLDER, patientId.toString())))
+		        .thenReturn(asList(asList(null, null, null, null, patientUuid, null)));
+		
+		List<List<Object>> expectedPatient = new ArrayList<>();
+		expectedPatient.add(asList(patientUuid));
+		when(MpiUtils.executeQuery(PATIENT_QUERY.replace(ID_PLACEHOLDER, patientId.toString()))).thenReturn(expectedPatient);
+		Map<String, Object> patinetGeneratedPayload = new HashMap<>();
+		patinetGeneratedPayload.put("name", "mpi");
+		when(FhirUtils.buildPatient(patientId.toString(), false, expectedPatient.get(0), patinetGeneratedPayload))
+		        .thenReturn(patinetGeneratedPayload);
+		processor.process(1, new DatabaseEvent(null, "person", UPDATE, null, prevState, null));
+		
 	}
 	
 	@Test
@@ -482,7 +523,7 @@ public class MpiIntegrationProcessorTest {
 	}
 	
 	@Test
-	public void shouldRetrieveAccessTokenAndProcessBundleData() throws Exception {
+	public void shouldRetrieveAccessTokenAndSubmitBundle() throws Exception {
 		final String patientUuid = "patient-uuid";
 		when(mockMpiHttpClient.getPatient(patientUuid)).thenReturn(singletonMap(FIELD_ACTIVE, false));
 		

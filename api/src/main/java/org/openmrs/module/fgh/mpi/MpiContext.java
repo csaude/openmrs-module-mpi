@@ -72,7 +72,7 @@ public class MpiContext {
 		return mpiContext;
 	}
 	
-	private void init() throws Exception {
+	protected void init() throws Exception {
 		
 		synchronized (this) {
 			//TODO: Add global property listener to rebuild the SSL context when the GP values change
@@ -141,8 +141,8 @@ public class MpiContext {
 			}
 		}
 	}
-	
-	private void initOauth() {
+
+	protected void initOauth() {
 		AdministrationService adminService = Context.getAdministrationService();
 		
 		this.clientId = adminService.getGlobalProperty(GP_SANTE_CLIENT_ID);
@@ -166,7 +166,7 @@ public class MpiContext {
 		}
 	}
 	
-	private void initSSL() throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException,
+	protected void initSSL() throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException,
 	        FileNotFoundException, UnrecoverableKeyException, KeyManagementException {
 		
 		AdministrationService adminService = Context.getAdministrationService();

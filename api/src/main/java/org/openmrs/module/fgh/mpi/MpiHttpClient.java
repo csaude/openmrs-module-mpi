@@ -153,7 +153,7 @@ public class MpiHttpClient {
 			
 			if (!mpiContext.getTokenInfo().isValid()) {
 				//Implement a refresh token method
-				data = "grant_type=refresh_token&refresh_token=" + mpiContext.getTokenInfo().getRefresh_token() + "&"
+				data = "grant_type=refresh_token&refresh_token=" + mpiContext.getTokenInfo().getRefreshToken() + "&"
 				        + "client_secret=" + mpiContext.getClientSecret() + "&" + "client_id=" + mpiContext.getClientId();
 				this.doAuthentication(data);
 			}
@@ -226,7 +226,7 @@ public class MpiHttpClient {
 			
 			connection = (HttpURLConnection) new URL(url).openConnection();
 			
-			String authHeaderValue = "bearer " + mpiContext.getTokenInfo().getAccess_token();
+			String authHeaderValue = "bearer " + mpiContext.getTokenInfo().getAccessToken();
 			
 			connection.setRequestProperty("Authorization", authHeaderValue);
 		} else if (mpiContext.getAuthenticationType().isCertificate()) {
