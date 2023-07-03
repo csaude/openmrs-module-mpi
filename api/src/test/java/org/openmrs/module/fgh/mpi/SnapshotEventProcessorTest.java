@@ -1,5 +1,6 @@
 package org.openmrs.module.fgh.mpi;
 
+import org.apache.commons.lang.time.StopWatch;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -32,7 +33,7 @@ import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.ID_PLACEHOLDER;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({ Context.class, MpiUtils.class, FhirUtils.class, MpiContext.class, BaseEventProcessor.class, KeyManagerFactory.class })
-public class snapshotEventProcessorTest {
+public class SnapshotEventProcessorTest {
 	
 	@Mock
 	private MpiHttpClient mockMpiHttpClient;
@@ -62,18 +63,18 @@ public class snapshotEventProcessorTest {
 	private static final String SANTE_CLIENT_ID = "client_credentials";
 	
 	private static final String SANTE_CLIENT_SECRET = "bG6TuS3X-H1MsT4ctW!CxXjK9J4l1QpK8B0Q";
-	
+
+	private static final String TOKEN_ID = "TOKEN-ID";
+
+	private static final String ACCESS_TOKEN = "ACCESS-TOKEN";
+
+	private static final String REFRESH_TOKEN = "REFRESH_TOKEN";
+
 	@Mock
 	private MpiContext mpiContext;
 	
 	@Mock
 	private Context context = new Context();
-
-	@Mock
-	private KeyStore keyStore;
-
-	@Mock
-	private KeyManagerFactory keyManagerFactory;
 	
 	@Before
 	public void setup() throws Exception {
@@ -97,8 +98,6 @@ public class snapshotEventProcessorTest {
 		when(MpiUtils.getGlobalPropertyValue(GP_UUID_SYSTEM)).thenReturn(UUID_SYSTEM);
 		when(MpiContext.initIfNecessary()).thenReturn(mpiContext);
 		mpiContext.setAuthenticationType(AUTHENTICATION_TYPE);
-		when(context.getRegisteredComponents(PatientAndPersonEventHandler.class)).thenReturn(new ArrayList<>());
-		when(context.getRegisteredComponents(MpiHttpClient.class)).thenReturn(new ArrayList<>());
 	}
 	
 	@Test
@@ -198,5 +197,22 @@ public class snapshotEventProcessorTest {
 		assertEquals(MPI_SYSTEM_AS_OPENCR, initSSLContext.getMpiSystem());
 		assertEquals(UUID_SYSTEM, initSSLContext.getOpenmrsUuidSystem());
 		assertFalse(initSSLContext.isContextInitialized());
+	}
+
+	@Test
+	public void token_ShouldBeValid() throws Exception {
+		TokenInfo tokenInfo = new TokenInfo();
+
+		tokenInfo.setTokenId(TOKEN_ID);
+		tokenInfo.setAccessToken(ACCESS_TOKEN);
+		tokenInfo.setRefreshToken(REFRESH_TOKEN);
+		StopWatch stopWach = new StopWatch();
+		stopWach.start();
+		stopWach.split();
+
+		tokenInfo.setExpiresIn((double) stopWach.getSplitTime());
+		boolean isValidToken = tokenInfo.isValid();
+
+		assertFalse(isValidToken);
 	}
 }
