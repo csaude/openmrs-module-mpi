@@ -57,7 +57,7 @@ public class SnapshotEventProcessorTest {
 	private static final String SANTE_CLIENT_ID = "client_credentials";
 	
 	private static final String SANTE_CLIENT_SECRET = "bG6TuS3X-H1MsT4ctW!CxXjK9J4l1QpK8B0Q";
-
+	
 	@Mock
 	private MpiContext mpiContext;
 	

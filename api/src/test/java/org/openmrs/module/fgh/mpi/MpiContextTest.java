@@ -20,7 +20,8 @@ import static org.mockito.Mockito.when;
 import static org.openmrs.module.fgh.mpi.MpiConstants.*;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({ Context.class, MpiUtils.class, FhirUtils.class, MpiContext.class, BaseEventProcessor.class, KeyManagerFactory.class })
+@PrepareForTest({ Context.class, MpiUtils.class, FhirUtils.class, MpiContext.class, BaseEventProcessor.class,
+        KeyManagerFactory.class })
 public class MpiContextTest {
 	
 	@Mock
@@ -51,10 +52,10 @@ public class MpiContextTest {
 	private static final String SANTE_CLIENT_ID = "client_credentials";
 	
 	private static final String SANTE_CLIENT_SECRET = "bG6TuS3X-H1MsT4ctW!CxXjK9J4l1QpK8B0Q";
-
+	
 	@Mock
 	private MpiContext mpiContext;
-
+	
 	@Before
 	public void setup() throws Exception {
 		PowerMockito.mockStatic(Context.class);
@@ -78,7 +79,7 @@ public class MpiContextTest {
 		when(MpiContext.initIfNecessary()).thenReturn(mpiContext);
 		mpiContext.setAuthenticationType(AUTHENTICATION_TYPE);
 	}
-
+	
 	@Test
 	public void context_shouldInitOauth() throws Exception {
 		AuthenticationType OUAUTH = AuthenticationType.OAUTH;
@@ -86,7 +87,7 @@ public class MpiContextTest {
 		when(adminService.getGlobalProperty(GP_MPI_SYSTEM)).thenReturn(MPI_SYSTEM.toString());
 		MpiContext initOauthContext = new MpiContext();
 		initOauthContext.init();
-
+		
 		assertNotNull(initOauthContext.getAuthenticationType());
 		assertEquals(OUAUTH, initOauthContext.getAuthenticationType());
 		assertEquals(MPI_BASE_URL, initOauthContext.getServerBaseUrl());
@@ -96,7 +97,7 @@ public class MpiContextTest {
 		assertEquals(SANTE_CLIENT_SECRET, initOauthContext.getClientSecret());
 		assertTrue(initOauthContext.isContextInitialized());
 	}
-
+	
 	@Test
 	public void context_shouldInitSSL() throws Exception {
 		AuthenticationType CERTIFICATE = AuthenticationType.CERTIFICATE;
@@ -108,14 +109,14 @@ public class MpiContextTest {
 		when(KeyStore.getInstance(any())).thenReturn(null);
 		when(KeyManagerFactory.getInstance("SunX509")).thenReturn(null);
 		MpiContext initSSLContext = new MpiContext();
-
+		
 		try {
 			initSSLContext.init();
 		}
-		catch (Exception e){
+		catch (Exception e) {
 			e.printStackTrace();
 		}
-
+		
 		assertNotNull(initSSLContext.getAuthenticationType());
 		assertEquals(CERTIFICATE, initSSLContext.getAuthenticationType());
 		assertEquals(MPI_BASE_URL, initSSLContext.getServerBaseUrl());

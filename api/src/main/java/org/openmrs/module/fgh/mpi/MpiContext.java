@@ -1,37 +1,22 @@
 package org.openmrs.module.fgh.mpi;
 
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_AUTHENTICATION_TYPE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PASS;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PATH;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_TYPE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_APP_CONTENT_TYPE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_BASE_URL;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_SYSTEM;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_CLIENT_ID;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_CLIENT_SECRET;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_UUID_SYSTEM;
-
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
-
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-
 import org.apache.commons.lang3.StringUtils;
 import org.openmrs.api.APIException;
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.context.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.security.*;
+import java.security.cert.CertificateException;
+
+import static org.openmrs.module.fgh.mpi.MpiConstants.*;
 
 public class MpiContext {
 	
@@ -141,7 +126,7 @@ public class MpiContext {
 			}
 		}
 	}
-
+	
 	protected void initOauth() {
 		AdministrationService adminService = Context.getAdministrationService();
 		

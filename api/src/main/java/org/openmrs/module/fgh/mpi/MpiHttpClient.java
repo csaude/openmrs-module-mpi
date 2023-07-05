@@ -1,18 +1,6 @@
 package org.openmrs.module.fgh.mpi;
 
-import static org.openmrs.module.fgh.mpi.MpiConstants.HTTP_REQUEST_SUCCESS_RANGE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.REQ_PARAM_SOURCE_ID;
-import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_PARAM;
-import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_VALUE_REF;
-
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.List;
-import java.util.Map;
-
-import javax.net.ssl.HttpsURLConnection;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.Range;
@@ -21,7 +9,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import javax.net.ssl.HttpsURLConnection;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.List;
+import java.util.Map;
+
+import static org.openmrs.module.fgh.mpi.MpiConstants.*;
 
 /**
  * Http client that posts patient data to the MPI
@@ -216,8 +211,8 @@ public class MpiHttpClient {
 	 */
 	private <T> T submitRequest(String requestPath, String data, Class<T> responseType) throws Exception {
 		MpiContext mpiContext = MpiContext.initIfNecessary();
-		
 		String url = mpiContext.getServerBaseUrl() + "/" + requestPath;
+		int responseCode = 0;
 		
 		HttpURLConnection connection = null;
 		
@@ -266,17 +261,20 @@ public class MpiHttpClient {
 				out.close();
 			}
 			
-			if (!HTTP_REQUEST_SUCCESS_RANGE.contains(connection.getResponseCode())) {
-				//Sante returns NOT FOUND when you query for not existing Patient 
-				if (connection.getResponseCode() == 404 && mpiContext.getMpiSystem().isSanteMPI()) {
-					return (T) MapUtils.EMPTY_MAP;
-				}
-				
-				final String error = connection.getResponseCode() + " " + connection.getResponseMessage();
-				
-				throw new APIException("Unexpected response " + error + " from MPI");
-			}
+			responseCode = connection.getResponseCode();
 			
+			if (mpiContext.getMpiSystem().isSanteMPI()) {
+				if (!HTTP_REQUEST_SUCCESS_RANGE.contains(responseCode)) {
+					if (responseCode == 404) {
+						return (T) MapUtils.EMPTY_MAP;
+					}
+					handleUnexpectedResponse(responseCode, connection.getResponseMessage());
+				}
+			} else if (mpiContext.getMpiSystem().isOpenCr()) {
+				if (responseCode != 200) {
+					handleUnexpectedResponse(responseCode, connection.getResponseMessage());
+				}
+			}
 			return MAPPER.readValue(connection.getInputStream(), responseType);
 		}
 		finally {
@@ -284,5 +282,10 @@ public class MpiHttpClient {
 				connection.disconnect();
 			}
 		}
+	}
+	
+	private void handleUnexpectedResponse(int responseCode, String responseMessage) {
+		String error = responseCode + " " + responseMessage;
+		throw new APIException("Unexpected response " + error + " from MPI");
 	}
 }
