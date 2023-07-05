@@ -1,24 +1,5 @@
 package org.openmrs.module.fgh.mpi;
 
-import static org.openmrs.module.fgh.mpi.MpiConstants.MODULE_ID;
-import static org.openmrs.module.fgh.mpi.MpiConstants.PATIENT_ID_OFFSET_FILE;
-import static org.openmrs.util.OpenmrsUtil.getApplicationDataDirectory;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.sql.DataSource;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.SessionFactory;
@@ -28,6 +9,20 @@ import org.openmrs.api.context.Context;
 import org.openmrs.api.db.DAOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.sql.DataSource;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.openmrs.module.fgh.mpi.MpiConstants.MODULE_ID;
+import static org.openmrs.module.fgh.mpi.MpiConstants.PATIENT_ID_OFFSET_FILE;
+import static org.openmrs.util.OpenmrsUtil.getApplicationDataDirectory;
 
 /**
  * Contains utility methods
