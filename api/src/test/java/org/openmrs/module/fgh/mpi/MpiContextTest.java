@@ -14,10 +14,8 @@ import org.powermock.reflect.Whitebox;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import java.security.KeyStore;
-import java.security.SecureRandom;
 
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.openmrs.module.fgh.mpi.MpiConstants.*;
 
@@ -59,7 +57,7 @@ public class MpiContextTest {
 	private MpiContext mpiContext;
 	
 	@Before
-	public void setup() throws Exception {
+	public void setup() {
 		PowerMockito.mockStatic(Context.class);
 		PowerMockito.mockStatic(MpiUtils.class);
 		PowerMockito.mockStatic(FhirUtils.class);
@@ -116,11 +114,10 @@ public class MpiContextTest {
 		when(FhirUtils.getKeyStoreInstanceByType(GP_KEYSTORE_TYPE)).thenReturn(keyStoreMock);
 		when(FhirUtils.getKeyManagerFactoryInstance("SunX509")).thenReturn(keyManagerFactoryMock);
 		when(FhirUtils.getSslContextByProtocol("TLSv1.2")).thenReturn(sslContextMock);
-		doNothing().when(sslContextMock).init(keyManagerFactoryMock.getKeyManagers(), null, new SecureRandom());
+		//doNothing().when(sslContextMock).init(null, null, new SecureRandom());
 		MpiContext initSSLContext = new MpiContext();
 		initSSLContext.init();
 		
-		assertNotNull(initSSLContext.getAuthenticationType());
 		assertEquals(CERTIFICATE, initSSLContext.getAuthenticationType());
 		assertEquals(MPI_BASE_URL, initSSLContext.getServerBaseUrl());
 		assertEquals(MPI_SYSTEM_AS_OPENCR, initSSLContext.getMpiSystem());
