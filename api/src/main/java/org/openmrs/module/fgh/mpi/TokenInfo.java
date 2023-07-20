@@ -30,40 +30,40 @@ public class TokenInfo {
 		return accessToken;
 	}
 	
-	public void setAccessToken(String access_token) {
-		this.accessToken = access_token;
+	public void setAccessToken(String accessToken) {
+		this.accessToken = accessToken;
 	}
 	
 	public String getTokenId() {
 		return tokenId;
 	}
 	
-	public void setTokenId(String id_token) {
-		this.tokenId = id_token;
+	public void setTokenId(String idToken) {
+		this.tokenId = idToken;
 	}
 	
 	public String getTokenType() {
 		return tokenType;
 	}
 	
-	public void setTokenType(String token_type) {
-		this.tokenType = token_type;
+	public void setTokenType(String tokenType) {
+		this.tokenType = tokenType;
 	}
 	
 	public Double getExpiresIn() {
 		return expiresIn;
 	}
 	
-	public void setExpiresIn(Double expires_in) {
-		this.expiresIn = expires_in;
+	public void setExpiresIn(Double expiresIn) {
+		this.expiresIn = expiresIn;
 	}
 	
 	public String getRefreshToken() {
 		return refreshToken;
 	}
 	
-	public void setRefreshToken(String refresh_token) {
-		this.refreshToken = refresh_token;
+	public void setRefreshToken(String refreshToken) {
+		this.refreshToken = refreshToken;
 	}
 	
 	public boolean isValid() {
@@ -83,4 +83,7 @@ public class TokenInfo {
 		this.stopWach.start();
 	}
 	
+	public void setStopWach(StopWatch stopWach) {
+		this.stopWach = stopWach;
+	}
 }

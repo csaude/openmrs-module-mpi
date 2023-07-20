@@ -1,56 +1,5 @@
 package org.openmrs.module.fgh.mpi;
 
-import static java.util.Collections.singletonList;
-import static org.openmrs.module.fgh.mpi.MpiConstants.DATETIME_FORMATTER;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ADDRESS;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_CODE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_CODING;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_CONTACT;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_DISPLAY;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_END;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_EXTENSION;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_GENDER;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ID;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_NAME;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_PERIOD;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_RELATIONSHIP;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_START;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_SYSTEM;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_TELECOM;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_TEXT;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_TYPE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_URL;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_USE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE_STR;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE_UUID;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_HEALTH_CENTER_EXT_URL;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_IDENTIFIER_TYPE_CONCEPT_MAP;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_IDENTIFIER_TYPE_SYSTEM;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_ID_TYPE_SYSTEM_MAP;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_OPENMRS_UUID_CONCEPT_MAP;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_PERSON_UUID_EXT_URL;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_CONCEPT_MAP_A;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_CONCEPT_MAP_B;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_SYSTEM;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_MESSAGE_HEADER_EVENT_URI;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_MESSAGE_HEADER_FOCUS_REFERENCE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_UUID_SYSTEM;
-import static org.openmrs.module.fgh.mpi.MpiConstants.HEALTH_CENTER_ATTRIB_TYPE_UUID;
-import static org.openmrs.module.fgh.mpi.MpiConstants.IDENTIFIER;
-import static org.openmrs.module.fgh.mpi.MpiConstants.NAME;
-import static org.openmrs.module.fgh.mpi.MpiConstants.UUID_PREFIX;
-import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.ID_PLACEHOLDER;
-import static org.openmrs.module.fgh.mpi.MpiUtils.executeQuery;
-
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.commons.lang3.StringUtils;
 import org.openmrs.Location;
 import org.openmrs.PatientIdentifierType;
@@ -61,6 +10,19 @@ import org.openmrs.api.LocationService;
 import org.openmrs.api.context.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.sql.Timestamp;
+import java.util.*;
+
+import static java.util.Collections.singletonList;
+import static org.openmrs.module.fgh.mpi.MpiConstants.*;
+import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.ID_PLACEHOLDER;
+import static org.openmrs.module.fgh.mpi.MpiUtils.executeQuery;
 
 /**
  * Contains utilities for working with fhir resources
@@ -622,7 +584,7 @@ public class FhirUtils {
 	/**
 	 * Loads and caches the necessary global property values
 	 */
-	private synchronized static void initializeCachesIfNecessary() {
+	protected synchronized static void initializeCachesIfNecessary() {
 		if (idTypeSystem == null) {
 			idTypeSystem = MpiUtils.getGlobalPropertyValue(GP_IDENTIFIER_TYPE_SYSTEM);
 		}
@@ -755,6 +717,18 @@ public class FhirUtils {
 	public static List<Map<String, Object>> getObjectOnMapAsListOfMap(String key, Map<String, Object> map)
 	        throws ClassCastException {
 		return (List<Map<String, Object>>) map.get(key);
+	}
+	
+	public static KeyStore getKeyStoreInstanceByType(String keyStoreType) throws KeyStoreException {
+		return KeyStore.getInstance(keyStoreType);
+	}
+	
+	public static KeyManagerFactory getKeyManagerFactoryInstance(String algorithm) throws NoSuchAlgorithmException {
+		return KeyManagerFactory.getInstance(algorithm);
+	}
+	
+	public static SSLContext getSslContextByProtocol(String protocol) throws NoSuchAlgorithmException {
+		return SSLContext.getInstance("TLSv1.2");
 	}
 	
 	private static class TypeConcept {

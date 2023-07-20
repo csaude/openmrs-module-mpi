@@ -1,78 +1,5 @@
 package org.openmrs.module.fgh.mpi;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.when;
-import static org.openmrs.module.fgh.mpi.FhirUtils.ADDRESS_QUERY;
-import static org.openmrs.module.fgh.mpi.FhirUtils.ATTR_QUERY;
-import static org.openmrs.module.fgh.mpi.FhirUtils.ATTR_TYPE_ID_PLACEHOLDER;
-import static org.openmrs.module.fgh.mpi.FhirUtils.CONTACT_PERSON_QUERY;
-import static org.openmrs.module.fgh.mpi.FhirUtils.NAME_QUERY;
-import static org.openmrs.module.fgh.mpi.FhirUtils.RELATIONSHIP_QUERY;
-import static org.openmrs.module.fgh.mpi.MpiConstants.DATETIME_FORMATTER;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ADDRESS;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_CODE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_CODING;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_CONTACT;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_DISPLAY;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_END;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_EXTENSION;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_GENDER;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_GIVEN;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ID;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_NAME;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_PREFIX;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_RELATIONSHIP;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_START;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_SYSTEM;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_TELECOM;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_TEXT;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_TYPE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_URL;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_USE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE_UUID;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_FEMALE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_MALE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_OTHER;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_UNKNOWN;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_HEALTH_CENTER_EXT_URL;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_IDENTIFIER_TYPE_CONCEPT_MAP;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_IDENTIFIER_TYPE_SYSTEM;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_ID_TYPE_SYSTEM_MAP;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_OPENMRS_UUID_CONCEPT_MAP;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_PERSON_UUID_EXT_URL;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_PHONE_HOME;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_PHONE_MOBILE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_CONCEPT_MAP_A;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_CONCEPT_MAP_B;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_SYSTEM;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_UUID_SYSTEM;
-import static org.openmrs.module.fgh.mpi.MpiConstants.HEALTH_CENTER_ATTRIB_TYPE_UUID;
-import static org.openmrs.module.fgh.mpi.MpiConstants.IDENTIFIER;
-import static org.openmrs.module.fgh.mpi.MpiConstants.UUID_PREFIX;
-import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.ID_PLACEHOLDER;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_MESSAGE_HEADER_EVENT_URI;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_MESSAGE_HEADER_FOCUS_REFERENCE;
-import static org.openmrs.module.fgh.mpi.MpiUtils.executeQuery;
-
-import java.io.IOException;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -94,6 +21,21 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.reflect.Whitebox;
+
+import java.io.IOException;
+import java.sql.Timestamp;
+import java.util.*;
+
+import static java.util.Arrays.asList;
+import static java.util.Collections.*;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.*;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.when;
+import static org.openmrs.module.fgh.mpi.FhirUtils.*;
+import static org.openmrs.module.fgh.mpi.MpiConstants.*;
+import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.ID_PLACEHOLDER;
+import static org.openmrs.module.fgh.mpi.MpiUtils.executeQuery;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({ Context.class, MpiUtils.class })
@@ -860,7 +802,7 @@ public class FhirUtilsTest {
 	}
 	
 	@Test
-	public void shouldGenerateMessageHeader() {
+	public void generateMessageHeader_shouldCreateMessageHeaderForIntegration() {
 		Map<String, Object> messageHeader = FhirUtils.generateMessageHeader();
 		
 		@SuppressWarnings("unchecked")
@@ -878,7 +820,7 @@ public class FhirUtilsTest {
 	}
 	
 	@Test
-	public void shouldDoFasterCreateMap() {
+	public void fastCreateMap_shouldDoFasterCreateMapWithTwoWithNameAndPhone() {
 		Map<String, Object> fasterCreatedMap = FhirUtils.fastCreateMap("name", NAME, "phone", PHONE);
 		
 		assertTrue(!fasterCreatedMap.isEmpty());
@@ -889,7 +831,7 @@ public class FhirUtilsTest {
 	}
 	
 	@Test
-	public void shouldGetObjectInMapAsMap() {
+	public void getObjectInMapAsMap_shouldGetObjectInMessageHeaderMap() {
 		Map<String, Object> messageHeader = FhirUtils.generateMessageHeader();
 		
 		Map<String, Object> resource = FhirUtils.getObjectInMapAsMap("resource", messageHeader);
@@ -905,9 +847,11 @@ public class FhirUtilsTest {
 	}
 	
 	@Test
-	public void shouldGetObjectInMapAsListMap() {
+	public void getObjectOnMapAsListOfMap_shouldGetObjectInMapAsListMap() {
+		when(MpiUtils.getGlobalPropertyValue(GP_SANTE_MESSAGE_HEADER_EVENT_URI)).thenReturn(MESSAGE_HEADER_EVENT_URI);
+		when(MpiUtils.getGlobalPropertyValue(GP_SANTE_MESSAGE_HEADER_FOCUS_REFERENCE)).thenReturn(MESSAGE_HEADER_REFERENCE);
+		FhirUtils.initializeCachesIfNecessary();
 		Map<String, Object> messageHeader = FhirUtils.generateMessageHeader();
-		
 		Map<String, Object> resource = FhirUtils.getObjectInMapAsMap("resource", messageHeader);
 		
 		assertFalse(resource.isEmpty());

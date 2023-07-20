@@ -10,11 +10,12 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({ Context.class, MpiUtils.class, FhirUtils.class })
 public class TokenInfoTest {
-
+	
 	private static final String TOKEN_ID = "TOKEN-ID";
 	
 	private static final String ACCESS_TOKEN = "ACCESS-TOKEN";
@@ -29,7 +30,23 @@ public class TokenInfoTest {
 	}
 	
 	@Test
-	public void token_ShouldBeValid() {
+	public void isValid_tokenShouldBeValid() {
+		TokenInfo tokenInfo = new TokenInfo();
+		
+		tokenInfo.setTokenId(TOKEN_ID);
+		tokenInfo.setAccessToken(ACCESS_TOKEN);
+		tokenInfo.setRefreshToken(REFRESH_TOKEN);
+		tokenInfo.setExpiresIn(new Double(520000));
+		StopWatch stopWach = new StopWatch();
+		stopWach.start();
+		tokenInfo.setStopWach(stopWach);
+		boolean isValidToken = tokenInfo.isValid();
+		
+		assertTrue(isValidToken);
+	}
+	
+	@Test
+	public void isValid_tokenShouldBeInValid() {
 		TokenInfo tokenInfo = new TokenInfo();
 		
 		tokenInfo.setTokenId(TOKEN_ID);

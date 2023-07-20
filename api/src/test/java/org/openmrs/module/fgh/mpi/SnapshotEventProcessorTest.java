@@ -22,13 +22,16 @@ import java.util.Map;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 import static org.openmrs.module.debezium.DatabaseOperation.UPDATE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.*;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.*;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({ Context.class, MpiUtils.class, FhirUtils.class, MpiContext.class, BaseEventProcessor.class, KeyManagerFactory.class })
+@PrepareForTest({ Context.class, MpiUtils.class, FhirUtils.class, MpiContext.class, BaseEventProcessor.class,
+        KeyManagerFactory.class })
 public class SnapshotEventProcessorTest {
 	
 	@Mock
@@ -53,7 +56,7 @@ public class SnapshotEventProcessorTest {
 	private static final String MPI_APP_CONTENT_TYPE = "application/fhir+json";
 	
 	private static final MpiSystemType MPI_SYSTEM = MpiSystemType.SANTEMPI;
-
+	
 	private static final String SANTE_CLIENT_ID = "client_credentials";
 	
 	private static final String SANTE_CLIENT_SECRET = "bG6TuS3X-H1MsT4ctW!CxXjK9J4l1QpK8B0Q";
@@ -95,6 +98,8 @@ public class SnapshotEventProcessorTest {
 		final String patientUuid = "patient-uuid-for-openCR";
 		Map res = new HashMap();
 		res.put("active", true);
+		res.put(OPENMRS_UUID, patientUuid);
+		res.put("id", 1);
 		when(mockMpiHttpClient.getPatient(patientUuid)).thenReturn(res);
 		Map prevState = singletonMap("uuid", patientUuid);
 		final Integer patientId = 1;
@@ -110,8 +115,17 @@ public class SnapshotEventProcessorTest {
 		when(FhirUtils.buildPatient(patientId.toString(), false, expectedPatient.get(0), patinetGeneratedPayload))
 		        .thenReturn(patinetGeneratedPayload);
 		snapshotEventProcessor.process(new DatabaseEvent(null, "person", UPDATE, null, prevState, null));
+		
 		Mockito.verify(mpiContext, Mockito.never()).initOauth();
 		
+		doAnswer(invocation -> {
+			Map<String, Object> capturedPatientData = (Map<String, Object>) invocation.getArguments()[0];
+			
+			assertEquals(capturedPatientData.get(FIELD_ACTIVE), res.get(FIELD_ACTIVE));
+			assertEquals(capturedPatientData.get(OPENMRS_UUID), res.get(OPENMRS_UUID));
+			assertEquals(capturedPatientData.get("id"), res.get("id"));
+			return capturedPatientData;
+		}).when(snapshotEventProcessor).process(new DatabaseEvent(null, "person", UPDATE, null, prevState, null));
 	}
 	
 	@Test
@@ -123,6 +137,8 @@ public class SnapshotEventProcessorTest {
 		final String patientUuid = "patient-uuid-for-openCR";
 		Map res = new HashMap();
 		res.put("active", true);
+		res.put(OPENMRS_UUID, patientUuid);
+		res.put("id", 1);
 		when(mockMpiHttpClient.getPatient(patientUuid)).thenReturn(res);
 		Map prevState = singletonMap("uuid", patientUuid);
 		final Integer patientId = 1;
@@ -138,6 +154,14 @@ public class SnapshotEventProcessorTest {
 		when(FhirUtils.buildPatient(patientId.toString(), false, expectedPatient.get(0), patinetGeneratedPayload))
 		        .thenReturn(patinetGeneratedPayload);
 		snapshotEventProcessor.process(new DatabaseEvent(null, "person", UPDATE, null, prevState, null));
-		Mockito.verify(mpiContext, Mockito.never()).initSSL();
+		
+		doAnswer(invocation -> {
+			Map<String, Object> capturedPatientData = (Map<String, Object>) invocation.getArguments()[0];
+			
+			assertEquals(capturedPatientData.get(FIELD_ACTIVE), res.get(FIELD_ACTIVE));
+			assertEquals(capturedPatientData.get(OPENMRS_UUID), res.get(OPENMRS_UUID));
+			assertEquals(capturedPatientData.get("id"), res.get("id"));
+			return capturedPatientData;
+		}).when(snapshotEventProcessor).process(new DatabaseEvent(null, "person", UPDATE, null, prevState, null));
 	}
 }

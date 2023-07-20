@@ -12,10 +12,12 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.reflect.Whitebox;
 
 import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 import java.security.KeyStore;
+import java.security.SecureRandom;
 
 import static org.junit.Assert.*;
-import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.openmrs.module.fgh.mpi.MpiConstants.*;
 
@@ -76,19 +78,19 @@ public class MpiContextTest {
 		when(adminService.getGlobalProperty(GP_SANTE_CLIENT_ID)).thenReturn(SANTE_CLIENT_ID);
 		when(adminService.getGlobalProperty(GP_SANTE_CLIENT_SECRET)).thenReturn(SANTE_CLIENT_SECRET);
 		when(MpiUtils.getGlobalPropertyValue(GP_UUID_SYSTEM)).thenReturn(UUID_SYSTEM);
-		when(MpiContext.initIfNecessary()).thenReturn(mpiContext);
 		mpiContext.setAuthenticationType(AUTHENTICATION_TYPE);
 	}
 	
 	@Test
-	public void context_shouldInitOauth() throws Exception {
+	public void init_shouldInitOauth() throws Exception {
+		when(MpiContext.initIfNecessary()).thenReturn(mpiContext);
+		
 		AuthenticationType OUAUTH = AuthenticationType.OAUTH;
 		when(adminService.getGlobalProperty(GP_AUTHENTICATION_TYPE)).thenReturn(OUAUTH.toString());
 		when(adminService.getGlobalProperty(GP_MPI_SYSTEM)).thenReturn(MPI_SYSTEM.toString());
 		MpiContext initOauthContext = new MpiContext();
 		initOauthContext.init();
 		
-		assertNotNull(initOauthContext.getAuthenticationType());
 		assertEquals(OUAUTH, initOauthContext.getAuthenticationType());
 		assertEquals(MPI_BASE_URL, initOauthContext.getServerBaseUrl());
 		assertEquals(MPI_SYSTEM, initOauthContext.getMpiSystem());
@@ -99,23 +101,24 @@ public class MpiContextTest {
 	}
 	
 	@Test
-	public void context_shouldInitSSL() throws Exception {
+	public void init_shouldInitSSL() throws Exception {
+		KeyStore keyStoreMock = PowerMockito.mock(KeyStore.class);
+		KeyManagerFactory keyManagerFactoryMock = PowerMockito.mock(KeyManagerFactory.class);
+		SSLContext sslContextMock = PowerMockito.mock(SSLContext.class);
+		
+		when(MpiContext.initIfNecessary()).thenReturn(mpiContext);
 		AuthenticationType CERTIFICATE = AuthenticationType.CERTIFICATE;
 		when(adminService.getGlobalProperty(GP_AUTHENTICATION_TYPE)).thenReturn(CERTIFICATE.toString());
 		when(adminService.getGlobalProperty(GP_MPI_SYSTEM)).thenReturn(MPI_SYSTEM_AS_OPENCR.toString());
-		when(adminService.getGlobalProperty(GP_KEYSTORE_PATH)).thenReturn("src/test/resources/log4j.xml");
+		when(adminService.getGlobalProperty(GP_KEYSTORE_PATH)).thenReturn("src/test/resources/test/test-resource.xml");
 		when(adminService.getGlobalProperty(GP_KEYSTORE_PASS)).thenReturn(GP_KEYSTORE_PASS);
 		when(adminService.getGlobalProperty(GP_KEYSTORE_TYPE)).thenReturn(GP_KEYSTORE_TYPE);
-		when(KeyStore.getInstance(any())).thenReturn(null);
-		when(KeyManagerFactory.getInstance("SunX509")).thenReturn(null);
+		when(FhirUtils.getKeyStoreInstanceByType(GP_KEYSTORE_TYPE)).thenReturn(keyStoreMock);
+		when(FhirUtils.getKeyManagerFactoryInstance("SunX509")).thenReturn(keyManagerFactoryMock);
+		when(FhirUtils.getSslContextByProtocol("TLSv1.2")).thenReturn(sslContextMock);
+		doNothing().when(sslContextMock).init(keyManagerFactoryMock.getKeyManagers(), null, new SecureRandom());
 		MpiContext initSSLContext = new MpiContext();
-		
-		try {
-			initSSLContext.init();
-		}
-		catch (Exception e) {
-			e.printStackTrace();
-		}
+		initSSLContext.init();
 		
 		assertNotNull(initSSLContext.getAuthenticationType());
 		assertEquals(CERTIFICATE, initSSLContext.getAuthenticationType());

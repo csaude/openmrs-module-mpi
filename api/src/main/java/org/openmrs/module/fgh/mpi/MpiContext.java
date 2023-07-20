@@ -59,71 +59,69 @@ public class MpiContext {
 	
 	protected void init() throws Exception {
 		
-		synchronized (this) {
-			//TODO: Add global property listener to rebuild the SSL context when the GP values change
-			if (!this.contextInitialized) {
-				AdministrationService adminService = Context.getAdministrationService();
-				
-				String gpAuthenticationType = adminService.getGlobalProperty(GP_AUTHENTICATION_TYPE);
-				
-				if (StringUtils.isBlank(gpAuthenticationType)) {
-					throw new APIException(GP_AUTHENTICATION_TYPE + " global property value is not set");
-				}
-				
-				this.authenticationType = AuthenticationType.valueOf(gpAuthenticationType);
-				
-				if (log.isDebugEnabled()) {
-					log.debug("Authentication Type: " + this.authenticationType);
-				}
-				
-				this.serverBaseUrl = adminService.getGlobalProperty(GP_MPI_BASE_URL);
-				if (StringUtils.isBlank(this.serverBaseUrl)) {
-					throw new APIException(GP_MPI_BASE_URL + " global property value is not set");
-				}
-				
-				if (log.isDebugEnabled()) {
-					log.debug("The MPI Syetem base server URL: " + this.serverBaseUrl);
-				}
-				
-				String gpMpiSystem = adminService.getGlobalProperty(GP_MPI_SYSTEM);
-				
-				if (StringUtils.isBlank(gpMpiSystem)) {
-					throw new APIException(GP_MPI_SYSTEM + " global property value is not set");
-				}
-				
-				this.mpiSystem = MpiSystemType.valueOf(gpMpiSystem);
-				
-				if (log.isDebugEnabled()) {
-					log.debug("MPI system: " + gpMpiSystem);
-				}
-				
-				this.openmrsUuidSystem = MpiUtils.getGlobalPropertyValue(GP_UUID_SYSTEM);
-				
-				if (StringUtils.isBlank(this.openmrsUuidSystem)) {
-					throw new APIException(GP_UUID_SYSTEM + " global property value is not set");
-				}
-				
-				if (log.isDebugEnabled()) {
-					log.debug("Openmrs UUID System: " + this.openmrsUuidSystem);
-				}
-				
-				this.contentType = adminService.getGlobalProperty(GP_MPI_APP_CONTENT_TYPE);
-				if (StringUtils.isBlank(this.serverBaseUrl)) {
-					throw new APIException(GP_MPI_APP_CONTENT_TYPE + " global property value is not set");
-				}
-				
-				if (log.isDebugEnabled()) {
-					log.debug("Content Type: " + this.contentType);
-				}
-				
-				if (this.authenticationType.isCertificate()) {
-					initSSL();
-				} else if (this.authenticationType.isOuath()) {
-					initOauth();
-				}
-				
-				this.contextInitialized = true;
+		//TODO: Add global property listener to rebuild the SSL context when the GP values change
+		if (!this.contextInitialized) {
+			AdministrationService adminService = Context.getAdministrationService();
+			
+			String gpAuthenticationType = adminService.getGlobalProperty(GP_AUTHENTICATION_TYPE);
+			
+			if (StringUtils.isBlank(gpAuthenticationType)) {
+				throw new APIException(GP_AUTHENTICATION_TYPE + " global property value is not set");
 			}
+			
+			this.authenticationType = AuthenticationType.valueOf(gpAuthenticationType);
+			
+			if (log.isDebugEnabled()) {
+				log.debug("Authentication Type: " + this.authenticationType);
+			}
+			
+			this.serverBaseUrl = adminService.getGlobalProperty(GP_MPI_BASE_URL);
+			if (StringUtils.isBlank(this.serverBaseUrl)) {
+				throw new APIException(GP_MPI_BASE_URL + " global property value is not set");
+			}
+			
+			if (log.isDebugEnabled()) {
+				log.debug("The MPI Syetem base server URL: " + this.serverBaseUrl);
+			}
+			
+			String gpMpiSystem = adminService.getGlobalProperty(GP_MPI_SYSTEM);
+			
+			if (StringUtils.isBlank(gpMpiSystem)) {
+				throw new APIException(GP_MPI_SYSTEM + " global property value is not set");
+			}
+			
+			this.mpiSystem = MpiSystemType.valueOf(gpMpiSystem);
+			
+			if (log.isDebugEnabled()) {
+				log.debug("MPI system: " + gpMpiSystem);
+			}
+			
+			this.openmrsUuidSystem = MpiUtils.getGlobalPropertyValue(GP_UUID_SYSTEM);
+			
+			if (StringUtils.isBlank(this.openmrsUuidSystem)) {
+				throw new APIException(GP_UUID_SYSTEM + " global property value is not set");
+			}
+			
+			if (log.isDebugEnabled()) {
+				log.debug("Openmrs UUID System: " + this.openmrsUuidSystem);
+			}
+			
+			this.contentType = adminService.getGlobalProperty(GP_MPI_APP_CONTENT_TYPE);
+			if (StringUtils.isBlank(this.serverBaseUrl)) {
+				throw new APIException(GP_MPI_APP_CONTENT_TYPE + " global property value is not set");
+			}
+			
+			if (log.isDebugEnabled()) {
+				log.debug("Content Type: " + this.contentType);
+			}
+			
+			if (this.authenticationType.isCertificate()) {
+				initSSL();
+			} else if (this.authenticationType.isOuath()) {
+				initOauth();
+			}
+			
+			this.contextInitialized = true;
 		}
 	}
 	
@@ -177,17 +175,21 @@ public class MpiContext {
 		log.info("Keystore path: " + keyStorePath);
 		log.info("Keystore Type: " + keyStoreType);
 		
-		KeyStore ks = KeyStore.getInstance(keyStoreType);
+		KeyStore ks = FhirUtils.getKeyStoreInstanceByType(keyStoreType);
 		ks.load(new FileInputStream(keyStorePath), keyStorePassArray);
 		
-		KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+		KeyManagerFactory kmf = FhirUtils.getKeyManagerFactoryInstance("SunX509");
 		kmf.init(ks, keyStorePassArray);
-		this.sslContext = SSLContext.getInstance("TLSv1.2");
-		this.sslContext.init(kmf.getKeyManagers(), null, new SecureRandom());
+		this.sslContext = FhirUtils.getSslContextByProtocol("TLSv1.2");
+		this.initSSLContext(this.sslContext, kmf);
 		
 		//We are communicating wih our own service that uses a self signed certificate so no need for
 		//host name verification
 		HttpsURLConnection.setDefaultHostnameVerifier((host, session) -> true);
+	}
+	
+	protected void initSSLContext(SSLContext sslContext, KeyManagerFactory keyManagerFactory) throws KeyManagementException {
+		sslContext.init(keyManagerFactory.getKeyManagers(), null, new SecureRandom());
 	}
 	
 	public String getContentType() {

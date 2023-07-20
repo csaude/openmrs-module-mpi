@@ -1,23 +1,5 @@
 package org.openmrs.module.fgh.mpi;
 
-import static java.lang.System.currentTimeMillis;
-import static java.util.Collections.synchronizedList;
-import static org.openmrs.module.fgh.mpi.FhirUtils.fastCreateMap;
-import static org.openmrs.module.fgh.mpi.FhirUtils.generateMessageHeader;
-import static org.openmrs.module.fgh.mpi.FhirUtils.getObjectOnMapAsListOfMap;
-import static org.openmrs.module.fgh.mpi.FhirUtils.getObjectInMapAsMap;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.apache.kafka.common.errors.ApiException;
 import org.openmrs.api.APIException;
@@ -25,6 +7,16 @@ import org.openmrs.module.debezium.DatabaseEvent;
 import org.openmrs.module.debezium.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static java.lang.System.currentTimeMillis;
+import static java.util.Collections.synchronizedList;
+import static org.openmrs.module.fgh.mpi.FhirUtils.*;
 
 /**
  * Processes snapshot events in parallel
@@ -161,8 +153,6 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 							}
 							
 							successCount.addAndGet(fhirPatients.size());
-							
-							MpiUtils.saveLastSubmittedPatientId(Integer.valueOf(event.getPrimaryKeyId().toString()));
 						} else {
 							//TODO Loop through all patients in the batch and check which records were problematic
 							throw new APIException((fhirPatients.size() - successPatientCount)
@@ -212,13 +202,11 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 						getObjectOnMapAsListOfMap(MpiConstants.FIELD_ENTRY, messageBundle).add(fhirMessageHeaderEntry);
 						getObjectOnMapAsListOfMap(MpiConstants.FIELD_ENTRY, messageBundle).add(fhirResourceEntry);
 						
-						Map<String, Object> response = mpiHttpClient.submitBundle("fhir/Bundle",
-						    mapper.writeValueAsString(messageBundle), Map.class);
-						
-						MpiUtils.saveLastSubmittedPatientId(Integer.valueOf(event.getPrimaryKeyId().toString()));
-					} else
+						mpiHttpClient.submitBundle("fhir/Bundle", mapper.writeValueAsString(messageBundle), Map.class);
+					} else {
 						throw new APIException("Unkown MPISystem [" + mpiContext.getMpiSystem() + "]");
-					
+					}
+					MpiUtils.saveLastSubmittedPatientId(Integer.valueOf(event.getPrimaryKeyId().toString()));
 				}
 			}
 			catch (Exception e) {

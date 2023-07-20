@@ -158,7 +158,7 @@ public class MpiHttpClient {
 		}
 	}
 	
-	private void doAuthentication(String data) throws Exception {
+	protected void doAuthentication(String data) throws Exception {
 		MpiContext mpiContext = MpiContext.initIfNecessary();
 		
 		String uri = "/auth/oauth2_token";
@@ -209,7 +209,7 @@ public class MpiHttpClient {
 	 * @return the response from the MPI
 	 * @throws Exception
 	 */
-	private <T> T submitRequest(String requestPath, String data, Class<T> responseType) throws Exception {
+	protected <T> T submitRequest(String requestPath, String data, Class<T> responseType) throws Exception {
 		MpiContext mpiContext = MpiContext.initIfNecessary();
 		String url = mpiContext.getServerBaseUrl() + "/" + requestPath;
 		int responseCode = 0;
