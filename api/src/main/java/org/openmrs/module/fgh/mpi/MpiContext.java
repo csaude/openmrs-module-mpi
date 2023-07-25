@@ -1,22 +1,38 @@
 package org.openmrs.module.fgh.mpi;
 
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_AUTHENTICATION_TYPE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PASS;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PATH;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_TYPE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_APP_CONTENT_TYPE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_BASE_URL;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_SYSTEM;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_CLIENT_ID;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_CLIENT_SECRET;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_UUID_SYSTEM;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 import org.apache.commons.lang3.StringUtils;
 import org.openmrs.api.APIException;
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.context.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.security.*;
-import java.security.cert.CertificateException;
-
-import static org.openmrs.module.fgh.mpi.MpiConstants.*;
 
 public class MpiContext {
 	
@@ -143,10 +159,6 @@ public class MpiContext {
 		if (StringUtils.isBlank(this.clientSecret)) {
 			throw new APIException(GP_SANTE_CLIENT_SECRET + " global property value is not set");
 		}
-		
-		if (log.isDebugEnabled()) {
-			log.debug("Client Secret: " + this.clientSecret);
-		}
 	}
 	
 	protected void initSSL() throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException,
@@ -242,7 +254,6 @@ public class MpiContext {
 	
 	public void initToken(TokenInfo tokenInfo) {
 		this.tokenInfo = tokenInfo;
-		
-		this.tokenInfo.timeCountDown();
+		this.tokenInfo.setTokenExpirationDateTime(LocalDateTime.now().plus(this.tokenInfo.getExpiresIn(), ChronoUnit.MILLIS));
 	}
 }

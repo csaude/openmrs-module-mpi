@@ -1,5 +1,23 @@
 package org.openmrs.module.fgh.mpi;
 
+import static org.openmrs.module.fgh.mpi.FhirUtils.fastCreateMap;
+import static org.openmrs.module.fgh.mpi.FhirUtils.generateMessageHeader;
+import static org.openmrs.module.fgh.mpi.FhirUtils.getObjectInMapAsMap;
+import static org.openmrs.module.fgh.mpi.FhirUtils.getObjectOnMapAsListOfMap;
+import static java.lang.System.currentTimeMillis;
+import static java.util.Collections.synchronizedList;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.apache.kafka.common.errors.ApiException;
 import org.openmrs.api.APIException;
@@ -7,16 +25,6 @@ import org.openmrs.module.debezium.DatabaseEvent;
 import org.openmrs.module.debezium.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static java.lang.System.currentTimeMillis;
-import static java.util.Collections.synchronizedList;
-import static org.openmrs.module.fgh.mpi.FhirUtils.*;
 
 /**
  * Processes snapshot events in parallel

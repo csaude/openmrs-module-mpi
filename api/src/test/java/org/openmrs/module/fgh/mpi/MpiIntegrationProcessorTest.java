@@ -1,5 +1,44 @@
 package org.openmrs.module.fgh.mpi;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyList;
+import static org.mockito.Matchers.anyMap;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.openmrs.module.debezium.DatabaseOperation.CREATE;
+import static org.openmrs.module.debezium.DatabaseOperation.DELETE;
+import static org.openmrs.module.debezium.DatabaseOperation.READ;
+import static org.openmrs.module.debezium.DatabaseOperation.UPDATE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ACTIVE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_CONTACT;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ID;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_RELATIONSHIP;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_AUTHENTICATION_TYPE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_APP_CONTENT_TYPE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_BASE_URL;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_SYSTEM;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_CLIENT_ID;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_CLIENT_SECRET;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_MESSAGE_HEADER_EVENT_URI;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_MESSAGE_HEADER_FOCUS_REFERENCE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_UUID_SYSTEM;
+import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.ID_PLACEHOLDER;
+import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.PATIENT_QUERY;
+import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.PERSON_QUERY;
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,23 +57,8 @@ import org.powermock.reflect.Whitebox;
 import org.slf4j.Logger;
 import org.springframework.context.ApplicationContext;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static java.util.Arrays.asList;
-import static java.util.Collections.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.mockito.Matchers.*;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.*;
-import static org.openmrs.module.debezium.DatabaseOperation.*;
-import static org.openmrs.module.fgh.mpi.MpiConstants.*;
-import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.*;
-
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({ MpiUtils.class, FhirUtils.class, Context.class, MpiContext.class, ApplicationContext.class,
+@PrepareForTest({ MpiUtils.class, FhirUtils.class, Context.class, ApplicationContext.class,
         PatientAndPersonEventHandler.class })
 public class MpiIntegrationProcessorTest {
 	
@@ -45,10 +69,7 @@ public class MpiIntegrationProcessorTest {
 	private Logger mockLogger;
 	
 	private MpiIntegrationProcessor processor = new MpiIntegrationProcessor();
-	
-	@Mock
-	private SnapshotEventProcessor snapshotEventProcessor;
-	
+
 	@Mock
 	private AdministrationService adminService;
 	
@@ -72,16 +93,11 @@ public class MpiIntegrationProcessorTest {
 	
 	private static final String SANTE_CLIENT_SECRET = "bG6TuS3X-H1MsT4ctW!CxXjK9J4l1QpK8B0Q";
 	
-	private MpiContext mpiContext = new MpiContext();
-	
-	@Mock
-	private Context context = new Context();
-	
+
 	@Before
 	public void setup() throws Exception {
 		PowerMockito.mockStatic(MpiUtils.class);
 		PowerMockito.mockStatic(FhirUtils.class);
-		PowerMockito.mockStatic(MpiContext.class);
 		PowerMockito.mockStatic(Context.class);
 		PowerMockito.mockStatic(ApplicationContext.class);
 		Whitebox.setInternalState(MpiIntegrationProcessor.class, Logger.class, mockLogger);
@@ -98,8 +114,6 @@ public class MpiIntegrationProcessorTest {
 		when(adminService.getGlobalProperty(GP_SANTE_CLIENT_ID)).thenReturn(SANTE_CLIENT_ID);
 		when(adminService.getGlobalProperty(GP_SANTE_CLIENT_SECRET)).thenReturn(SANTE_CLIENT_SECRET);
 		when(MpiUtils.getGlobalPropertyValue(GP_UUID_SYSTEM)).thenReturn(UUID_SYSTEM);
-		when(MpiContext.initIfNecessary()).thenReturn(mpiContext);
-		mpiContext.setAuthenticationType(AUTHENTICATION_TYPE);
 		when(Context.getRegisteredComponents(any())).thenReturn(null);
 	}
 	

@@ -1,6 +1,19 @@
 package org.openmrs.module.fgh.mpi;
 
+import static org.openmrs.module.fgh.mpi.MpiConstants.HTTP_REQUEST_SUCCESS_RANGE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.REQ_PARAM_SOURCE_ID;
+import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_PARAM;
+import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_VALUE_REF;
+
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import javax.net.ssl.HttpsURLConnection;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.Range;
@@ -8,15 +21,6 @@ import org.openmrs.api.APIException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-
-import javax.net.ssl.HttpsURLConnection;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.List;
-import java.util.Map;
-
-import static org.openmrs.module.fgh.mpi.MpiConstants.*;
 
 /**
  * Http client that posts patient data to the MPI
@@ -50,9 +54,7 @@ public class MpiHttpClient {
 		
 		String query = REQ_PARAM_SOURCE_ID + "=" + mpiContext.getOpenmrsUuidSystem() + "|" + patientUuid;
 		
-		Map<String, Object> pixResponse = null;
-		
-		pixResponse = submitRequest(SUBPATH_PATIENT + "/$ihe-pix?" + query, null, Map.class);
+		Map<String, Object> pixResponse = submitRequest(SUBPATH_PATIENT + "/$ihe-pix?" + query, null, Map.class);
 		
 		List<Map<String, Object>> ids = (List<Map<String, Object>>) pixResponse.get(RESPONSE_FIELD_PARAM);
 		if (CollectionUtils.isEmpty(ids)) {
@@ -146,7 +148,7 @@ public class MpiHttpClient {
 		// Request a Refresh token in case it expires 
 		if (mpiContext.getTokenInfo() != null) {
 			
-			if (!mpiContext.getTokenInfo().isValid()) {
+			if (!mpiContext.getTokenInfo().isValid(LocalDateTime.now())) {
 				//Implement a refresh token method
 				data = "grant_type=refresh_token&refresh_token=" + mpiContext.getTokenInfo().getRefreshToken() + "&"
 				        + "client_secret=" + mpiContext.getClientSecret() + "&" + "client_id=" + mpiContext.getClientId();
@@ -284,7 +286,7 @@ public class MpiHttpClient {
 		}
 	}
 	
-	private void handleUnexpectedResponse(int responseCode, String responseMessage) {
+	protected void handleUnexpectedResponse(int responseCode, String responseMessage) {
 		String error = responseCode + " " + responseMessage;
 		throw new APIException("Unexpected response " + error + " from MPI");
 	}

@@ -179,11 +179,7 @@ public class MpiConstants {
 	public final static String GP_MPI_APP_CONTENT_TYPE = MODULE_ID + ".application.content.type";
 	
 	public final static String GP_AUTHENTICATION_TYPE = MODULE_ID + ".authentication.type";
-	
-	public final static String AUTHENTICATION_OAUTH_TYPE = "OAUTH";
-	
-	public final static String CERTIFICATE_SSL_TYPE = "SSL";
-	
+
 	public final static String FIELD_TYPE_HISTORY = "history";
 	
 	public final static String GP_SANTE_MESSAGE_HEADER_FOCUS_REFERENCE = MODULE_ID + ".sante.message.header.focus.reference";

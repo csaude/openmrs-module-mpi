@@ -1,20 +1,23 @@
 package org.openmrs.module.fgh.mpi;
 
+import static org.openmrs.module.debezium.DatabaseOperation.CREATE;
+import static org.openmrs.module.debezium.DatabaseOperation.DELETE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ACTIVE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_CONTACT;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ID;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_RELATIONSHIP;
+import static java.lang.Boolean.valueOf;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.openmrs.module.debezium.DatabaseEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-import static java.lang.Boolean.valueOf;
-import static org.openmrs.module.debezium.DatabaseOperation.CREATE;
-import static org.openmrs.module.debezium.DatabaseOperation.DELETE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.*;
 
 /**
  * An instance of this class takes a patient uuid, loads the patient record, generates the fhir json
@@ -133,7 +136,13 @@ public class MpiIntegrationProcessor {
 				//TODO May be we should not build a new resource and instead update the mpiPatient if one exists
 				//And we will need to be aware of placeholder rows
 				Map<String, Object> generated = FhirUtils.buildPatient(id, patientVoided, personDetails, mpiPatient);
-				
+
+				if (generated.get("name") == null) {
+					log.warn("Skipping patient with no name");
+
+					return null;
+				}
+
 				//There is a bug in the MPI where contact.relationship field is never updated for existing contacts,
 				//Clear it in the MPI for existing contacts and we will later update it when we resubmit the patient
 				if (generated != null && mpiPatient != null) {

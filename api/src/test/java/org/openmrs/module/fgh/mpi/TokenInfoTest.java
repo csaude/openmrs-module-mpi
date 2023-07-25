@@ -1,6 +1,11 @@
 package org.openmrs.module.fgh.mpi;
 
-import org.apache.commons.lang.time.StopWatch;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -8,9 +13,6 @@ import org.openmrs.api.context.Context;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({ Context.class, MpiUtils.class, FhirUtils.class })
@@ -32,15 +34,13 @@ public class TokenInfoTest {
 	@Test
 	public void isValid_tokenShouldBeValid() {
 		TokenInfo tokenInfo = new TokenInfo();
-		
+
 		tokenInfo.setTokenId(TOKEN_ID);
 		tokenInfo.setAccessToken(ACCESS_TOKEN);
 		tokenInfo.setRefreshToken(REFRESH_TOKEN);
-		tokenInfo.setExpiresIn(new Double(520000));
-		StopWatch stopWach = new StopWatch();
-		stopWach.start();
-		tokenInfo.setStopWach(stopWach);
-		boolean isValidToken = tokenInfo.isValid();
+		tokenInfo.setExpiresIn(3l);
+		tokenInfo.setTokenExpirationDateTime(LocalDateTime.now().plus(15,  ChronoUnit.MILLIS));
+		boolean isValidToken = tokenInfo.isValid(LocalDateTime.now());
 		
 		assertTrue(isValidToken);
 	}
@@ -52,11 +52,9 @@ public class TokenInfoTest {
 		tokenInfo.setTokenId(TOKEN_ID);
 		tokenInfo.setAccessToken(ACCESS_TOKEN);
 		tokenInfo.setRefreshToken(REFRESH_TOKEN);
-		StopWatch stopWach = new StopWatch();
-		stopWach.start();
-		stopWach.split();
-		tokenInfo.setExpiresIn((double) stopWach.getSplitTime());
-		boolean isValidToken = tokenInfo.isValid();
+		tokenInfo.setTokenExpirationDateTime(LocalDateTime.now().plus(2,  ChronoUnit.MILLIS));
+		tokenInfo.setExpiresIn(1l);
+		boolean isValidToken = tokenInfo.isValid(LocalDateTime.now());
 		
 		assertFalse(isValidToken);
 	}

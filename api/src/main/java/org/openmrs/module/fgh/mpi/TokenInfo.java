@@ -1,6 +1,6 @@
 package org.openmrs.module.fgh.mpi;
 
-import org.apache.commons.lang.time.StopWatch;
+import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -16,12 +16,12 @@ public class TokenInfo {
 	private String tokenType;
 	
 	@JsonProperty("expires_in")
-	private Double expiresIn;
+	private long expiresIn;
 	
 	@JsonProperty("refresh_token")
 	private String refreshToken;
 	
-	private StopWatch stopWach;
+	private LocalDateTime tokenExpirationDateTime;
 	
 	public TokenInfo() {
 	}
@@ -50,11 +50,11 @@ public class TokenInfo {
 		this.tokenType = tokenType;
 	}
 	
-	public Double getExpiresIn() {
+	public long getExpiresIn() {
 		return expiresIn;
 	}
 	
-	public void setExpiresIn(Double expiresIn) {
+	public void setExpiresIn(long expiresIn) {
 		this.expiresIn = expiresIn;
 	}
 	
@@ -65,25 +65,16 @@ public class TokenInfo {
 	public void setRefreshToken(String refreshToken) {
 		this.refreshToken = refreshToken;
 	}
-	
-	public boolean isValid() {
-		if (this.stopWach == null)
-			return false;
-		
-		this.stopWach.split();
-		
-		double takenTime = this.stopWach.getSplitTime();
-		
-		return takenTime + 30000 < this.expiresIn;
+
+	public void setTokenExpirationDateTime(LocalDateTime tokenExpirationDateTime) {
+		this.tokenExpirationDateTime = tokenExpirationDateTime;
 	}
-	
-	public void timeCountDown() {
-		this.stopWach = new StopWatch();
-		
-		this.stopWach.start();
+
+	public LocalDateTime getTokenExpirationDateTime() {
+		return tokenExpirationDateTime;
 	}
-	
-	public void setStopWach(StopWatch stopWach) {
-		this.stopWach = stopWach;
+
+	public boolean isValid(LocalDateTime tokenDateTime) {
+		return tokenDateTime.isBefore(tokenExpirationDateTime);
 	}
 }

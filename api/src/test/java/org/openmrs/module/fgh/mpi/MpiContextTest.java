@@ -1,5 +1,26 @@
 package org.openmrs.module.fgh.mpi;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.when;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_AUTHENTICATION_TYPE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PASS;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PATH;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_TYPE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_APP_CONTENT_TYPE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_BASE_URL;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_SYSTEM;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_CLIENT_ID;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_CLIENT_SECRET;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_MESSAGE_HEADER_EVENT_URI;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_MESSAGE_HEADER_FOCUS_REFERENCE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_UUID_SYSTEM;
+
+import java.security.KeyStore;
+
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -10,14 +31,6 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.reflect.Whitebox;
-
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import java.security.KeyStore;
-
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.when;
-import static org.openmrs.module.fgh.mpi.MpiConstants.*;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({ Context.class, MpiUtils.class, FhirUtils.class, MpiContext.class, BaseEventProcessor.class,
@@ -52,10 +65,6 @@ public class MpiContextTest {
 	private static final String SANTE_CLIENT_ID = "client_credentials";
 	
 	private static final String SANTE_CLIENT_SECRET = "bG6TuS3X-H1MsT4ctW!CxXjK9J4l1QpK8B0Q";
-	
-	@Mock
-	private MpiContext mpiContext;
-	
 	@Before
 	public void setup() {
 		PowerMockito.mockStatic(Context.class);
@@ -76,13 +85,10 @@ public class MpiContextTest {
 		when(adminService.getGlobalProperty(GP_SANTE_CLIENT_ID)).thenReturn(SANTE_CLIENT_ID);
 		when(adminService.getGlobalProperty(GP_SANTE_CLIENT_SECRET)).thenReturn(SANTE_CLIENT_SECRET);
 		when(MpiUtils.getGlobalPropertyValue(GP_UUID_SYSTEM)).thenReturn(UUID_SYSTEM);
-		mpiContext.setAuthenticationType(AUTHENTICATION_TYPE);
 	}
 	
 	@Test
 	public void init_shouldInitOauth() throws Exception {
-		when(MpiContext.initIfNecessary()).thenReturn(mpiContext);
-		
 		AuthenticationType OUAUTH = AuthenticationType.OAUTH;
 		when(adminService.getGlobalProperty(GP_AUTHENTICATION_TYPE)).thenReturn(OUAUTH.toString());
 		when(adminService.getGlobalProperty(GP_MPI_SYSTEM)).thenReturn(MPI_SYSTEM.toString());
@@ -104,7 +110,6 @@ public class MpiContextTest {
 		KeyManagerFactory keyManagerFactoryMock = PowerMockito.mock(KeyManagerFactory.class);
 		SSLContext sslContextMock = PowerMockito.mock(SSLContext.class);
 		
-		when(MpiContext.initIfNecessary()).thenReturn(mpiContext);
 		AuthenticationType CERTIFICATE = AuthenticationType.CERTIFICATE;
 		when(adminService.getGlobalProperty(GP_AUTHENTICATION_TYPE)).thenReturn(CERTIFICATE.toString());
 		when(adminService.getGlobalProperty(GP_MPI_SYSTEM)).thenReturn(MPI_SYSTEM_AS_OPENCR.toString());
