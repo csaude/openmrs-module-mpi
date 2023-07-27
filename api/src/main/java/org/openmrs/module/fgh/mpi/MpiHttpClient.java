@@ -7,13 +7,11 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_VALUE_REF;
 
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import javax.net.ssl.HttpsURLConnection;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.Range;
@@ -166,7 +164,7 @@ public class MpiHttpClient {
 		String uri = "/auth/oauth2_token";
 		String url = mpiContext.getServerBaseUrl() + uri;
 		
-		HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+		HttpURLConnection connection = MpiUtils.openConnection(url);
 		
 		Range<Integer> successRange = Range.between(200, 299);
 		
@@ -200,7 +198,7 @@ public class MpiHttpClient {
 			}
 		}
 	}
-	
+
 	/**
 	 * Submits a request to the MPI
 	 *
@@ -221,17 +219,14 @@ public class MpiHttpClient {
 		if (mpiContext.getAuthenticationType().isOuath()) {
 			retriveAccessToken(responseType);
 			
-			connection = (HttpURLConnection) new URL(url).openConnection();
+			connection =  MpiUtils.openConnection(url);
 			
 			String authHeaderValue = "bearer " + mpiContext.getTokenInfo().getAccessToken();
 			
 			connection.setRequestProperty("Authorization", authHeaderValue);
 		} else if (mpiContext.getAuthenticationType().isCertificate()) {
 			
-			connection = (HttpsURLConnection) new URL(url).openConnection();
-			
-			((HttpsURLConnection) connection).setSSLSocketFactory(mpiContext.getSslContext().getSocketFactory());
-			
+			connection = MpiUtils.openConnectionForSSL(url, mpiContext);
 		} else {
 			throw new APIException("Unsupported Authentication type");
 		}

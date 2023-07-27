@@ -219,7 +219,12 @@ public class MpiContext {
 	public boolean isContextInitialized() {
 		return contextInitialized;
 	}
-	
+
+
+	public void setSslContext(SSLContext sslContext) {
+		this.sslContext = sslContext;
+	}
+
 	public SSLContext getSslContext() {
 		return sslContext;
 	}

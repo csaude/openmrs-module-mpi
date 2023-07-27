@@ -6,6 +6,8 @@ import static org.openmrs.util.OpenmrsUtil.getApplicationDataDirectory;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -17,6 +19,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.net.ssl.HttpsURLConnection;
 import javax.sql.DataSource;
 
 import org.apache.commons.io.FileUtils;
@@ -176,6 +179,16 @@ public class MpiUtils {
 	private static DataSource getDataSource() {
 		SessionFactory sf = Context.getRegisteredComponents(SessionFactory.class).get(0);
 		return ((SessionFactoryImpl) sf).getConnectionProvider().unwrap(DataSource.class);
+	}
+
+	public static HttpURLConnection openConnection(String url) throws IOException {
+		return (HttpURLConnection) new URL(url).openConnection();
+	}
+
+	public static HttpURLConnection openConnectionForSSL(String url, MpiContext mpiContext) throws IOException {
+		HttpsURLConnection connection =  (HttpsURLConnection) new URL(url).openConnection();
+		connection.setSSLSocketFactory(mpiContext.getSslContext().getSocketFactory());
+		return connection;
 	}
 	
 }

@@ -1,10 +1,11 @@
 package org.openmrs.module.fgh.mpi;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class TokenInfo {
+public class TokenInfo implements Serializable {
 	
 	@JsonProperty("access_token")
 	private String accessToken;
