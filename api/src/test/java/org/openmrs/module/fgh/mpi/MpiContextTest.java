@@ -1,8 +1,8 @@
 package org.openmrs.module.fgh.mpi;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_AUTHENTICATION_TYPE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PASS;
@@ -25,6 +25,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.context.Context;
 import org.powermock.api.mockito.PowerMockito;
@@ -65,6 +66,7 @@ public class MpiContextTest {
 	private static final String SANTE_CLIENT_ID = "client_credentials";
 	
 	private static final String SANTE_CLIENT_SECRET = "bG6TuS3X-H1MsT4ctW!CxXjK9J4l1QpK8B0Q";
+	
 	@Before
 	public void setup() {
 		PowerMockito.mockStatic(Context.class);
@@ -119,14 +121,15 @@ public class MpiContextTest {
 		when(FhirUtils.getKeyStoreInstanceByType(GP_KEYSTORE_TYPE)).thenReturn(keyStoreMock);
 		when(FhirUtils.getKeyManagerFactoryInstance("SunX509")).thenReturn(keyManagerFactoryMock);
 		when(FhirUtils.getSslContextByProtocol("TLSv1.2")).thenReturn(sslContextMock);
-		//doNothing().when(sslContextMock).init(null, null, new SecureRandom());
 		MpiContext initSSLContext = new MpiContext();
+		initSSLContext = Mockito.spy(initSSLContext);
+		doNothing().when(initSSLContext).initSSLContext(sslContextMock, keyManagerFactoryMock);
 		initSSLContext.init();
 		
 		assertEquals(CERTIFICATE, initSSLContext.getAuthenticationType());
 		assertEquals(MPI_BASE_URL, initSSLContext.getServerBaseUrl());
 		assertEquals(MPI_SYSTEM_AS_OPENCR, initSSLContext.getMpiSystem());
 		assertEquals(UUID_SYSTEM, initSSLContext.getOpenmrsUuidSystem());
-		assertFalse(initSSLContext.isContextInitialized());
+		assertTrue(initSSLContext.isContextInitialized());
 	}
 }

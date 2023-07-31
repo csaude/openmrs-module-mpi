@@ -170,16 +170,12 @@ public class MpiConstants {
 	
 	public final static String GP_SANTE_CLIENT_SECRET = MODULE_ID + ".sante.db.client.secret";
 	
-	public final static String GP_SANTE_LOGIN_TYPE = MODULE_ID + ".sante.db.login.type";
-	
-	public final static String GP_SANTE_SCOPE = MODULE_ID + ".sante.db.scope";
-	
 	public final static String GP_MPI_SYSTEM = MODULE_ID + ".system";
 	
 	public final static String GP_MPI_APP_CONTENT_TYPE = MODULE_ID + ".application.content.type";
 	
 	public final static String GP_AUTHENTICATION_TYPE = MODULE_ID + ".authentication.type";
-
+	
 	public final static String FIELD_TYPE_HISTORY = "history";
 	
 	public final static String GP_SANTE_MESSAGE_HEADER_FOCUS_REFERENCE = MODULE_ID + ".sante.message.header.focus.reference";

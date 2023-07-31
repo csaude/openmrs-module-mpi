@@ -219,12 +219,11 @@ public class MpiContext {
 	public boolean isContextInitialized() {
 		return contextInitialized;
 	}
-
-
+	
 	public void setSslContext(SSLContext sslContext) {
 		this.sslContext = sslContext;
 	}
-
+	
 	public SSLContext getSslContext() {
 		return sslContext;
 	}
@@ -259,6 +258,7 @@ public class MpiContext {
 	
 	public void initToken(TokenInfo tokenInfo) {
 		this.tokenInfo = tokenInfo;
-		this.tokenInfo.setTokenExpirationDateTime(LocalDateTime.now().plus(this.tokenInfo.getExpiresIn(), ChronoUnit.MILLIS));
+		this.tokenInfo
+		        .setTokenExpirationDateTime(LocalDateTime.now().plus(this.tokenInfo.getExpiresIn(), ChronoUnit.MILLIS));
 	}
 }

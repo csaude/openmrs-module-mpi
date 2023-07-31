@@ -180,15 +180,15 @@ public class MpiUtils {
 		SessionFactory sf = Context.getRegisteredComponents(SessionFactory.class).get(0);
 		return ((SessionFactoryImpl) sf).getConnectionProvider().unwrap(DataSource.class);
 	}
-
+	
 	public static HttpURLConnection openConnection(String url) throws IOException {
 		return (HttpURLConnection) new URL(url).openConnection();
 	}
-
+	
 	public static HttpURLConnection openConnectionForSSL(String url, MpiContext mpiContext) throws IOException {
-		HttpsURLConnection connection =  (HttpsURLConnection) new URL(url).openConnection();
+		HttpsURLConnection connection = (HttpsURLConnection) new URL(url).openConnection();
 		connection.setSSLSocketFactory(mpiContext.getSslContext().getSocketFactory());
 		return connection;
 	}
-	
+
 }

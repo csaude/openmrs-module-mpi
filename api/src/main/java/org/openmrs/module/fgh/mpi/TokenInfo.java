@@ -66,15 +66,15 @@ public class TokenInfo implements Serializable {
 	public void setRefreshToken(String refreshToken) {
 		this.refreshToken = refreshToken;
 	}
-
+	
 	public void setTokenExpirationDateTime(LocalDateTime tokenExpirationDateTime) {
 		this.tokenExpirationDateTime = tokenExpirationDateTime;
 	}
-
+	
 	public LocalDateTime getTokenExpirationDateTime() {
 		return tokenExpirationDateTime;
 	}
-
+	
 	public boolean isValid(LocalDateTime tokenDateTime) {
 		return tokenDateTime.isBefore(tokenExpirationDateTime);
 	}

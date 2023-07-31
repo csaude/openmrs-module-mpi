@@ -3,8 +3,12 @@ package org.openmrs.module.fgh.mpi;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ACTIVE;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_CONTACT;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_RELATIONSHIP;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE_UUID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_AUTHENTICATION_TYPE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_APP_CONTENT_TYPE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_BASE_URL;
@@ -17,6 +21,9 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.GP_UUID_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.OPENMRS_UUID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_PARAM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_VALUE_REF;
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonMap;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -39,6 +46,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.context.Context;
 import org.powermock.api.mockito.PowerMockito;
@@ -49,21 +57,21 @@ import org.powermock.modules.junit4.PowerMockRunner;
 @PrepareForTest({ Context.class, MpiUtils.class, MpiContext.class, URL.class })
 public class MpiHttpClientTest {
 	
-	private MpiHttpClient mpiHttpClient = new MpiHttpClient();
-
+	private MpiHttpClient mpiHttpClient;
+	
 	@Mock
 	private HttpURLConnection httpURLConnectionMock;
-
+	
 	@Mock
 	private HttpsURLConnection httpsURLConnectionMock;
 	
 	@Mock
 	private AdministrationService adminService;
-
+	
 	private static final String TOKEN_ID = "TOKEN_ID";
-
+	
 	private static final String ACCESS_TOKEN = "ACCESS_TOKEN";
-
+	
 	private static final String REFRESH_TOKEN = "REFRESH_TOKEN";
 	
 	private static final String UUID_SYSTEM = "http://test.openmrs.id/uuid";
@@ -86,9 +94,9 @@ public class MpiHttpClientTest {
 	
 	@Rule
 	public ExpectedException expectedException = ExpectedException.none();
-
+	
 	@Mock
-	private MpiContext mpiContext;
+	private MpiContext mpiContextMock;
 	
 	@Before
 	public void setup() {
@@ -107,161 +115,30 @@ public class MpiHttpClientTest {
 		when(adminService.getGlobalProperty(GP_SANTE_CLIENT_ID)).thenReturn(SANTE_CLIENT_ID);
 		when(adminService.getGlobalProperty(GP_SANTE_CLIENT_SECRET)).thenReturn(SANTE_CLIENT_SECRET);
 		when(MpiUtils.getGlobalPropertyValue(GP_UUID_SYSTEM)).thenReturn(UUID_SYSTEM);
-		mpiContext.setAuthenticationType(AUTHENTICATION_TYPE.CERTIFICATE);
+		mpiHttpClient = new MpiHttpClient();
 		
 	}
 	
 	@Test
-	public void getPatient_shouldRetrievePatientInOpenCR() throws Exception {
+	public void doAuthentication_shouldDoAuthenticationForNonLoggedUser() throws Exception {
 		// Mock for HttpURLConnection
-		String baseUrl = "https://localhost:8080";
+		MpiContext mpiContext = new MpiContext();
+		mpiContext.setServerBaseUrl(MPI_BASE_URL);
 		when(MpiContext.initIfNecessary()).thenReturn(mpiContext);
-		when(mpiContext.getAuthenticationType()).thenReturn(AUTHENTICATION_TYPE.CERTIFICATE);
-		when(mpiContext.getServerBaseUrl()).thenReturn(baseUrl);
-		when(mpiContext.getMpiSystem()).thenReturn(MpiSystemType.OPENCR);
-		when(MpiUtils.openConnectionForSSL("https://demompi.santesuite.net//fhiir-url/test", mpiContext)).thenReturn(httpsURLConnectionMock);
-		when(MpiUtils.openConnectionForSSL("https://demompi.santesuite.net/auth/oauth2_token", mpiContext)).thenReturn(httpsURLConnectionMock);
-		when(MpiUtils.openConnectionForSSL("https://demompi.santesuite.net/fhir/Patient", mpiContext)).thenReturn(httpsURLConnectionMock);
-		when(MpiUtils.openConnectionForSSL("https://localhost:8080/fhir/Patient/$ihe-pix?sourceIdentifier=null|patient-uuid-open-cr", mpiContext)).thenReturn(httpsURLConnectionMock);
-		when(MpiUtils.openConnectionForSSL("https://localhost:8080/fhir/Patient/[]", mpiContext)).thenReturn(httpsURLConnectionMock);
-		when(MpiUtils.openConnectionForSSL("https://localhost:8080/fhir/Patient/opencr", mpiContext)).thenReturn(httpsURLConnectionMock);
-
-		OutputStream outputStreamMock = PowerMockito.mock(OutputStream.class);
-		when(httpsURLConnectionMock.getOutputStream()).thenReturn(outputStreamMock);
-		when(httpsURLConnectionMock.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
-		when(mpiContext.getMpiSystem()).thenReturn(MpiSystemType.OPENCR);
-
-		Map<String, Object> pixResponse = new HashMap<>();
-
-		List<Map<String, Object>> patienIds = new ArrayList<>();
-		Map<String, Object> patientId = new HashMap<>();
-		patientId.put("id", 1);
-		patientId.put(RESPONSE_FIELD_VALUE_REF, "opencr");
-		patienIds.add(patientId);
-
-		pixResponse.put(RESPONSE_FIELD_PARAM, patienIds);
-
-		ObjectMapper objectMapper = new ObjectMapper();
-
-		String jsonString = objectMapper.writeValueAsString(pixResponse);
-		InputStream inputStream = new ByteArrayInputStream(jsonString.getBytes());
-		when(httpsURLConnectionMock.getInputStream()).thenReturn(inputStream);
-
-		final String patientUuid = "patient-uuid-open-cr";
-		Map<String, Object> patientResponse = new HashMap<>();
-		patientResponse.put(FIELD_ACTIVE, true);
-		patientResponse.put(OPENMRS_UUID, patientUuid);
-		Map<String, Object> openCRResponse = mpiHttpClient.getPatient(patientUuid);
-		
-		assertEquals(openCRResponse.get(FIELD_ACTIVE), patientResponse.get(FIELD_ACTIVE));
-		assertEquals(openCRResponse.get(OPENMRS_UUID), patientUuid);
-	}
-	
-	@Test
-	public void getPatient_shouldRetrievePatientInSanteMpi() throws Exception {
-		// Mock for HttpURLConnection
-		when(MpiUtils.openConnection("https://demompi.santesuite.net//fhiir-url/test")).thenReturn(httpURLConnectionMock);
 		when(MpiUtils.openConnection("https://demompi.santesuite.net/auth/oauth2_token")).thenReturn(httpURLConnectionMock);
-		when(MpiUtils.openConnection("https://demompi.santesuite.net/fhir/Patient")).thenReturn(httpURLConnectionMock);
-		when(MpiUtils.openConnection("https://demompi.santesuite.net/fhir/Patient/$ihe-pix?sourceIdentifier=null|patient-uuid-santempi")).thenReturn(httpURLConnectionMock);
 		OutputStream outputStreamMock = PowerMockito.mock(OutputStream.class);
 		when(httpURLConnectionMock.getOutputStream()).thenReturn(outputStreamMock);
 		when(httpURLConnectionMock.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
-
+		
 		// Mock inputSTream for mock connection
 		TokenInfo tokenInfo = new TokenInfo();
 		tokenInfo.setTokenId(TOKEN_ID);
 		tokenInfo.setAccessToken(ACCESS_TOKEN);
 		tokenInfo.setRefreshToken(REFRESH_TOKEN);
-		tokenInfo.setTokenExpirationDateTime(LocalDateTime.now().plus(2500,  ChronoUnit.MILLIS));
+		tokenInfo.setTokenExpirationDateTime(LocalDateTime.now().plus(2500, ChronoUnit.MILLIS));
 		tokenInfo.setExpiresIn(140l);
 		tokenInfo.setTokenType("bearer");
-
-		Map<String, Object> pixResponse = new HashMap<>();
-		List<Map<String, Object>> patienIds = new ArrayList<>();
-		Map<String, Object> patientId = new HashMap<>();
-		patientId.put("id", 1);
-		patientId.put(RESPONSE_FIELD_VALUE_REF, "sante");
-		patienIds.add(patientId);
-
-		pixResponse.put(RESPONSE_FIELD_PARAM, patienIds);
-
-		ObjectMapper objectMapper = new ObjectMapper();
-
-		String jsonString = objectMapper.writeValueAsString(pixResponse);
-		InputStream inputStream = new ByteArrayInputStream(jsonString.getBytes());
-		when(httpsURLConnectionMock.getInputStream()).thenReturn(inputStream);
-		when(MpiContext.initIfNecessary()).thenReturn(mpiContext);
-		when(mpiContext.getTokenInfo()).thenReturn(tokenInfo);
-		when(mpiContext.getServerBaseUrl()).thenReturn(MPI_BASE_URL);
-		when(MpiContext.initIfNecessary()).thenReturn(mpiContext);
-		when(mpiContext.getAuthenticationType()).thenReturn(AuthenticationType.OAUTH);
-		when(mpiContext.getMpiSystem()).thenReturn(MpiSystemType.SANTEMPI);
-
-		final String patientUuid = "patient-uuid-santempi";
-		Map<String, Object> patientData = new HashMap<>();
-		patientData.put(FIELD_ACTIVE, true);
-		patientData.put(OPENMRS_UUID, patientUuid);
-
-		Map<String, Object> santeMPIResponse =  mpiHttpClient.getPatient(patientUuid);
-
-		assertEquals(santeMPIResponse.get(FIELD_ACTIVE), patientData.get(FIELD_ACTIVE));
-		assertEquals(santeMPIResponse.get(OPENMRS_UUID), patientUuid);
 		
-	}
-	
-	@Test
-	public void submitBundle_shouldRetrieveAccessTokenAndSubmitBundle() throws Exception {
-		when(MpiContext.initIfNecessary()).thenReturn(mpiContext);
-		when(mpiContext.getServerBaseUrl()).thenReturn(MPI_BASE_URL);
-		when(mpiContext.getAuthenticationType()).thenReturn(AUTHENTICATION_TYPE.OAUTH);
-		final String patientUuid = "patient-uuid";
-		when(MpiUtils.openConnection("https://demompi.santesuite.net/fhir/Patient/$ihe-pix?sourceIdentifier=null|patient-uuid")).thenReturn(httpURLConnectionMock);
-		when(MpiUtils.openConnection("https://demompi.santesuite.net//fhiir-url/test")).thenReturn(httpURLConnectionMock);
-		when(MpiUtils.openConnection("https://demompi.santesuite.net/auth/oauth2_token")).thenReturn(httpURLConnectionMock);
-		when(httpURLConnectionMock.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
-
-		OutputStream outputStreamMock = PowerMockito.mock(OutputStream.class);
-		when(httpURLConnectionMock.getOutputStream()).thenReturn(outputStreamMock);
-		when(mpiContext.getMpiSystem()).thenReturn(MpiSystemType.SANTEMPI);
-
-
-		List<Object> response = new ArrayList<>();
-		
-		Map<String, Object> messageHeader = FhirUtils.generateMessageHeader();
-		List<Map<String, Object>> entryList = new ArrayList<>();
-		entryList.add(messageHeader);
-		Map<String, Object> data = new HashMap<>();
-		Map<String, Object> resourceData = new HashMap<>();
-		resourceData.put("resourceType", "Bundle");
-		resourceData.put("resource", resourceData);
-		data.put("entry", entryList);
-		
-		String bundleData = data.toString();
-		when(mpiHttpClient.submitBundle("/fhiir-url/test", bundleData, List.class)).thenReturn(response);
-		List<Object> submutedData = mpiHttpClient.submitBundle("/fhiir-url/test", bundleData, List.class);
-		assertNotNull(submutedData);
-	}
-	
-	@Test
-	public void submitPatient_shouldSubmitPatientAsSanteMpi() throws Exception {
-		// Mock for HttpURLConnection
-		when(MpiUtils.openConnection("https://demompi.santesuite.net//fhiir-url/test")).thenReturn(httpURLConnectionMock);
-		when(MpiUtils.openConnection("https://demompi.santesuite.net/auth/oauth2_token")).thenReturn(httpURLConnectionMock);
-		when(MpiUtils.openConnection("https://demompi.santesuite.net/fhir/Patient")).thenReturn(httpURLConnectionMock);
-		OutputStream outputStreamMock = PowerMockito.mock(OutputStream.class);
-		when(httpURLConnectionMock.getOutputStream()).thenReturn(outputStreamMock);
-		when(httpURLConnectionMock.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
-
-		// Mock inputSTream for mock connection
-		TokenInfo tokenInfo = new TokenInfo();
-		tokenInfo.setTokenId(TOKEN_ID);
-		tokenInfo.setAccessToken(ACCESS_TOKEN);
-		tokenInfo.setRefreshToken(REFRESH_TOKEN);
-		tokenInfo.setTokenExpirationDateTime(LocalDateTime.now().plus(2500,  ChronoUnit.MILLIS));
-		tokenInfo.setExpiresIn(140l);
-		tokenInfo.setTokenType("bearer");
-
 		ObjectMapper objectMapper = new ObjectMapper();
 		Map<String, String> tokenInfoAsJson = new HashMap<>();
 		tokenInfoAsJson.put("access_token", ACCESS_TOKEN);
@@ -269,25 +146,349 @@ public class MpiHttpClientTest {
 		tokenInfoAsJson.put("expires_in", "140");
 		tokenInfoAsJson.put("token_type", "bearer");
 		tokenInfoAsJson.put("refresh_token", REFRESH_TOKEN);
-
+		
 		String jsonString = objectMapper.writeValueAsString(tokenInfoAsJson);
 		InputStream inputStream = new ByteArrayInputStream(jsonString.getBytes());
-
 		when(httpURLConnectionMock.getInputStream()).thenReturn(inputStream);
-		when(MpiContext.initIfNecessary()).thenReturn(mpiContext);
-		when(mpiContext.getTokenInfo()).thenReturn(tokenInfo);
-		when(mpiContext.getServerBaseUrl()).thenReturn(MPI_BASE_URL);
-		when(MpiContext.initIfNecessary()).thenReturn(mpiContext);
-		when(mpiContext.getAuthenticationType()).thenReturn(AuthenticationType.OAUTH);
-		when(mpiContext.getMpiSystem()).thenReturn(MpiSystemType.SANTEMPI);
-
+		
+		Map<String, Object> authenticationData = new HashMap<>();
+		authenticationData.put("grant_type", "client_credential");
+		authenticationData.put("scope", "*");
+		authenticationData.put("client_secret", GP_SANTE_CLIENT_SECRET);
+		authenticationData.put("client_id", GP_SANTE_CLIENT_ID);
+		String authenticationDataAsString = objectMapper.writeValueAsString(authenticationData);
+		
+		this.mpiHttpClient.doAuthentication(authenticationDataAsString);
+		assertEquals(mpiContext.getTokenInfo().getAccessToken(), tokenInfoAsJson.get("access_token"));
+		assertEquals(mpiContext.getTokenInfo().getTokenId(), tokenInfoAsJson.get("id_token"));
+		assertEquals(mpiContext.getTokenInfo().getTokenType(), tokenInfoAsJson.get("token_type"));
+		assertEquals(mpiContext.getTokenInfo().getExpiresIn(), Long.parseLong(tokenInfoAsJson.get("expires_in")));
+		assertEquals(mpiContext.getTokenInfo().getRefreshToken(), tokenInfoAsJson.get("refresh_token"));
+	}
+	
+	@Test
+	public void submitRequest_shouldDoSubmitRequestForSantMpi() throws Exception {
+		// Mock for HttpURLConnection
+		when(MpiContext.initIfNecessary()).thenReturn(mpiContextMock);
+		when(mpiContextMock.getAuthenticationType()).thenReturn(AUTHENTICATION_TYPE.OAUTH);
+		when(mpiContextMock.getServerBaseUrl()).thenReturn(MPI_BASE_URL);
+		when(mpiContextMock.getMpiSystem()).thenReturn(MpiSystemType.SANTEMPI);
+		when(mpiContextMock.getClientId()).thenReturn(SANTE_CLIENT_ID);
+		when(mpiContextMock.getClientSecret()).thenReturn(SANTE_CLIENT_SECRET);
+		when(MpiUtils.openConnection("https://demompi.santesuite.net/fhir/Patient")).thenReturn(httpURLConnectionMock);
+		when(httpURLConnectionMock.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
+		
+		TokenInfo tokenInfo = new TokenInfo();
+		tokenInfo.setTokenId(TOKEN_ID);
+		tokenInfo.setAccessToken(ACCESS_TOKEN);
+		tokenInfo.setRefreshToken(REFRESH_TOKEN);
+		tokenInfo.setTokenExpirationDateTime(LocalDateTime.now().plus(2500, ChronoUnit.MILLIS));
+		tokenInfo.setExpiresIn(140l);
+		tokenInfo.setTokenType("bearer");
+		when(mpiContextMock.getTokenInfo()).thenReturn(tokenInfo);
+		
+		Map<String, Object> pixResponse = new HashMap<>();
+		List<Map<String, Object>> patienIds = new ArrayList<>();
+		String patientUuid = "d454b7b4-2c85-11ee-fake-0242ac120002";
+		Map<String, Object> patientData = new HashMap<>();
+		patientData.put("id", 1);
+		patientData.put(RESPONSE_FIELD_VALUE_REF, patientUuid);
+		patientData.put(FIELD_ACTIVE, true);
+		patientData.put(FIELD_VALUE_UUID, patientUuid);
+		patienIds.add(patientData);
+		pixResponse.put(RESPONSE_FIELD_PARAM, patienIds);
+		
+		ObjectMapper objectMapper = new ObjectMapper();
+		String jsonString = objectMapper.writeValueAsString(pixResponse);
+		InputStream inputStream = new ByteArrayInputStream(jsonString.getBytes());
+		when(httpURLConnectionMock.getInputStream()).thenReturn(inputStream);
+		
+		mpiHttpClient = Mockito.spy(mpiHttpClient);
+		doNothing().when(mpiHttpClient).doAuthentication(
+		    "grant_type=client_credentials&scope=*&client_secret=bG6TuS3X-H1MsT4ctW!CxXjK9J4l1QpK8B0Q&client_id=client_credentials");
+		
+		Map<String, Object> submitedData = this.mpiHttpClient.submitRequest("fhir/Patient", null, Map.class);
+		Map<String, Object> response = (Map<String, Object>) ((List) submitedData.get(RESPONSE_FIELD_PARAM)).get(0);
+		
+		assertEquals(pixResponse.size(), submitedData.size());
+		assertEquals(((List) submitedData.get(RESPONSE_FIELD_PARAM)).get(0),
+		    ((List) pixResponse.get(RESPONSE_FIELD_PARAM)).get(0));
+		assertEquals(response.get(RESPONSE_FIELD_VALUE_REF), patientUuid);
+		assertEquals(response.get(FIELD_ACTIVE), true);
+	}
+	
+	@Test
+	public void submitRequest_shouldDoSubmitRequestForOpenCr() throws Exception {
+		// Mock for HttpURLConnection
+		String baseUrl = "https://localhost:8080";
+		when(MpiContext.initIfNecessary()).thenReturn(mpiContextMock);
+		when(mpiContextMock.getAuthenticationType()).thenReturn(AUTHENTICATION_TYPE.CERTIFICATE);
+		when(mpiContextMock.getServerBaseUrl()).thenReturn(baseUrl);
+		when(mpiContextMock.getMpiSystem()).thenReturn(MpiSystemType.OPENCR);
+		when(MpiUtils.openConnectionForSSL("https://localhost:8080/fhir/Patient", mpiContextMock))
+		        .thenReturn(httpsURLConnectionMock);
+		when(httpsURLConnectionMock.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
+		
+		Map<String, Object> pixResponse = new HashMap<>();
+		List<Map<String, Object>> patienIds = new ArrayList<>();
+		String patientUuid = "d454b7b4-2c85-11ee-fake-0242ac120002";
+		Map<String, Object> patientData = new HashMap<>();
+		patientData.put("id", 1);
+		patientData.put(RESPONSE_FIELD_VALUE_REF, patientUuid);
+		patientData.put(FIELD_ACTIVE, true);
+		patientData.put(FIELD_VALUE_UUID, patientUuid);
+		patienIds.add(patientData);
+		pixResponse.put(RESPONSE_FIELD_PARAM, patienIds);
+		
+		ObjectMapper objectMapper = new ObjectMapper();
+		String jsonString = objectMapper.writeValueAsString(pixResponse);
+		InputStream inputStream = new ByteArrayInputStream(jsonString.getBytes());
+		when(httpsURLConnectionMock.getInputStream()).thenReturn(inputStream);
+		
+		mpiHttpClient = Mockito.spy(mpiHttpClient);
+		
+		Map<String, Object> submitedData = this.mpiHttpClient.submitRequest("fhir/Patient", null, Map.class);
+		Map<String, Object> response = (Map<String, Object>) ((List) submitedData.get(RESPONSE_FIELD_PARAM)).get(0);
+		
+		assertEquals(pixResponse.size(), submitedData.size());
+		assertEquals(((List) submitedData.get(RESPONSE_FIELD_PARAM)).get(0),
+		    ((List) pixResponse.get(RESPONSE_FIELD_PARAM)).get(0));
+		assertEquals(response.get(RESPONSE_FIELD_VALUE_REF), patientUuid);
+		assertEquals(response.get(FIELD_ACTIVE), true);
+	}
+	
+	@Test
+	public void getPatient_shouldRetrievePatientInOpenCR() throws Exception {
+		// Mock for HttpURLConnection
+		String baseUrl = "https://localhost:8080";
+		when(MpiContext.initIfNecessary()).thenReturn(mpiContextMock);
+		when(mpiContextMock.getAuthenticationType()).thenReturn(AUTHENTICATION_TYPE.CERTIFICATE);
+		when(mpiContextMock.getServerBaseUrl()).thenReturn(baseUrl);
+		when(mpiContextMock.getMpiSystem()).thenReturn(MpiSystemType.OPENCR);
+		
+		Map<String, Object> pixResponse = new HashMap<>();
+		List<Map<String, Object>> patienIds = new ArrayList<>();
+		String patientUuid = "d454b7b4-2c85-11ee-fake-0242ac120002";
+		Map<String, Object> patientData = new HashMap<>();
+		patientData.put("id", 1);
+		patientData.put(RESPONSE_FIELD_VALUE_REF, patientUuid);
+		patientData.put(FIELD_ACTIVE, true);
+		patientData.put(FIELD_VALUE_UUID, patientUuid);
+		patienIds.add(patientData);
+		pixResponse.put(RESPONSE_FIELD_PARAM, patienIds);
+		
+		ObjectMapper objectMapper = new ObjectMapper();
+		String jsonString = objectMapper.writeValueAsString(pixResponse);
+		InputStream inputStream = new ByteArrayInputStream(jsonString.getBytes());
+		when(httpsURLConnectionMock.getInputStream()).thenReturn(inputStream);
+		
+		mpiHttpClient = Mockito.spy(mpiHttpClient);
+		
+		doAnswer(invocation -> {
+			Map updatedContact1 = new HashMap();
+			updatedContact1.put(FIELD_RELATIONSHIP, null);
+			Map updatedContact2 = new HashMap();
+			updatedContact2.put(FIELD_RELATIONSHIP, null);
+			
+			Map expectedMpiPatient = new HashMap();
+			expectedMpiPatient.put(FIELD_ACTIVE, true);
+			expectedMpiPatient.put(FIELD_VALUE_UUID, "d454b7b4-2c85-11ee-fake-0242ac120002");
+			expectedMpiPatient.put(FIELD_CONTACT,
+			    asList(updatedContact1, singletonMap(FIELD_RELATIONSHIP, emptyMap()), updatedContact2));
+			return expectedMpiPatient;
+		}).when(mpiHttpClient).submitRequest("fhir/Patient/d454b7b4-2c85-11ee-fake-0242ac120002", null, Map.class);
+		doAnswer(invocation -> {
+			return pixResponse;
+		}).when(mpiHttpClient).submitRequest(
+		    "fhir/Patient/$ihe-pix?sourceIdentifier=null|d454b7b4-2c85-11ee-fake-0242ac120002", null, Map.class);
+		
+		Map<String, Object> openCRResponse = mpiHttpClient.getPatient(patientUuid);
+		
+		assertEquals(openCRResponse.get(FIELD_ACTIVE), patientData.get(FIELD_ACTIVE));
+		assertEquals(openCRResponse.get(FIELD_VALUE_UUID), patientUuid);
+	}
+	
+	@Test
+	public void getPatient_shouldRetrievePatientInSanteMpi() throws Exception {
+		
+		OutputStream outputStreamMock = PowerMockito.mock(OutputStream.class);
+		when(httpURLConnectionMock.getOutputStream()).thenReturn(outputStreamMock);
+		when(httpURLConnectionMock.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
+		when(mpiContextMock.getAuthenticationType()).thenReturn(AUTHENTICATION_TYPE.OAUTH);
+		when(mpiContextMock.getServerBaseUrl()).thenReturn(MPI_BASE_URL);
+		when(mpiContextMock.getMpiSystem()).thenReturn(MpiSystemType.SANTEMPI);
+		
+		// Mock inputSTream for mock connection
+		TokenInfo tokenInfo = new TokenInfo();
+		tokenInfo.setTokenId(TOKEN_ID);
+		tokenInfo.setAccessToken(ACCESS_TOKEN);
+		tokenInfo.setRefreshToken(REFRESH_TOKEN);
+		tokenInfo.setTokenExpirationDateTime(LocalDateTime.now().plus(2500, ChronoUnit.MILLIS));
+		tokenInfo.setExpiresIn(140l);
+		tokenInfo.setTokenType("bearer");
+		
+		final String patientUuid = "d454b7b4-2c85-11ee-fake-0242ac120002";
+		
+		Map<String, Object> pixResponse = new HashMap<>();
+		List<Map<String, Object>> patienIds = new ArrayList<>();
+		Map<String, Object> patientId = new HashMap<>();
+		patientId.put("id", 1);
+		patientId.put(RESPONSE_FIELD_VALUE_REF, "/" + patientUuid);
+		patienIds.add(patientId);
+		
+		pixResponse.put(RESPONSE_FIELD_PARAM, patienIds);
+		
+		ObjectMapper objectMapper = new ObjectMapper();
+		String jsonString = objectMapper.writeValueAsString(pixResponse);
+		InputStream inputStream = new ByteArrayInputStream(jsonString.getBytes());
+		when(httpsURLConnectionMock.getInputStream()).thenReturn(inputStream);
+		when(MpiContext.initIfNecessary()).thenReturn(mpiContextMock);
+		when(mpiContextMock.getTokenInfo()).thenReturn(tokenInfo);
+		when(mpiContextMock.getServerBaseUrl()).thenReturn(MPI_BASE_URL);
+		when(MpiContext.initIfNecessary()).thenReturn(mpiContextMock);
+		when(mpiContextMock.getAuthenticationType()).thenReturn(AuthenticationType.OAUTH);
+		when(mpiContextMock.getMpiSystem()).thenReturn(MpiSystemType.SANTEMPI);
+		
+		Map<String, Object> patientData = new HashMap<>();
+		patientData.put(FIELD_ACTIVE, true);
+		patientData.put(FIELD_VALUE_UUID, patientUuid);
+		
+		mpiHttpClient = Mockito.spy(mpiHttpClient);
+		doNothing().when(mpiHttpClient)
+		        .doAuthentication("grant_type=refresh_token&refresh_token=REFRESH_TOKEN&client_secret=null&client_id=null");
+		doAnswer(invocation -> {
+			Map updatedContact1 = new HashMap();
+			updatedContact1.put(FIELD_RELATIONSHIP, null);
+			Map updatedContact2 = new HashMap();
+			updatedContact2.put(FIELD_RELATIONSHIP, null);
+			
+			Map expectedMpiPatient = new HashMap();
+			expectedMpiPatient.put(FIELD_ACTIVE, true);
+			expectedMpiPatient.put(FIELD_VALUE_UUID, "d454b7b4-2c85-11ee-fake-0242ac120002");
+			expectedMpiPatient.put(FIELD_CONTACT,
+			    asList(updatedContact1, singletonMap(FIELD_RELATIONSHIP, emptyMap()), updatedContact2));
+			return expectedMpiPatient;
+			
+		}).when(mpiHttpClient).submitRequest("fhir/Patient/d454b7b4-2c85-11ee-fake-0242ac120002", null, Map.class);
+		doAnswer(invocation -> {
+			return pixResponse;
+		}).when(mpiHttpClient).submitRequest(
+		    "fhir/Patient/$ihe-pix?sourceIdentifier=null|d454b7b4-2c85-11ee-fake-0242ac120002", null, Map.class);
+		
+		when(mpiHttpClient.submitRequest("fhir/Patient/$ihe-pix?sourceIdentifier=null|d454b7b4-2c85-11ee-fake-0242ac120002",
+		    null, Map.class)).thenReturn(pixResponse);
+		Map<String, Object> santeMPIResponse = mpiHttpClient.getPatient(patientUuid);
+		
+		assertEquals(santeMPIResponse.get(FIELD_ACTIVE), patientData.get(FIELD_ACTIVE));
+		assertEquals(santeMPIResponse.get(FIELD_VALUE_UUID), patientUuid);
+	}
+	
+	@Test
+	public void submitBundle_shouldRetrieveAccessTokenAndSubmitBundle() throws Exception {
+		when(MpiContext.initIfNecessary()).thenReturn(mpiContextMock);
+		when(mpiContextMock.getServerBaseUrl()).thenReturn(MPI_BASE_URL);
+		when(mpiContextMock.getAuthenticationType()).thenReturn(AUTHENTICATION_TYPE.OAUTH);
+		final String patientAUuid = "d454b7b4-2c85-11ee-pata-0242ac120002";
+		final String patientBUuid = "d454b7b4-2c85-11ee-patb-0242ac120002";
+		
+		when(MpiUtils.openConnection("https://demompi.santesuite.net//fhiir-url/test")).thenReturn(httpURLConnectionMock);
+		when(MpiUtils.openConnection("https://demompi.santesuite.net/auth/oauth2_token")).thenReturn(httpURLConnectionMock);
+		when(httpURLConnectionMock.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
+		
+		OutputStream outputStreamMock = PowerMockito.mock(OutputStream.class);
+		when(httpURLConnectionMock.getOutputStream()).thenReturn(outputStreamMock);
+		when(mpiContextMock.getMpiSystem()).thenReturn(MpiSystemType.SANTEMPI);
+		
+		Map<String, Object> messageHeader = FhirUtils.generateMessageHeader();
+		List<Map<String, Object>> entryList = new ArrayList<>();
+		
+		Map<String, Object> patientA = new HashMap<>();
+		patientA.put(FIELD_ACTIVE, true);
+		patientA.put(FIELD_VALUE_UUID, patientAUuid);
+		
+		Map<String, Object> patientB = new HashMap<>();
+		patientB.put(FIELD_ACTIVE, true);
+		patientB.put(FIELD_VALUE_UUID, patientBUuid);
+		
+		entryList.add(messageHeader);
+		entryList.add(patientA);
+		entryList.add(patientB);
+		
+		Map<String, Object> resourceData = new HashMap<>();
+		Map<String, Object> resource = new HashMap<>();
+		
+		String resourceType = "Bundle";
+		resource.put("resourceType", resourceType);
+		patientB.put("resource", resource);
+		patientA.put("resource", resource);
+		resourceData.put("resourceType", resourceType);
+		resourceData.put("resource", "");
+		resourceData.put("entry", entryList);
+		
+		mpiHttpClient = Mockito.spy(mpiHttpClient);
+		
+		String bundleData = resourceData.toString();
+		doAnswer(invocation -> {
+			Map<String, Object> bundleSubmissionResponse = resourceData;
+			List<String> references = new ArrayList<>();
+			references.add("Patient/" + patientA.get(FIELD_VALUE_UUID));
+			references.add("Patient/" + patientB.get(FIELD_VALUE_UUID));
+			
+			Map<String, Object> patientReferences = new HashMap<>();
+			bundleSubmissionResponse.put("reference", references);
+			
+			return bundleSubmissionResponse;
+		}).when(mpiHttpClient).submitRequest("/fhiir-url/test", bundleData, List.class);
+		
+		Map<String, Object> bundleSubmissionResponse = (Map) mpiHttpClient.submitBundle("/fhiir-url/test", bundleData,
+		    List.class);
+		assertEquals(bundleSubmissionResponse.get("resourceType"), resourceType);
+		assertEquals((bundleSubmissionResponse.get("entry")), resourceData.get("entry"));
+		assertNotNull(bundleSubmissionResponse.get("reference"));
+	}
+	
+	@Test
+	public void submitPatient_shouldSubmitPatientAsSanteMpi() throws Exception {
+		// Mock for HttpURLConnection
+		when(MpiUtils.openConnection("https://demompi.santesuite.net//fhiir-url/test")).thenReturn(httpURLConnectionMock);
+		when(MpiUtils.openConnection("https://demompi.santesuite.net/fhir/Patient")).thenReturn(httpURLConnectionMock);
+		OutputStream outputStreamMock = PowerMockito.mock(OutputStream.class);
+		when(httpURLConnectionMock.getOutputStream()).thenReturn(outputStreamMock);
+		when(httpURLConnectionMock.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
+		
+		// Mock inputSTream for mock connection
+		TokenInfo tokenInfo = new TokenInfo();
+		tokenInfo.setTokenId(TOKEN_ID);
+		tokenInfo.setAccessToken(ACCESS_TOKEN);
+		tokenInfo.setRefreshToken(REFRESH_TOKEN);
+		tokenInfo.setTokenExpirationDateTime(LocalDateTime.now().plus(2500, ChronoUnit.MILLIS));
+		tokenInfo.setExpiresIn(140l);
+		tokenInfo.setTokenType("bearer");
+		
+		ObjectMapper objectMapper = new ObjectMapper();
+		Map<String, String> tokenInfoAsJson = new HashMap<>();
+		tokenInfoAsJson.put("access_token", ACCESS_TOKEN);
+		tokenInfoAsJson.put("id_token", TOKEN_ID);
+		tokenInfoAsJson.put("expires_in", "140");
+		tokenInfoAsJson.put("token_type", "bearer");
+		tokenInfoAsJson.put("refresh_token", REFRESH_TOKEN);
+		
+		String jsonString = objectMapper.writeValueAsString(tokenInfoAsJson);
+		InputStream inputStream = new ByteArrayInputStream(jsonString.getBytes());
+		
+		when(httpURLConnectionMock.getInputStream()).thenReturn(inputStream);
+		when(MpiContext.initIfNecessary()).thenReturn(mpiContextMock);
+		when(mpiContextMock.getTokenInfo()).thenReturn(tokenInfo);
+		when(mpiContextMock.getServerBaseUrl()).thenReturn(MPI_BASE_URL);
+		when(MpiContext.initIfNecessary()).thenReturn(mpiContextMock);
+		when(mpiContextMock.getAuthenticationType()).thenReturn(AuthenticationType.OAUTH);
+		when(mpiContextMock.getMpiSystem()).thenReturn(MpiSystemType.SANTEMPI);
+		
 		final String patientUuid = "patient-uuid-santempi";
 		Map<String, Object> patientData = new HashMap<>();
 		patientData.put(FIELD_ACTIVE, true);
 		patientData.put(OPENMRS_UUID, patientUuid);
-
-		this.mpiHttpClient.submitPatient(patientData.toString());
-
+		
 		MpiHttpClient httpClientMock = PowerMockito.mock(MpiHttpClient.class);
 		doAnswer(invocation -> {
 			Map<String, Object> capturedPatientData = (Map<String, Object>) invocation.getArguments()[0];
@@ -302,47 +503,50 @@ public class MpiHttpClientTest {
 	@Test
 	public void submitPatient_shouldSubmitPatientAsOPenCr() throws Exception {
 		// Mock for HttpURLConnection
-		when(MpiUtils.openConnectionForSSL("https://demompi.santesuite.net//fhiir-url/test", mpiContext)).thenReturn(httpsURLConnectionMock);
-		when(MpiUtils.openConnectionForSSL("https://demompi.santesuite.net/auth/oauth2_token", mpiContext)).thenReturn(httpsURLConnectionMock);
-		when(MpiUtils.openConnectionForSSL("https://demompi.santesuite.net/fhir/Patient", mpiContext)).thenReturn(httpsURLConnectionMock);
+		when(MpiUtils.openConnectionForSSL("https://demompi.santesuite.net//fhiir-url/test", mpiContextMock))
+		        .thenReturn(httpsURLConnectionMock);
+		when(MpiUtils.openConnectionForSSL("https://demompi.santesuite.net/auth/oauth2_token", mpiContextMock))
+		        .thenReturn(httpsURLConnectionMock);
+		when(MpiUtils.openConnectionForSSL("https://demompi.santesuite.net/fhir/Patient", mpiContextMock))
+		        .thenReturn(httpsURLConnectionMock);
 		OutputStream outputStreamMock = PowerMockito.mock(OutputStream.class);
 		when(httpsURLConnectionMock.getOutputStream()).thenReturn(outputStreamMock);
 		when(httpsURLConnectionMock.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
-
-		when(MpiContext.initIfNecessary()).thenReturn(mpiContext);
-		when(mpiContext.getServerBaseUrl()).thenReturn(MPI_BASE_URL);
-		when(MpiContext.initIfNecessary()).thenReturn(mpiContext);
-		when(mpiContext.getAuthenticationType()).thenReturn(AuthenticationType.CERTIFICATE);
-		when(mpiContext.getMpiSystem()).thenReturn(MpiSystemType.OPENCR);
-
+		
+		when(MpiContext.initIfNecessary()).thenReturn(mpiContextMock);
+		when(mpiContextMock.getServerBaseUrl()).thenReturn(MPI_BASE_URL);
+		when(MpiContext.initIfNecessary()).thenReturn(mpiContextMock);
+		when(mpiContextMock.getAuthenticationType()).thenReturn(AuthenticationType.CERTIFICATE);
+		when(mpiContextMock.getMpiSystem()).thenReturn(MpiSystemType.OPENCR);
+		
 		SSLContext sslContextMock = PowerMockito.mock(SSLContext.class);
-		mpiContext.setSslContext(sslContextMock);
-		when(mpiContext.getSslContext()).thenReturn(sslContextMock);
-
+		mpiContextMock.setSslContext(sslContextMock);
+		when(mpiContextMock.getSslContext()).thenReturn(sslContextMock);
+		
 		ObjectMapper objectMapper = new ObjectMapper();
-
+		
 		List<Map<String, Object>> patienIds = new ArrayList<>();
 		Map<String, Object> patientId = new HashMap<>();
 		patientId.put("id", 1);
 		patienIds.add(patientId);
-
+		
 		String jsonString = objectMapper.writeValueAsString(patienIds);
 		InputStream inputStream = new ByteArrayInputStream(jsonString.getBytes());
 		when(httpsURLConnectionMock.getInputStream()).thenReturn(inputStream);
-
+		
 		final String patientUuid = "patient-uuid-opencr";
 		Map<String, Object> patientData = new HashMap<>();
 		patientData.put(FIELD_ACTIVE, true);
 		patientData.put(OPENMRS_UUID, patientUuid);
-		MpiHttpClient httpClientMock = PowerMockito.mock(MpiHttpClient.class);
 		this.mpiHttpClient.submitPatient(patientData.toString());
-
+		mpiHttpClient = Mockito.spy(mpiHttpClient);
+		
 		doAnswer(invocation -> {
 			Map<String, Object> capturedPatientData = (Map<String, Object>) invocation.getArguments()[0];
 			
 			assertEquals(capturedPatientData.get(FIELD_ACTIVE), patientData.get(FIELD_ACTIVE));
 			assertEquals(capturedPatientData.get(OPENMRS_UUID), patientData.get(OPENMRS_UUID));
 			return capturedPatientData;
-		}).when(httpClientMock).submitPatient(patientData.toString());
+		}).when(mpiHttpClient).submitPatient(patientData.toString());
 	}
 }

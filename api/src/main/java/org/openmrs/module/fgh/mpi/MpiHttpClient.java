@@ -198,7 +198,7 @@ public class MpiHttpClient {
 			}
 		}
 	}
-
+	
 	/**
 	 * Submits a request to the MPI
 	 *
@@ -219,7 +219,7 @@ public class MpiHttpClient {
 		if (mpiContext.getAuthenticationType().isOuath()) {
 			retriveAccessToken(responseType);
 			
-			connection =  MpiUtils.openConnection(url);
+			connection = MpiUtils.openConnection(url);
 			
 			String authHeaderValue = "bearer " + mpiContext.getTokenInfo().getAccessToken();
 			

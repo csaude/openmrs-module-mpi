@@ -34,27 +34,27 @@ public class TokenInfoTest {
 	@Test
 	public void isValid_tokenShouldBeValid() {
 		TokenInfo tokenInfo = new TokenInfo();
-
+		
 		tokenInfo.setTokenId(TOKEN_ID);
 		tokenInfo.setAccessToken(ACCESS_TOKEN);
 		tokenInfo.setRefreshToken(REFRESH_TOKEN);
 		tokenInfo.setExpiresIn(3l);
-		tokenInfo.setTokenExpirationDateTime(LocalDateTime.now().plus(15,  ChronoUnit.MILLIS));
+		tokenInfo.setTokenExpirationDateTime(LocalDateTime.now().plus(15, ChronoUnit.MILLIS));
 		boolean isValidToken = tokenInfo.isValid(LocalDateTime.now());
 		
 		assertTrue(isValidToken);
 	}
 	
 	@Test
-	public void isValid_tokenShouldBeInValid() {
+	public void isValid_tokenShouldBeInValid() throws InterruptedException {
 		TokenInfo tokenInfo = new TokenInfo();
 		
 		tokenInfo.setTokenId(TOKEN_ID);
 		tokenInfo.setAccessToken(ACCESS_TOKEN);
 		tokenInfo.setRefreshToken(REFRESH_TOKEN);
-		tokenInfo.setTokenExpirationDateTime(LocalDateTime.now().plus(2,  ChronoUnit.MILLIS));
-		tokenInfo.setExpiresIn(1l);
-		boolean isValidToken = tokenInfo.isValid(LocalDateTime.now());
+		tokenInfo.setExpiresIn(10l);
+		tokenInfo.setTokenExpirationDateTime(LocalDateTime.now());
+		boolean isValidToken = tokenInfo.isValid(LocalDateTime.now().plus(10, ChronoUnit.MILLIS));
 		
 		assertFalse(isValidToken);
 	}

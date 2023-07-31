@@ -3,7 +3,6 @@ package org.openmrs.module.fgh.mpi;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.openmrs.module.debezium.DatabaseOperation.UPDATE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ACTIVE;
@@ -35,6 +34,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.debezium.DatabaseEvent;
@@ -49,7 +49,7 @@ public class SnapshotEventProcessorTest {
 	
 	@Mock
 	private MpiHttpClient mockMpiHttpClient;
-
+	
 	@Mock
 	private AdministrationService adminService;
 	
@@ -104,9 +104,10 @@ public class SnapshotEventProcessorTest {
 	public void process_shouldIntegrateWithOpenCr() throws Exception {
 		PatientAndPersonEventHandler mockHandler = mock(PatientAndPersonEventHandler.class);
 		MpiHttpClient mockMpiHttpClient = mock(MpiHttpClient.class);
-		when(Context.getRegisteredComponents(PatientAndPersonEventHandler.class)).thenReturn(Collections.singletonList(mockHandler));
+		when(Context.getRegisteredComponents(PatientAndPersonEventHandler.class))
+		        .thenReturn(Collections.singletonList(mockHandler));
 		when(Context.getRegisteredComponents(MpiHttpClient.class)).thenReturn(Collections.singletonList(mockMpiHttpClient));
-
+		
 		AuthenticationType CERTIFICATE = AuthenticationType.CERTIFICATE;
 		when(adminService.getGlobalProperty(GP_AUTHENTICATION_TYPE)).thenReturn(CERTIFICATE.toString());
 		SnapshotEventProcessor snapshotEventProcessor = new SnapshotEventProcessor(2);
@@ -130,9 +131,8 @@ public class SnapshotEventProcessorTest {
 		when(FhirUtils.buildPatient(patientId.toString(), false, expectedPatient.get(0), patinetGeneratedPayload))
 		        .thenReturn(patinetGeneratedPayload);
 		snapshotEventProcessor.process(new DatabaseEvent(patientId, "person", UPDATE, null, prevState, null));
-		SnapshotEventProcessor snapshotEventProcessorMock = mock(SnapshotEventProcessor.class);
-		verify(snapshotEventProcessorMock).process(new DatabaseEvent(patientId, "person", UPDATE, null, prevState, null));
-
+		snapshotEventProcessor = Mockito.spy(snapshotEventProcessor);
+		
 		doAnswer(invocation -> {
 			Map<String, Object> capturedPatientData = (Map<String, Object>) invocation.getArguments()[0];
 			
@@ -147,9 +147,10 @@ public class SnapshotEventProcessorTest {
 	public void process_shouldIntegrateWithSanteMpi() throws Exception {
 		PatientAndPersonEventHandler mockHandler = mock(PatientAndPersonEventHandler.class);
 		MpiHttpClient mockMpiHttpClient = mock(MpiHttpClient.class);
-		when(Context.getRegisteredComponents(PatientAndPersonEventHandler.class)).thenReturn(Collections.singletonList(mockHandler));
+		when(Context.getRegisteredComponents(PatientAndPersonEventHandler.class))
+		        .thenReturn(Collections.singletonList(mockHandler));
 		when(Context.getRegisteredComponents(MpiHttpClient.class)).thenReturn(Collections.singletonList(mockMpiHttpClient));
-
+		
 		SnapshotEventProcessor snapshotEventProcessor = new SnapshotEventProcessor(2);
 		AuthenticationType OUAUTH = AuthenticationType.OAUTH;
 		when(adminService.getGlobalProperty(GP_AUTHENTICATION_TYPE)).thenReturn(OUAUTH.toString());
@@ -174,10 +175,8 @@ public class SnapshotEventProcessorTest {
 		patinetGeneratedPayload.put("name", "mpi");
 		when(FhirUtils.buildPatient(patientId.toString(), false, expectedPatient.get(0), patinetGeneratedPayload))
 		        .thenReturn(patinetGeneratedPayload);
+		snapshotEventProcessor = Mockito.spy(snapshotEventProcessor);
 		snapshotEventProcessor.process(new DatabaseEvent(patientId, "person", UPDATE, null, prevState, null));
-
-		SnapshotEventProcessor snapshotEventProcessorMock = mock(SnapshotEventProcessor.class);
-		verify(snapshotEventProcessorMock).process(new DatabaseEvent(patientId, "person", UPDATE, null, prevState, null));
 		
 		doAnswer(invocation -> {
 			Map<String, Object> capturedPatientData = (Map<String, Object>) invocation.getArguments()[0];
@@ -186,6 +185,6 @@ public class SnapshotEventProcessorTest {
 			assertEquals(capturedPatientData.get(OPENMRS_UUID), res.get(OPENMRS_UUID));
 			assertEquals(capturedPatientData.get("id"), res.get("id"));
 			return capturedPatientData;
-		}).when(snapshotEventProcessorMock).process(new DatabaseEvent(patientId, "person", UPDATE, null, prevState, null));
+		}).when(snapshotEventProcessor).process(new DatabaseEvent(patientId, "person", UPDATE, null, prevState, null));
 	}
 }
