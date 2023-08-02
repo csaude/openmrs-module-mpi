@@ -16,7 +16,8 @@
 	<!-- / Module Properties -->
 
 	<!-- Module Activator -->
-	<activator>${project.parent.groupId}.${project.parent.artifactId}.MpiActivator
+	<activator>
+		${project.parent.groupId}.${project.parent.artifactId}.MpiActivator
 	</activator>
 
 	<!-- Required Modules -->
@@ -54,7 +55,8 @@
 		</description>
 	</globalProperty>
 	<globalProperty>
-		<property>${project.parent.artifactId}.patient.uuid.concept.map
+		<property>
+			${project.parent.artifactId}.patient.uuid.concept.map
 		</property>
 		<description>
 			Specifies the concept mapping for the internal OpenMRS patient uuid identifier
@@ -65,20 +67,23 @@
 		</description>
 	</globalProperty>
 	<globalProperty>
-		<property>${project.parent.artifactId}.patient.health.center.url
+		<property>
+			${project.parent.artifactId}.patient.health.center.url
 		</property>
 		<description>
 			Specifies the URL to use for the health center extension
 		</description>
 	</globalProperty>
 	<globalProperty>
-		<property>${project.parent.artifactId}.person.uuid.url</property>
+		<property>
+			${project.parent.artifactId}.person.uuid.url</property>
 		<description>
 			Specifies the URL to use for the person uuid extension
 		</description>
 	</globalProperty>
 	<globalProperty>
-		<property>${project.parent.artifactId}.person.attribute.type.mobile.phone
+		<property>
+			${project.parent.artifactId}.person.attribute.type.mobile.phone
 		</property>
 		<description>
 			Specifies the uuid of the person attribute type for mobile phone number
@@ -86,7 +91,8 @@
 		<defaultValue>e2e3fd64-1d5f-11e0-b929-000c29ad1d07</defaultValue>
 	</globalProperty>
 	<globalProperty>
-		<property>${project.parent.artifactId}.person.attribute.type.home.phone
+		<property>
+			${project.parent.artifactId}.person.attribute.type.home.phone
 		</property>
 		<description>
 			Specifies the uuid of the person attribute type for home phone number
@@ -94,7 +100,8 @@
 		<defaultValue>e6c97a9d-a77b-401f-b06e-81900e21ed1d</defaultValue>
 	</globalProperty>
 	<globalProperty>
-		<property>${project.parent.artifactId}.relationship.type.terminology.system.uri
+		<property>
+			${project.parent.artifactId}.relationship.type.terminology.system.uri
 		</property>
 		<description>
 			Specifies the URI of the terminology system for the concepts mapped to
@@ -102,7 +109,8 @@
 		</description>
 	</globalProperty>
 	<globalProperty>
-		<property>${project.parent.artifactId}.relationship.type.personA.concept.mappings
+		<property>
+			${project.parent.artifactId}.relationship.type.personA.concept.mappings
 		</property>
 		<description>
 			Comma-separated list of mappings between OpenMRS relationship type uuids for person
@@ -117,7 +125,8 @@
 		</description>
 	</globalProperty>
 	<globalProperty>
-		<property>${project.parent.artifactId}.relationship.type.personB.concept.mappings
+		<property>
+			${project.parent.artifactId}.relationship.type.personB.concept.mappings
 		</property>
 		<description>
 			Comma-separated list of mappings between OpenMRS relationship type uuids for person
@@ -132,7 +141,8 @@
 		</description>
 	</globalProperty>
 	<globalProperty>
-		<property>${project.parent.artifactId}.identifier.type.terminology.system.uri
+		<property>
+			${project.parent.artifactId}.identifier.type.terminology.system.uri
 		</property>
 		<description>
 			Specifies the URI of the terminology system for the concepts mapped to patient
@@ -140,7 +150,8 @@
 		</description>
 	</globalProperty>
 	<globalProperty>
-		<property>${project.parent.artifactId}.patient.uuid.system.uri
+		<property>
+			${project.parent.artifactId}.patient.uuid.system.uri
 		</property>
 		<description>
 			Specifies the URI of the namespace for the patient uuids, this will be set as
@@ -151,7 +162,8 @@
 		</description>
 	</globalProperty>
 	<globalProperty>
-		<property>${project.parent.artifactId}.identifier.type.system.uri.mappings
+		<property>
+			${project.parent.artifactId}.identifier.type.system.uri.mappings
 		</property>
 		<description>
 			Comma-separated list of mappings between OpenMRS patient identifier type uuids and
@@ -167,7 +179,8 @@
 		</description>
 	</globalProperty>
 	<globalProperty>
-		<property>${project.parent.artifactId}.identifier.type.concept.mappings
+		<property>
+			${project.parent.artifactId}.identifier.type.concept.mappings
 		</property>
 		<description>
 			Comma-separated list of mappings between OpenMRS patient identifier type uuids and
@@ -183,7 +196,8 @@
 		</description>
 	</globalProperty>
 	<globalProperty>
-		<property>${project.parent.artifactId}.initial.loading.batch.size
+		<property>
+			${project.parent.artifactId}.initial.loading.batch.size
 		</property>
 		<description>
 			Specifies the number of patients to process and submit in parallel to the MPI.
@@ -203,7 +217,8 @@
 		</description>
 	</globalProperty>
 	<globalProperty>
-		<property>${project.parent.artifactId}.application.content.type
+		<property>
+			${project.parent.artifactId}.application.content.type
 		</property>
 		<description>
 			Specify the application content type which should be used when submiting the
@@ -213,7 +228,8 @@
 		<defaultValue>application/fhir+json</defaultValue>
 	</globalProperty>
 	<globalProperty>
-		<property>${project.parent.artifactId}.authentication.type
+		<property>
+			${project.parent.artifactId}.authentication.type
 		</property>
 		<description>
 			Specify the authentication type used to authenticate to the mpi system. OpenCR: SSL, SanteDB: OAUTH
@@ -221,7 +237,8 @@
 		<defaultValue>OAUTH</defaultValue>
 	</globalProperty>
 	<globalProperty>
-		<property>${project.parent.artifactId}.system
+		<property>
+			${project.parent.artifactId}.system
 		</property>
 		<description>
 			The MPI System. Could be "SANTEMPI" or "OPENCR"
@@ -229,7 +246,8 @@
 		<defaultValue>SANTEMPI</defaultValue>
 	</globalProperty>
 	<globalProperty>
-		<property>${project.parent.artifactId}.sante.db.client.id
+		<property>
+			${project.parent.artifactId}.sante.db.client.id
 		</property>
 		<description>
 			The client_id which will be used to connect to the SanteMPI system
@@ -254,7 +272,5 @@
 		<description>
 			The event URI for Sante Message Header Bundle
 		</description>
-	</globalProperty>	
-	
+	</globalProperty>
 </module>
-
