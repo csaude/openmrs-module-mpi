@@ -6,7 +6,6 @@ import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyList;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.openmrs.module.debezium.DatabaseOperation.CREATE;
@@ -16,16 +15,8 @@ import static org.openmrs.module.debezium.DatabaseOperation.UPDATE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ACTIVE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_CONTACT;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ID;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_NAME;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_RELATIONSHIP;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_AUTHENTICATION_TYPE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_APP_CONTENT_TYPE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_BASE_URL;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_SYSTEM;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_CLIENT_ID;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_CLIENT_SECRET;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_MESSAGE_HEADER_EVENT_URI;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_MESSAGE_HEADER_FOCUS_REFERENCE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_UUID_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.ID_PLACEHOLDER;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.PATIENT_QUERY;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.PERSON_QUERY;
@@ -47,19 +38,15 @@ import org.mockito.ArgumentMatcher;
 import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.openmrs.api.AdministrationService;
-import org.openmrs.api.context.Context;
 import org.openmrs.module.debezium.DatabaseEvent;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.reflect.Whitebox;
 import org.slf4j.Logger;
-import org.springframework.context.ApplicationContext;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({ MpiUtils.class, FhirUtils.class, Context.class, ApplicationContext.class,
-        PatientAndPersonEventHandler.class })
+@PrepareForTest({ MpiUtils.class, FhirUtils.class })
 public class MpiIntegrationProcessorTest {
 	
 	@Mock
@@ -69,52 +56,13 @@ public class MpiIntegrationProcessorTest {
 	private Logger mockLogger;
 	
 	private MpiIntegrationProcessor processor = new MpiIntegrationProcessor();
-
-	@Mock
-	private AdministrationService adminService;
 	
-	private static final String UUID_SYSTEM = "http://test.openmrs.id/uuid";
-	
-	private static final String MESSAGE_HEADER_REFERENCE = "metadata.epts.e-saude.net/bundle";
-	
-	private static final String MESSAGE_HEADER_EVENT_URI = "urn:ihe:iti:pmir:2019:patient-feed";
-	
-	private static final AuthenticationType AUTHENTICATION_TYPE = AuthenticationType.OAUTH;
-	
-	private static final String MPI_BASE_URL = "http://sante.org.mz";
-	
-	private static final String MPI_APP_CONTENT_TYPE = "application/fhir+json";
-	
-	private static final MpiSystemType MPI_SYSTEM = MpiSystemType.SANTEMPI;
-	
-	private static final MpiSystemType MPI_SYSTEM_AS_OPENCR = MpiSystemType.SANTEMPI;
-	
-	private static final String SANTE_CLIENT_ID = "client_credentials";
-	
-	private static final String SANTE_CLIENT_SECRET = "bG6TuS3X-H1MsT4ctW!CxXjK9J4l1QpK8B0Q";
-	
-
 	@Before
-	public void setup() throws Exception {
+	public void setup() {
 		PowerMockito.mockStatic(MpiUtils.class);
 		PowerMockito.mockStatic(FhirUtils.class);
-		PowerMockito.mockStatic(Context.class);
-		PowerMockito.mockStatic(ApplicationContext.class);
 		Whitebox.setInternalState(MpiIntegrationProcessor.class, Logger.class, mockLogger);
-		Whitebox.setInternalState(PatientAndPersonEventHandler.class, Logger.class, mockLogger);
 		Whitebox.setInternalState(processor, MpiHttpClient.class, mockMpiHttpClient);
-		when(Context.getAdministrationService()).thenReturn(adminService);
-		when(adminService.getGlobalProperty(GP_AUTHENTICATION_TYPE)).thenReturn(AUTHENTICATION_TYPE.toString());
-		when(adminService.getGlobalProperty(GP_MPI_BASE_URL)).thenReturn(MPI_BASE_URL);
-		when(adminService.getGlobalProperty(GP_MPI_SYSTEM)).thenReturn(MPI_SYSTEM.toString());
-		when(adminService.getGlobalProperty(GP_MPI_APP_CONTENT_TYPE)).thenReturn(MPI_APP_CONTENT_TYPE);
-		when(adminService.getGlobalProperty(GP_SANTE_MESSAGE_HEADER_FOCUS_REFERENCE)).thenReturn(MESSAGE_HEADER_REFERENCE);
-		when(adminService.getGlobalProperty(GP_SANTE_MESSAGE_HEADER_EVENT_URI)).thenReturn(MESSAGE_HEADER_EVENT_URI);
-		when(adminService.getGlobalProperty(GP_SANTE_MESSAGE_HEADER_EVENT_URI)).thenReturn(MESSAGE_HEADER_EVENT_URI);
-		when(adminService.getGlobalProperty(GP_SANTE_CLIENT_ID)).thenReturn(SANTE_CLIENT_ID);
-		when(adminService.getGlobalProperty(GP_SANTE_CLIENT_SECRET)).thenReturn(SANTE_CLIENT_SECRET);
-		when(MpiUtils.getGlobalPropertyValue(GP_UUID_SYSTEM)).thenReturn(UUID_SYSTEM);
-		when(Context.getRegisteredComponents(any())).thenReturn(null);
 	}
 	
 	@Test
@@ -159,8 +107,7 @@ public class MpiIntegrationProcessorTest {
 	}
 	
 	@Test
-	public void process_shouldIgnoreAPersonDeleteEventIfTsnapshotEventProcessorheTheMpiPatientRecordIsInactive()
-	        throws Exception {
+	public void process_shouldIgnoreAPersonDeleteEventIfTheTheMpiPatientRecordIsInactive() throws Exception {
 		final String patientUuid = "patient-uuid";
 		when(mockMpiHttpClient.getPatient(patientUuid)).thenReturn(singletonMap(FIELD_ACTIVE, false));
 		Map prevState = singletonMap("uuid", patientUuid);
@@ -284,8 +231,9 @@ public class MpiIntegrationProcessorTest {
 		Map newContact2 = new HashMap();
 		newContact2.put(FIELD_ID, relationshipUuid2);
 		newContact2.put(FIELD_RELATIONSHIP, emptyMap());
-		Map newPatient = singletonMap(FIELD_CONTACT,
-		    asList(newContact1, singletonMap(FIELD_ID, "relationship-uuid-3"), newContact2));
+		Map newPatient = new HashMap();
+		newPatient.put(FIELD_CONTACT, asList(newContact1, singletonMap(FIELD_ID, "relationship-uuid-3"), newContact2));
+		newPatient.put(FIELD_NAME, "patient-name");
 		when(FhirUtils.buildPatient(anyString(), anyBoolean(), anyList(), anyMap())).thenReturn(newPatient);
 		
 		processor.process(1, new DatabaseEvent(null, "patient", UPDATE, null, null, null));
@@ -337,7 +285,6 @@ public class MpiIntegrationProcessorTest {
 		List mpiContacts = asList(mpiContact1, singletonMap(FIELD_RELATIONSHIP, emptyMap()), mpiContact2);
 		mpiPatient.put(FIELD_CONTACT, mpiContacts);
 		when(mockMpiHttpClient.getPatient(patientUuid)).thenReturn(mpiPatient);
-		
 		Map newContact1 = new HashMap();
 		newContact1.put(FIELD_ID, "relationship-uuid-3");
 		newContact1.put(FIELD_RELATIONSHIP, emptyMap());
@@ -346,9 +293,7 @@ public class MpiIntegrationProcessorTest {
 		newContact2.put(FIELD_RELATIONSHIP, emptyMap());
 		Map newPatient = singletonMap(FIELD_CONTACT, asList(newContact1, newContact2));
 		when(FhirUtils.buildPatient(anyString(), anyBoolean(), anyList(), anyMap())).thenReturn(newPatient);
-		
 		processor.process(1, new DatabaseEvent(null, "patient", UPDATE, null, null, null));
-		
 		Mockito.verify(mockMpiHttpClient, Mockito.never()).submitPatient(anyString());
 	}
 	
@@ -378,7 +323,9 @@ public class MpiIntegrationProcessorTest {
 		Map newContact1 = new HashMap();
 		newContact1.put(FIELD_ID, relationshipUuid1);
 		newContact1.put(FIELD_RELATIONSHIP, emptyMap());
-		Map newPatient = singletonMap(FIELD_CONTACT, asList(newContact1, null));
+		Map newPatient = new HashMap();
+		newPatient.put(FIELD_CONTACT, asList(newContact1, null));
+		newPatient.put(FIELD_NAME, "patient-name");
 		when(FhirUtils.buildPatient(anyString(), anyBoolean(), anyList(), anyMap())).thenReturn(newPatient);
 		
 		processor.process(1, new DatabaseEvent(null, "patient", UPDATE, null, null, null));
@@ -408,6 +355,11 @@ public class MpiIntegrationProcessorTest {
 	}
 	
 	@Test
+	public void process_shouldProcessAPatientThatDoesNotExistInTheMpi() throws Exception {
+		processor.process(1, new DatabaseEvent(null, null, null, null, null, null));
+	}
+	
+	@Test
 	public void process_shouldProcessAPatientThatAlreadyExistsInTheMpi() throws Exception {
 	}
 	
@@ -417,5 +369,18 @@ public class MpiIntegrationProcessorTest {
 	
 	@Test
 	public void process_shouldProcessAPatientDeleteEvent() throws Exception {
+	}
+	
+	@Test
+	public void process_shouldSkipPatientWithNoName() throws Exception {
+		String patientId = "1";
+		String patientUuid = "patient-uuid";
+		when(MpiUtils.executeQuery(PERSON_QUERY.replace(ID_PLACEHOLDER, patientId.toString())))
+		        .thenReturn(asList(asList(null, null, null, null, patientUuid, null)));
+		when(mockMpiHttpClient.getPatient(patientUuid)).thenReturn(singletonMap(FIELD_ACTIVE, false));
+		when(MpiUtils.executeQuery(PATIENT_QUERY.replace(ID_PLACEHOLDER, patientId.toString())))
+		        .thenReturn(singletonList(singletonList(false)));
+		Map<String, Object> patientData = processor.process(1, new DatabaseEvent(null, null, null, null, null, null));
+		assertNull(patientData);
 	}
 }

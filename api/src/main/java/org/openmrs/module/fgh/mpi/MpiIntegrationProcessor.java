@@ -136,13 +136,13 @@ public class MpiIntegrationProcessor {
 				//TODO May be we should not build a new resource and instead update the mpiPatient if one exists
 				//And we will need to be aware of placeholder rows
 				Map<String, Object> generated = FhirUtils.buildPatient(id, patientVoided, personDetails, mpiPatient);
-
+				
 				if (generated.get("name") == null) {
 					log.warn("Skipping patient with no name");
-
+					
 					return null;
 				}
-
+				
 				//There is a bug in the MPI where contact.relationship field is never updated for existing contacts,
 				//Clear it in the MPI for existing contacts and we will later update it when we resubmit the patient
 				if (generated != null && mpiPatient != null) {

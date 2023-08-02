@@ -160,7 +160,6 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 								log.debug("All patients in the batch were successfully processed by the MPI");
 							}
 							
-							successCount.addAndGet(fhirPatients.size());
 						} else {
 							//TODO Loop through all patients in the batch and check which records were problematic
 							throw new APIException((fhirPatients.size() - successPatientCount)
@@ -214,6 +213,7 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 					} else {
 						throw new APIException("Unkown MPISystem [" + mpiContext.getMpiSystem() + "]");
 					}
+					successCount.addAndGet(fhirPatients.size());
 					MpiUtils.saveLastSubmittedPatientId(Integer.valueOf(event.getPrimaryKeyId().toString()));
 				}
 			}

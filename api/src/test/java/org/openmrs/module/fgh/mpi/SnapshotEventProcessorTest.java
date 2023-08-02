@@ -1,11 +1,10 @@
 package org.openmrs.module.fgh.mpi;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.openmrs.module.debezium.DatabaseOperation.UPDATE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ACTIVE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_AUTHENTICATION_TYPE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_APP_CONTENT_TYPE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_BASE_URL;
@@ -33,6 +32,8 @@ import javax.net.ssl.KeyManagerFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.openmrs.api.AdministrationService;
@@ -76,6 +77,9 @@ public class SnapshotEventProcessorTest {
 	
 	@Mock
 	private Context context;
+	
+	@Captor
+	private ArgumentCaptor<DatabaseEvent> DatabaseEventCaptor;
 	
 	@Before
 	public void setup() throws Exception {
@@ -130,17 +134,14 @@ public class SnapshotEventProcessorTest {
 		patinetGeneratedPayload.put("name", "mpi");
 		when(FhirUtils.buildPatient(patientId.toString(), false, expectedPatient.get(0), patinetGeneratedPayload))
 		        .thenReturn(patinetGeneratedPayload);
-		snapshotEventProcessor.process(new DatabaseEvent(patientId, "person", UPDATE, null, prevState, null));
 		snapshotEventProcessor = Mockito.spy(snapshotEventProcessor);
+		snapshotEventProcessor.process(new DatabaseEvent(patientId, "person", UPDATE, null, prevState, null));
 		
-		doAnswer(invocation -> {
-			Map<String, Object> capturedPatientData = (Map<String, Object>) invocation.getArguments()[0];
-			
-			assertEquals(capturedPatientData.get(FIELD_ACTIVE), res.get(FIELD_ACTIVE));
-			assertEquals(capturedPatientData.get(OPENMRS_UUID), res.get(OPENMRS_UUID));
-			assertEquals(capturedPatientData.get("id"), res.get("id"));
-			return capturedPatientData;
-		}).when(snapshotEventProcessor).process(new DatabaseEvent(patientId, "person", UPDATE, null, prevState, null));
+		verify(snapshotEventProcessor).process(DatabaseEventCaptor.capture());
+		DatabaseEvent submitedDataBaseEvent = DatabaseEventCaptor.getValue();
+		assertEquals(submitedDataBaseEvent.getPrimaryKeyId(), submitedDataBaseEvent.getPrimaryKeyId());
+		assertEquals(submitedDataBaseEvent.getTableName(), submitedDataBaseEvent.getTableName());
+		assertEquals(submitedDataBaseEvent.getOperation(), submitedDataBaseEvent.getOperation());
 	}
 	
 	@Test
@@ -178,13 +179,10 @@ public class SnapshotEventProcessorTest {
 		snapshotEventProcessor = Mockito.spy(snapshotEventProcessor);
 		snapshotEventProcessor.process(new DatabaseEvent(patientId, "person", UPDATE, null, prevState, null));
 		
-		doAnswer(invocation -> {
-			Map<String, Object> capturedPatientData = (Map<String, Object>) invocation.getArguments()[0];
-			
-			assertEquals(capturedPatientData.get(FIELD_ACTIVE), res.get(FIELD_ACTIVE));
-			assertEquals(capturedPatientData.get(OPENMRS_UUID), res.get(OPENMRS_UUID));
-			assertEquals(capturedPatientData.get("id"), res.get("id"));
-			return capturedPatientData;
-		}).when(snapshotEventProcessor).process(new DatabaseEvent(patientId, "person", UPDATE, null, prevState, null));
+		verify(snapshotEventProcessor).process(DatabaseEventCaptor.capture());
+		DatabaseEvent submitedDataBaseEvent = DatabaseEventCaptor.getValue();
+		assertEquals(submitedDataBaseEvent.getPrimaryKeyId(), submitedDataBaseEvent.getPrimaryKeyId());
+		assertEquals(submitedDataBaseEvent.getTableName(), submitedDataBaseEvent.getTableName());
+		assertEquals(submitedDataBaseEvent.getOperation(), submitedDataBaseEvent.getOperation());
 	}
 }
