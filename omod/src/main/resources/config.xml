@@ -12,202 +12,147 @@
 	<updateURL>https://modules.openmrs.org/modules/download/${project.parent.artifactId}/update.rdf</updateURL>
 	<require_version>${openmrsPlatformVersion}</require_version>
 	<!-- / Module Properties -->
-
+	
 	<!-- Module Activator -->
 	<activator>${project.parent.groupId}.${project.parent.artifactId}.MpiActivator</activator>
 
-	<!-- Required Modules -->
-	<require_modules>
-		<require_module version="${debeziumVersion}">org.openmrs.module.debezium</require_module>
-	</require_modules>
+    <!-- Required Modules -->
+    <require_modules>
+        <require_module version="${debeziumVersion}">org.openmrs.module.debezium</require_module>
+    </require_modules>
+    
+    <!-- Global properties -->
+    <globalProperty>
+        <property>${project.parent.artifactId}.server.base.url</property>
+        <description>
+            Base server URL for OpenCR e.g. https://localhost:3000
+        </description>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.keystore.path</property>
+        <description>
+            Path to the keystore containing the client certificate to use to authenticate with OpenCR
+        </description>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.keystore.password</property>
+        <description>
+            Password for the keystore containing the client certificate to use to authenticate with OpenCR
+        </description>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.keystore.type</property>
+        <description>
+            The type for the keystore containing the client certificate to use to authenticate with OpenCR
+        </description>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.patient.uuid.concept.map</property>
+        <description>
+            Specifies the concept mapping for the internal OpenMRS patient uuid identifier type and the concept
+            in the terminology system associated to the URI set via the global property named
+            ${project.parent.artifactId}.identifier.type.concept.source.uri
+        </description>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.patient.health.center.url</property>
+        <description>
+            Specifies the URL to use for the health center extension
+        </description>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.person.uuid.url</property>
+        <description>
+            Specifies the URL to use for the person uuid extension
+        </description>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.person.attribute.type.mobile.phone</property>
+        <description>
+            Specifies the uuid of the person attribute type for mobile phone number
+        </description>
+        <defaultValue>e2e3fd64-1d5f-11e0-b929-000c29ad1d07</defaultValue>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.person.attribute.type.home.phone</property>
+        <description>
+            Specifies the uuid of the person attribute type for home phone number
+        </description>
+        <defaultValue>e6c97a9d-a77b-401f-b06e-81900e21ed1d</defaultValue>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.relationship.type.terminology.system.uri</property>
+        <description>
+            Specifies the URI of the terminology system for the concepts mapped to relationship types in OpenMRS
+        </description>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.relationship.type.personA.concept.mappings</property>
+        <description>
+            Comma-separated list of mappings between OpenMRS relationship type uuids for person A and concepts
+            in the terminology system associated to the URI set via the global property named
+            ${project.parent.artifactId}.relationship.type.concept.source.uri, should be of the form
+            relationshipTypeUuid-1:conceptCode1:conceptDisplay1,relationshipTypeUuid-2:conceptCode2:conceptDisplay2
+            e.g a5c97a9d-a77b-401f-b06e-81900e21ed1e:M:Mother,b7c97a9d-a77b-401f-b06e-81900e21ed1e:L:Lawyer
+        </description>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.relationship.type.personB.concept.mappings</property>
+        <description>
+            Comma-separated list of mappings between OpenMRS relationship type uuids for person B and concepts
+            in the terminology system associated to the URI set via the global property named
+            ${project.parent.artifactId}.relationship.type.concept.source.uri, should be of the form
+            relationshipTypeUuid-1:conceptCode1:conceptDisplay1,relationshipTypeUuid-2:conceptCode2:conceptDisplay2
+            e.g a5c97a9d-a77b-401f-b06e-81900e21ed1e:CH:Child,b7c97a9d-a77b-401f-b06e-81900e21ed1e:CL:Client
+        </description>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.identifier.type.terminology.system.uri</property>
+        <description>
+            Specifies the URI of the terminology system for the concepts mapped to patient identifier types in OpenMRS
+        </description>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.patient.uuid.system.uri</property>
+        <description>
+            Specifies the URI of the namespace for the patient uuids, this will be set as the value of the system
+            property for the patient uuid identifier, the value MUST match the internalId URL value defined in the
+            OpenCR config file under the systems section.
+        </description>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.identifier.type.system.uri.mappings</property>
+        <description>
+            Comma-separated list of mappings between OpenMRS patient identifier type uuids and system URIs
+            (identifier type namespaces), should be of the form identifierTypeUuid-1^systemUri1,identifierTypeUuid-2^systemUri2.
+            The system URI values MUST match the URI values defined for the respective patient identifier types in the
+            OpenCR config file under the systems section. The system URI for the NID patient identifier type MUST also
+            match the values used in the OpenCR PatientRelationship.json and decisionRules.json files.
+        </description>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.identifier.type.concept.mappings</property>
+        <description>
+            Comma-separated list of mappings between OpenMRS patient identifier type uuids and concepts
+            in the terminology system associated to the URI set via the global property named
+            ${project.parent.artifactId}.identifier.type.concept.source.uri, should be of the form
+            identifierTypeUuid-1:conceptCode1:conceptDisplay1,identifierTypeUuid-2:conceptCode2:conceptDisplay2
+            e.g b6c97a9d-a77b-401f-b06e-81900e21ed1e:NID:National ID,c6c97a9d-a77b-401f-b06e-81900e21ed1e:SSN:Social
+            Security Number.
+        </description>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.initial.loading.batch.size</property>
+        <description>
+            Specifies the number of patients to process and submit in parallel to the MPI. Defaults to 10
+        </description>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.initial.loading</property>
+        <description>
+            Specifies whether the module should perform initial loading.
+        </description>
+    </globalProperty>
 
-	<!-- Global properties -->
-	<globalProperty>
-		<property>${project.parent.artifactId}.server.base.url</property>
-		<description>
-			Base server URL for OpenCR e.g. https://localhost:3000
-		</description>
-	</globalProperty>
-	<globalProperty>
-		<property>${project.parent.artifactId}.keystore.path</property>
-		<description>
-			Path to the keystore containing the client certificate to use to authenticate with OpenCR
-		</description>
-	</globalProperty>
-	<globalProperty>
-		<property>${project.parent.artifactId}.keystore.password</property>
-		<description>
-			Password for the keystore containing the client certificate to use to authenticate with OpenCR
-		</description>
-	</globalProperty>
-	<globalProperty>
-		<property>${project.parent.artifactId}.keystore.type</property>
-		<description>
-			The type for the keystore containing the client certificate to use to authenticate with OpenCR
-		</description>
-	</globalProperty>
-	<globalProperty>
-		<property>${project.parent.artifactId}.patient.uuid.concept.map</property>
-		<description>
-			Specifies the concept mapping for the internal OpenMRS patient uuid identifier type and the concept
-			in the terminology system associated to the URI set via the global property named
-			${project.parent.artifactId}.identifier.type.concept.source.uri
-		</description>
-	</globalProperty>
-	<globalProperty>
-		<property>${project.parent.artifactId}.patient.health.center.url</property>
-		<description>
-			Specifies the URL to use for the health center extension
-		</description>
-	</globalProperty>
-	<globalProperty>
-		<property>${project.parent.artifactId}.person.uuid.url</property>
-		<description>
-			Specifies the URL to use for the person uuid extension
-		</description>
-	</globalProperty>
-	<globalProperty>
-		<property>${project.parent.artifactId}.person.attribute.type.mobile.phone</property>
-		<description>
-			Specifies the uuid of the person attribute type for mobile phone number
-		</description>
-		<defaultValue>e2e3fd64-1d5f-11e0-b929-000c29ad1d07</defaultValue>
-	</globalProperty>
-	<globalProperty>
-		<property>${project.parent.artifactId}.person.attribute.type.home.phone</property>
-		<description>
-			Specifies the uuid of the person attribute type for home phone number
-		</description>
-		<defaultValue>e6c97a9d-a77b-401f-b06e-81900e21ed1d</defaultValue>
-	</globalProperty>
-	<globalProperty>
-		<property>${project.parent.artifactId}.relationship.type.terminology.system.uri</property>
-		<description>
-			Specifies the URI of the terminology system for the concepts mapped to relationship types in OpenMRS
-		</description>
-	</globalProperty>
-	<globalProperty>
-		<property>${project.parent.artifactId}.relationship.type.personA.concept.mappings</property>
-		<description>
-			Comma-separated list of mappings between OpenMRS relationship type uuids for person A and concepts
-			in the terminology system associated to the URI set via the global property named
-			${project.parent.artifactId}.relationship.type.concept.source.uri, should be of the form
-			relationshipTypeUuid-1:conceptCode1:conceptDisplay1,relationshipTypeUuid-2:conceptCode2:conceptDisplay2
-			e.g a5c97a9d-a77b-401f-b06e-81900e21ed1e:M:Mother,b7c97a9d-a77b-401f-b06e-81900e21ed1e:L:Lawyer
-		</description>
-	</globalProperty>
-	<globalProperty>
-		<property>${project.parent.artifactId}.relationship.type.personB.concept.mappings</property>
-		<description>
-			Comma-separated list of mappings between OpenMRS relationship type uuids for person B and concepts
-			in the terminology system associated to the URI set via the global property named
-			${project.parent.artifactId}.relationship.type.concept.source.uri, should be of the form
-			relationshipTypeUuid-1:conceptCode1:conceptDisplay1,relationshipTypeUuid-2:conceptCode2:conceptDisplay2
-			e.g a5c97a9d-a77b-401f-b06e-81900e21ed1e:CH:Child,b7c97a9d-a77b-401f-b06e-81900e21ed1e:CL:Client
-		</description>
-	</globalProperty>
-	<globalProperty>
-		<property>${project.parent.artifactId}.identifier.type.terminology.system.uri</property>
-		<description>
-			Specifies the URI of the terminology system for the concepts mapped to patient identifier types in OpenMRS
-		</description>
-	</globalProperty>
-	<globalProperty>
-		<property>${project.parent.artifactId}.patient.uuid.system.uri</property>
-		<description>
-			Specifies the URI of the namespace for the patient uuids, this will be set as the value of the system
-			property for the patient uuid identifier, the value MUST match the internalId URL value defined in the
-			OpenCR config file under the systems section.
-		</description>
-	</globalProperty>
-	<globalProperty>
-		<property>${project.parent.artifactId}.identifier.type.system.uri.mappings</property>
-		<description>
-			Comma-separated list of mappings between OpenMRS patient identifier type uuids and system URIs
-			(identifier type namespaces), should be of the form identifierTypeUuid-1^systemUri1,identifierTypeUuid-2^systemUri2.
-			The system URI values MUST match the URI values defined for the respective patient identifier types in the
-			OpenCR config file under the systems section. The system URI for the NID patient identifier type MUST also
-			match the values used in the OpenCR PatientRelationship.json and decisionRules.json files.
-		</description>
-	</globalProperty>
-	<globalProperty>
-		<property>${project.parent.artifactId}.identifier.type.concept.mappings</property>
-		<description>
-			Comma-separated list of mappings between OpenMRS patient identifier type uuids and concepts
-			in the terminology system associated to the URI set via the global property named
-			${project.parent.artifactId}.identifier.type.concept.source.uri, should be of the form
-			identifierTypeUuid-1:conceptCode1:conceptDisplay1,identifierTypeUuid-2:conceptCode2:conceptDisplay2
-			e.g b6c97a9d-a77b-401f-b06e-81900e21ed1e:NID:National ID,c6c97a9d-a77b-401f-b06e-81900e21ed1e:SSN:Social
-			Security Number.
-		</description>
-	</globalProperty>
-	<globalProperty>
-		<property>${project.parent.artifactId}.initial.loading.batch.size</property>
-		<description>
-			Specifies the number of patients to process and submit in parallel to the MPI. Defaults to 10
-		</description>
-	</globalProperty>
-	<globalProperty>
-		<property>${project.parent.artifactId}.initial.loading</property>
-		<description>
-			Specifies whether the module should perform initial loading.
-		</description>
-	</globalProperty>
-	<globalProperty>
-		<property>
-			${project.parent.artifactId}.application.content.type
-		</property>
-		<description>
-			Specify the application content type which should be used when submiting the
-			request to the mpi system: for opencr: "application/json", for
-			santeMPI: "application/fhir+json"
-		</description>
-		<defaultValue>application/fhir+json</defaultValue>
-	</globalProperty>
-	<globalProperty>
-		<property>
-			${project.parent.artifactId}.authentication.type
-		</property>
-		<description>
-			Specify the authentication type used to authenticate to the mpi system. OpenCR: SSL, SanteDB: OAUTH
-		</description>
-		<defaultValue>OAUTH</defaultValue>
-	</globalProperty>
-	<globalProperty>
-		<property>
-			${project.parent.artifactId}.system
-		</property>
-		<description>
-			The MPI System. Could be "SANTEMPI" or "OPENCR"
-		</description>
-		<defaultValue>SANTEMPI</defaultValue>
-	</globalProperty>
-	<globalProperty>
-		<property>
-			${project.parent.artifactId}.sante.db.client.id
-		</property>
-		<description>
-			The client_id which will be used to connect to the SanteMPI system
-		</description>
-	</globalProperty>
-	<globalProperty>
-		<property>${project.parent.artifactId}.sante.db.client.secret</property>
-		<description>
-			The secret of the client which will be used to connect to the SanteMPI system
-		</description>
-	</globalProperty>
-	<globalProperty>
-		<property>${project.parent.artifactId}.sante.message.header.focus.reference</property>
-		<defaultValue>metadata.epts.e-saude.net/bundle</defaultValue>
-		<description>
-			The reference for Sante Message Header Bundle
-		</description>
-	</globalProperty>
-	<globalProperty>
-		<property>${project.parent.artifactId}.sante.message.header.event.uri</property>
-		<defaultValue>urn:ihe:iti:pmir:2019:patient-feed</defaultValue>
-		<description>
-			The event URI for Sante Message Header Bundle
-		</description>
-	</globalProperty>
 </module>
+
