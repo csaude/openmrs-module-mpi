@@ -86,7 +86,7 @@ public class MpiHttpClientTest {
 	
 	private static final AuthenticationType AUTHENTICATION_TYPE = AuthenticationType.OAUTH;
 	
-	private static final String MPI_BASE_URL = "https://demompi.santesuite.net";
+	private static final String MPI_BASE_URL = "sante.fake";
 	
 	private static final String MPI_APP_CONTENT_TYPE = "application/fhir+json";
 	
@@ -129,7 +129,7 @@ public class MpiHttpClientTest {
 		MpiContext mpiContext = new MpiContext();
 		mpiContext.setServerBaseUrl(MPI_BASE_URL);
 		when(MpiContext.initIfNecessary()).thenReturn(mpiContext);
-		when(MpiUtils.openConnection("https://demompi.santesuite.net/auth/oauth2_token")).thenReturn(httpURLConnectionMock);
+		when(MpiUtils.openConnection("sante.fake/auth/oauth2_token")).thenReturn(httpURLConnectionMock);
 		OutputStream outputStreamMock = PowerMockito.mock(OutputStream.class);
 		when(httpURLConnectionMock.getOutputStream()).thenReturn(outputStreamMock);
 		when(httpURLConnectionMock.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
@@ -179,7 +179,7 @@ public class MpiHttpClientTest {
 		when(mpiContextMock.getMpiSystem()).thenReturn(MpiSystemType.SANTEMPI);
 		when(mpiContextMock.getClientId()).thenReturn(SANTE_CLIENT_ID);
 		when(mpiContextMock.getClientSecret()).thenReturn(SANTE_CLIENT_SECRET);
-		when(MpiUtils.openConnection("https://demompi.santesuite.net/fhir/Patient")).thenReturn(httpURLConnectionMock);
+		when(MpiUtils.openConnection("sante.fake/fhir/Patient")).thenReturn(httpURLConnectionMock);
 		when(httpURLConnectionMock.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
 		
 		TokenInfo tokenInfo = new TokenInfo();
@@ -224,13 +224,12 @@ public class MpiHttpClientTest {
 	@Test
 	public void submitRequest_shouldDoSubmitRequestForOpenCr() throws Exception {
 		// Mock for HttpURLConnection
-		String baseUrl = "https://localhost:8080";
+		String baseUrl = "opencr.fake";
 		when(MpiContext.initIfNecessary()).thenReturn(mpiContextMock);
 		when(mpiContextMock.getAuthenticationType()).thenReturn(AUTHENTICATION_TYPE.CERTIFICATE);
 		when(mpiContextMock.getServerBaseUrl()).thenReturn(baseUrl);
 		when(mpiContextMock.getMpiSystem()).thenReturn(MpiSystemType.OPENCR);
-		when(MpiUtils.openConnectionForSSL("https://localhost:8080/fhir/Patient", mpiContextMock))
-		        .thenReturn(httpsURLConnectionMock);
+		when(MpiUtils.openConnectionForSSL("opencr.fake/fhir/Patient", mpiContextMock)).thenReturn(httpsURLConnectionMock);
 		when(httpsURLConnectionMock.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
 		
 		Map<String, Object> pixResponse = new HashMap<>();
@@ -270,7 +269,7 @@ public class MpiHttpClientTest {
 		when(mpiContextMock.getMpiSystem()).thenReturn(MpiSystemType.SANTEMPI);
 		when(mpiContextMock.getClientId()).thenReturn(SANTE_CLIENT_ID);
 		when(mpiContextMock.getClientSecret()).thenReturn(SANTE_CLIENT_SECRET);
-		when(MpiUtils.openConnection("https://demompi.santesuite.net/fhir/Patient")).thenReturn(httpURLConnectionMock);
+		when(MpiUtils.openConnection("sante.fake/fhir/Patient")).thenReturn(httpURLConnectionMock);
 		when(httpURLConnectionMock.getResponseCode()).thenReturn(HttpURLConnection.HTTP_NOT_ACCEPTABLE);
 		
 		TokenInfo tokenInfo = new TokenInfo();
@@ -310,13 +309,12 @@ public class MpiHttpClientTest {
 	@Test
 	public void submitRequest_shouldHandleUnexpectedResponseForOpenCr() throws Exception {
 		// Mock for HttpURLConnection
-		String baseUrl = "https://localhost:8080";
+		String baseUrl = "opencr.fake";
 		when(MpiContext.initIfNecessary()).thenReturn(mpiContextMock);
 		when(mpiContextMock.getAuthenticationType()).thenReturn(AUTHENTICATION_TYPE.CERTIFICATE);
 		when(mpiContextMock.getServerBaseUrl()).thenReturn(baseUrl);
 		when(mpiContextMock.getMpiSystem()).thenReturn(MpiSystemType.OPENCR);
-		when(MpiUtils.openConnectionForSSL("https://localhost:8080/fhir/Patient", mpiContextMock))
-		        .thenReturn(httpsURLConnectionMock);
+		when(MpiUtils.openConnectionForSSL("opencr.fake/fhir/Patient", mpiContextMock)).thenReturn(httpsURLConnectionMock);
 		when(httpsURLConnectionMock.getResponseCode()).thenReturn(HttpURLConnection.HTTP_NOT_FOUND);
 		
 		Map<String, Object> pixResponse = new HashMap<>();
@@ -343,7 +341,7 @@ public class MpiHttpClientTest {
 	@Test
 	public void getPatient_shouldRetrievePatientInOpenCR() throws Exception {
 		// Mock for HttpURLConnection
-		String baseUrl = "https://localhost:8080";
+		String baseUrl = "opencr.fake";
 		when(MpiContext.initIfNecessary()).thenReturn(mpiContextMock);
 		when(mpiContextMock.getAuthenticationType()).thenReturn(AUTHENTICATION_TYPE.CERTIFICATE);
 		when(mpiContextMock.getServerBaseUrl()).thenReturn(baseUrl);
@@ -474,8 +472,8 @@ public class MpiHttpClientTest {
 		final String patientAUuid = "d454b7b4-2c85-11ee-pata-0242ac120002";
 		final String patientBUuid = "d454b7b4-2c85-11ee-patb-0242ac120002";
 		
-		when(MpiUtils.openConnection("https://demompi.santesuite.net//fhiir-url/test")).thenReturn(httpURLConnectionMock);
-		when(MpiUtils.openConnection("https://demompi.santesuite.net/auth/oauth2_token")).thenReturn(httpURLConnectionMock);
+		when(MpiUtils.openConnection("sante.fake//fhiir-url/test")).thenReturn(httpURLConnectionMock);
+		when(MpiUtils.openConnection("sante.fake/auth/oauth2_token")).thenReturn(httpURLConnectionMock);
 		when(httpURLConnectionMock.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
 		
 		OutputStream outputStreamMock = PowerMockito.mock(OutputStream.class);
@@ -533,8 +531,8 @@ public class MpiHttpClientTest {
 	@Test
 	public void submitPatient_shouldSubmitPatientAsSanteMpi() throws Exception {
 		// Mock for HttpURLConnection
-		when(MpiUtils.openConnection("https://demompi.santesuite.net//fhiir-url/test")).thenReturn(httpURLConnectionMock);
-		when(MpiUtils.openConnection("https://demompi.santesuite.net/fhir/Patient")).thenReturn(httpURLConnectionMock);
+		when(MpiUtils.openConnection("sante.fake//fhiir-url/test")).thenReturn(httpURLConnectionMock);
+		when(MpiUtils.openConnection("sante.fake/fhir/Patient")).thenReturn(httpURLConnectionMock);
 		OutputStream outputStreamMock = PowerMockito.mock(OutputStream.class);
 		when(httpURLConnectionMock.getOutputStream()).thenReturn(outputStreamMock);
 		when(httpURLConnectionMock.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
@@ -589,12 +587,10 @@ public class MpiHttpClientTest {
 	@Test
 	public void submitPatient_shouldSubmitPatientAsOPenCr() throws Exception {
 		// Mock for HttpURLConnection
-		when(MpiUtils.openConnectionForSSL("https://demompi.santesuite.net//fhiir-url/test", mpiContextMock))
+		when(MpiUtils.openConnectionForSSL("sante.fake//fhiir-url/test", mpiContextMock)).thenReturn(httpsURLConnectionMock);
+		when(MpiUtils.openConnectionForSSL("sante.fake/auth/oauth2_token", mpiContextMock))
 		        .thenReturn(httpsURLConnectionMock);
-		when(MpiUtils.openConnectionForSSL("https://demompi.santesuite.net/auth/oauth2_token", mpiContextMock))
-		        .thenReturn(httpsURLConnectionMock);
-		when(MpiUtils.openConnectionForSSL("https://demompi.santesuite.net/fhir/Patient", mpiContextMock))
-		        .thenReturn(httpsURLConnectionMock);
+		when(MpiUtils.openConnectionForSSL("sante.fake/fhir/Patient", mpiContextMock)).thenReturn(httpsURLConnectionMock);
 		OutputStream outputStreamMock = PowerMockito.mock(OutputStream.class);
 		when(httpsURLConnectionMock.getOutputStream()).thenReturn(outputStreamMock);
 		when(httpsURLConnectionMock.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
