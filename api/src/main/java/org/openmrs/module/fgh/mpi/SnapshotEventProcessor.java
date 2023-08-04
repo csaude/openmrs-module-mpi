@@ -181,7 +181,7 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 						getObjectInMapAsMap("resource", fhirResourceEntry).put(MpiConstants.FIELD_TYPE,
 						    MpiConstants.FIELD_TYPE_HISTORY);
 						
-						List<Map<String, Object>> fhirPatintsPlusRequest = new ArrayList<Map<String, Object>>(
+						List<Map<String, Object>> fhirPatientsPlusRequest = new ArrayList<Map<String, Object>>(
 						        fhirPatients.size());
 						
 						for (Map<String, Object> fhirPatient : fhirPatients) {
@@ -192,14 +192,14 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 							        .get(0).get("value");
 							
 							Map<String, Object> patientEntry = fastCreateMap(MpiConstants.FIELD_RESOURCE, resourceEntry,
-							    "request", fastCreateMap("method", "POST", "url", "Parient/" + patientUuid), "fullUrl",
-							    "Parient/" + patientUuid);
+							    "request", fastCreateMap("method", "POST", "url", "Patient/" + patientUuid), "fullUrl",
+							    "Patient/" + patientUuid);
 							
-							fhirPatintsPlusRequest.add(patientEntry);
+							fhirPatientsPlusRequest.add(patientEntry);
 						}
 						
 						getObjectInMapAsMap("resource", fhirResourceEntry).put(MpiConstants.FIELD_ENTRY,
-						    fhirPatintsPlusRequest);
+						    fhirPatientsPlusRequest);
 						
 						Map<String, Object> messageBundle = new HashMap<String, Object>();
 						messageBundle.put("resourceType", "Bundle");
