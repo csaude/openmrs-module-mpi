@@ -43,9 +43,12 @@ import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.ID_PLACEHOLDER;
 import static org.openmrs.module.fgh.mpi.MpiUtils.executeQuery;
 import static java.util.Collections.singletonList;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -762,8 +765,12 @@ public class FhirUtils {
 		return (List<Map<String, Object>>) map.get(key);
 	}
 	
-	public static KeyStore getKeyStoreInstanceByType(String keyStoreType) throws KeyStoreException {
-		return KeyStore.getInstance(keyStoreType);
+	public static KeyStore getKeyStoreInstanceByType(String keyStoreType, String keyStorePath, char[] keyStorePassArray)
+	        throws KeyStoreException, IOException, CertificateException, NoSuchAlgorithmException {
+		KeyStore ks = KeyStore.getInstance(keyStoreType);
+		ks.load(new FileInputStream(keyStorePath), keyStorePassArray);
+		
+		return ks;
 	}
 	
 	public static KeyManagerFactory getKeyManagerFactoryInstance(String algorithm) throws NoSuchAlgorithmException {

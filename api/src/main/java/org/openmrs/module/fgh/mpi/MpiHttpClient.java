@@ -281,7 +281,7 @@ public class MpiHttpClient {
 		}
 	}
 	
-	protected void handleUnexpectedResponse(int responseCode, String responseMessage) {
+	private void handleUnexpectedResponse(int responseCode, String responseMessage) {
 		String error = responseCode + " " + responseMessage;
 		throw new APIException("Unexpected response " + error + " from MPI");
 	}

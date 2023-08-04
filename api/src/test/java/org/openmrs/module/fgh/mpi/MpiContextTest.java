@@ -115,10 +115,11 @@ public class MpiContextTest {
 		AuthenticationType CERTIFICATE = AuthenticationType.CERTIFICATE;
 		when(adminService.getGlobalProperty(GP_AUTHENTICATION_TYPE)).thenReturn(CERTIFICATE.toString());
 		when(adminService.getGlobalProperty(GP_MPI_SYSTEM)).thenReturn(MPI_SYSTEM_AS_OPENCR.toString());
-		when(adminService.getGlobalProperty(GP_KEYSTORE_PATH)).thenReturn("src/test/resources/test/test-resource.xml");
+		when(adminService.getGlobalProperty(GP_KEYSTORE_PATH)).thenReturn("teste");
 		when(adminService.getGlobalProperty(GP_KEYSTORE_PASS)).thenReturn(GP_KEYSTORE_PASS);
 		when(adminService.getGlobalProperty(GP_KEYSTORE_TYPE)).thenReturn(GP_KEYSTORE_TYPE);
-		when(FhirUtils.getKeyStoreInstanceByType(GP_KEYSTORE_TYPE)).thenReturn(keyStoreMock);
+		when(FhirUtils.getKeyStoreInstanceByType(GP_KEYSTORE_TYPE, adminService.getGlobalProperty(GP_KEYSTORE_PATH),
+		    adminService.getGlobalProperty(GP_KEYSTORE_PASS).toCharArray())).thenReturn(keyStoreMock);
 		when(FhirUtils.getKeyManagerFactoryInstance("SunX509")).thenReturn(keyManagerFactoryMock);
 		when(FhirUtils.getSslContextByProtocol("TLSv1.2")).thenReturn(sslContextMock);
 		MpiContext initSSLContext = new MpiContext();

@@ -11,7 +11,6 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_CLIENT_ID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_CLIENT_SECRET;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_UUID_SYSTEM;
 
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.security.KeyManagementException;
@@ -187,8 +186,7 @@ public class MpiContext {
 		log.info("Keystore path: " + keyStorePath);
 		log.info("Keystore Type: " + keyStoreType);
 		
-		KeyStore ks = FhirUtils.getKeyStoreInstanceByType(keyStoreType);
-		ks.load(new FileInputStream(keyStorePath), keyStorePassArray);
+		KeyStore ks = FhirUtils.getKeyStoreInstanceByType(keyStoreType, keyStorePath, keyStorePassArray);
 		
 		KeyManagerFactory kmf = FhirUtils.getKeyManagerFactoryInstance("SunX509");
 		kmf.init(ks, keyStorePassArray);
