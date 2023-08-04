@@ -153,7 +153,7 @@
             Specifies whether the module should perform initial loading.
         </description>
     </globalProperty>
-        <globalProperty>
+    <globalProperty>
         <property>${project.parent.artifactId}.application.content.type</property>
 	<description>
 	    Specify the application content type which should be used when submiting the
