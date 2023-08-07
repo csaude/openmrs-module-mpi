@@ -1,5 +1,9 @@
 package org.openmrs.module.fgh.mpi;
 
+import static org.openmrs.module.fgh.mpi.FhirUtils.fastCreateMap;
+import static org.openmrs.module.fgh.mpi.FhirUtils.generateMessageHeader;
+import static org.openmrs.module.fgh.mpi.FhirUtils.getObjectInMapAsMap;
+import static org.openmrs.module.fgh.mpi.FhirUtils.getObjectOnMapAsListOfMap;
 import static java.lang.System.currentTimeMillis;
 import static java.util.Collections.synchronizedList;
 
@@ -15,6 +19,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang3.time.DurationFormatUtils;
+import org.apache.kafka.common.errors.ApiException;
 import org.openmrs.api.APIException;
 import org.openmrs.module.debezium.DatabaseEvent;
 import org.openmrs.module.debezium.Utils;
@@ -52,6 +57,15 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 	
 	@Override
 	public void process(DatabaseEvent event) {
+		MpiContext mpiContext = null;
+		
+		try {
+			mpiContext = MpiContext.initIfNecessary();
+		}
+		catch (Exception e) {
+			throw new ApiException(e);
+		}
+		
 		if (start == null) {
 			start = currentTimeMillis();
 			log.info("Patient full sync started at: " + new Date());
@@ -128,27 +142,79 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 				});
 				
 				if (!fhirPatients.isEmpty()) {
-					Map<String, Object> fhirBundle = new HashMap(3);
-					fhirBundle.put(MpiConstants.FIELD_RESOURCE_TYPE, MpiConstants.BUNDLE);
-					fhirBundle.put(MpiConstants.FIELD_TYPE, MpiConstants.BATCH);
-					fhirBundle.put(MpiConstants.FIELD_ENTRY, fhirPatients);
+					int successPatientCount = 0;
 					
-					List<Object> response = mpiHttpClient.submitBundle(mapper.writeValueAsString(fhirBundle));
-					//The response is a list of 2 MPI identifiers for each patient
-					int successPatientCount = response.size() / 2;
-					if (fhirPatients.size() == successPatientCount) {
-						if (log.isDebugEnabled()) {
-							log.debug("All patients in the batch were successfully processed by the MPI");
+					if (mpiContext.getMpiSystem().isOpenCr()) {
+						Map<String, Object> fhirBundle = new HashMap(3);
+						fhirBundle.put(MpiConstants.FIELD_RESOURCE_TYPE, MpiConstants.BUNDLE);
+						fhirBundle.put(MpiConstants.FIELD_TYPE, MpiConstants.BATCH);
+						fhirBundle.put(MpiConstants.FIELD_ENTRY, fhirPatients);
+						
+						List<Object> response = mpiHttpClient.submitBundle("fhir", mapper.writeValueAsString(fhirBundle),
+						    List.class);
+						
+						successPatientCount = response.size() / 2;
+						
+						if (fhirPatients.size() == successPatientCount) {
+							if (log.isDebugEnabled()) {
+								log.debug("All patients in the batch were successfully processed by the MPI");
+							}
+							
+						} else {
+							//TODO Loop through all patients in the batch and check which records were problematic
+							throw new APIException((fhirPatients.size() - successPatientCount)
+							        + " patient(s) in the batch were not successfully processed by the MPI");
 						}
 						
-						successCount.addAndGet(fhirPatients.size());
+					} else if (mpiContext.getMpiSystem().isSanteMPI()) {
+						Map<String, Object> fhirMessageHeaderEntry = generateMessageHeader();
 						
-						MpiUtils.saveLastSubmittedPatientId(Integer.valueOf(event.getPrimaryKeyId().toString()));
+						//The entry of resource in message bundle message
+						Map<String, Object> fhirResourceEntry = new HashMap<>(2);
+						
+						fhirResourceEntry.put("fullUrl", FhirUtils.santeMessageHeaderFocusReference);
+						fhirResourceEntry.put("resource", new HashMap<>(3));
+						
+						getObjectInMapAsMap("resource", fhirResourceEntry).put(MpiConstants.FIELD_RESOURCE_TYPE,
+						    MpiConstants.BUNDLE);
+						
+						getObjectInMapAsMap("resource", fhirResourceEntry).put(MpiConstants.FIELD_TYPE,
+						    MpiConstants.FIELD_TYPE_HISTORY);
+						
+						List<Map<String, Object>> fhirPatientsPlusRequest = new ArrayList<Map<String, Object>>(
+						        fhirPatients.size());
+						
+						for (Map<String, Object> fhirPatient : fhirPatients) {
+							Map<String, Object> resourceEntry = getObjectInMapAsMap(MpiConstants.FIELD_RESOURCE,
+							    fhirPatient);
+							
+							Object patientUuid = getObjectOnMapAsListOfMap(MpiConstants.FIELD_IDENTIFIER, resourceEntry)
+							        .get(0).get("value");
+							
+							Map<String, Object> patientEntry = fastCreateMap(MpiConstants.FIELD_RESOURCE, resourceEntry,
+							    "request", fastCreateMap("method", "POST", "url", "Patient/" + patientUuid), "fullUrl",
+							    "Patient/" + patientUuid);
+							
+							fhirPatientsPlusRequest.add(patientEntry);
+						}
+						
+						getObjectInMapAsMap("resource", fhirResourceEntry).put(MpiConstants.FIELD_ENTRY,
+						    fhirPatientsPlusRequest);
+						
+						Map<String, Object> messageBundle = new HashMap<String, Object>();
+						messageBundle.put("resourceType", "Bundle");
+						messageBundle.put("type", "message");
+						messageBundle.put(MpiConstants.FIELD_ENTRY, new ArrayList<Map<String, Object>>(2));
+						
+						getObjectOnMapAsListOfMap(MpiConstants.FIELD_ENTRY, messageBundle).add(fhirMessageHeaderEntry);
+						getObjectOnMapAsListOfMap(MpiConstants.FIELD_ENTRY, messageBundle).add(fhirResourceEntry);
+						
+						mpiHttpClient.submitBundle("fhir/Bundle", mapper.writeValueAsString(messageBundle), Map.class);
 					} else {
-						//TODO Loop through all patients in the batch and check which records were problematic
-						throw new APIException((fhirPatients.size() - successPatientCount)
-						        + " patient(s) in the batch were not successfully processed by the MPI");
+						throw new APIException("Unkown MPISystem [" + mpiContext.getMpiSystem() + "]");
 					}
+					successCount.addAndGet(fhirPatients.size());
+					MpiUtils.saveLastSubmittedPatientId(Integer.valueOf(event.getPrimaryKeyId().toString()));
 				}
 			}
 			catch (Exception e) {
@@ -181,5 +247,4 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 			}
 		}
 	}
-	
 }

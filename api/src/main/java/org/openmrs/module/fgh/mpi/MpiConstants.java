@@ -3,6 +3,8 @@ package org.openmrs.module.fgh.mpi;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
+import org.apache.commons.lang3.Range;
+
 public class MpiConstants {
 	
 	public final static String MODULE_ID = "mpi";
@@ -164,4 +166,21 @@ public class MpiConstants {
 	
 	public final static String RESPONSE_FIELD_VALUE_REF = "valueReference";
 	
+	public final static String GP_SANTE_CLIENT_ID = MODULE_ID + ".sante.db.client.id";
+	
+	public final static String GP_SANTE_CLIENT_SECRET = MODULE_ID + ".sante.db.client.secret";
+	
+	public final static String GP_MPI_SYSTEM = MODULE_ID + ".system";
+	
+	public final static String GP_MPI_APP_CONTENT_TYPE = MODULE_ID + ".application.content.type";
+	
+	public final static String GP_AUTHENTICATION_TYPE = MODULE_ID + ".authentication.type";
+	
+	public final static String FIELD_TYPE_HISTORY = "history";
+	
+	public final static String GP_SANTE_MESSAGE_HEADER_FOCUS_REFERENCE = MODULE_ID + ".sante.message.header.focus.reference";
+	
+	public final static String GP_SANTE_MESSAGE_HEADER_EVENT_URI = MODULE_ID + ".sante.message.header.event.uri";
+	
+	public final static Range<Integer> HTTP_REQUEST_SUCCESS_RANGE = Range.between(200, 299);
 }

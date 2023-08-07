@@ -1,10 +1,5 @@
 package org.openmrs.module.fgh.mpi;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Matchers.anyBoolean;
@@ -20,15 +15,22 @@ import static org.openmrs.module.debezium.DatabaseOperation.UPDATE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ACTIVE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_CONTACT;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ID;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_NAME;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_RELATIONSHIP;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.ID_PLACEHOLDER;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.PATIENT_QUERY;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.PERSON_QUERY;
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -42,8 +44,6 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.reflect.Whitebox;
 import org.slf4j.Logger;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({ MpiUtils.class, FhirUtils.class })
@@ -231,8 +231,9 @@ public class MpiIntegrationProcessorTest {
 		Map newContact2 = new HashMap();
 		newContact2.put(FIELD_ID, relationshipUuid2);
 		newContact2.put(FIELD_RELATIONSHIP, emptyMap());
-		Map newPatient = singletonMap(FIELD_CONTACT,
-		    asList(newContact1, singletonMap(FIELD_ID, "relationship-uuid-3"), newContact2));
+		Map newPatient = new HashMap();
+		newPatient.put(FIELD_CONTACT, asList(newContact1, singletonMap(FIELD_ID, "relationship-uuid-3"), newContact2));
+		newPatient.put(FIELD_NAME, "patient-name");
 		when(FhirUtils.buildPatient(anyString(), anyBoolean(), anyList(), anyMap())).thenReturn(newPatient);
 		
 		processor.process(1, new DatabaseEvent(null, "patient", UPDATE, null, null, null));
@@ -284,7 +285,6 @@ public class MpiIntegrationProcessorTest {
 		List mpiContacts = asList(mpiContact1, singletonMap(FIELD_RELATIONSHIP, emptyMap()), mpiContact2);
 		mpiPatient.put(FIELD_CONTACT, mpiContacts);
 		when(mockMpiHttpClient.getPatient(patientUuid)).thenReturn(mpiPatient);
-		
 		Map newContact1 = new HashMap();
 		newContact1.put(FIELD_ID, "relationship-uuid-3");
 		newContact1.put(FIELD_RELATIONSHIP, emptyMap());
@@ -293,9 +293,7 @@ public class MpiIntegrationProcessorTest {
 		newContact2.put(FIELD_RELATIONSHIP, emptyMap());
 		Map newPatient = singletonMap(FIELD_CONTACT, asList(newContact1, newContact2));
 		when(FhirUtils.buildPatient(anyString(), anyBoolean(), anyList(), anyMap())).thenReturn(newPatient);
-		
 		processor.process(1, new DatabaseEvent(null, "patient", UPDATE, null, null, null));
-		
 		Mockito.verify(mockMpiHttpClient, Mockito.never()).submitPatient(anyString());
 	}
 	
@@ -325,7 +323,9 @@ public class MpiIntegrationProcessorTest {
 		Map newContact1 = new HashMap();
 		newContact1.put(FIELD_ID, relationshipUuid1);
 		newContact1.put(FIELD_RELATIONSHIP, emptyMap());
-		Map newPatient = singletonMap(FIELD_CONTACT, asList(newContact1, null));
+		Map newPatient = new HashMap();
+		newPatient.put(FIELD_CONTACT, asList(newContact1, null));
+		newPatient.put(FIELD_NAME, "patient-name");
 		when(FhirUtils.buildPatient(anyString(), anyBoolean(), anyList(), anyMap())).thenReturn(newPatient);
 		
 		processor.process(1, new DatabaseEvent(null, "patient", UPDATE, null, null, null));
@@ -371,4 +371,16 @@ public class MpiIntegrationProcessorTest {
 	public void process_shouldProcessAPatientDeleteEvent() throws Exception {
 	}
 	
+	@Test
+	public void process_shouldSkipPatientWithNoName() throws Exception {
+		String patientId = "1";
+		String patientUuid = "patient-uuid";
+		when(MpiUtils.executeQuery(PERSON_QUERY.replace(ID_PLACEHOLDER, patientId.toString())))
+		        .thenReturn(asList(asList(null, null, null, null, patientUuid, null)));
+		when(mockMpiHttpClient.getPatient(patientUuid)).thenReturn(singletonMap(FIELD_ACTIVE, false));
+		when(MpiUtils.executeQuery(PATIENT_QUERY.replace(ID_PLACEHOLDER, patientId.toString())))
+		        .thenReturn(singletonList(singletonList(false)));
+		Map<String, Object> patientData = processor.process(1, new DatabaseEvent(null, null, null, null, null, null));
+		assertNull(patientData);
+	}
 }

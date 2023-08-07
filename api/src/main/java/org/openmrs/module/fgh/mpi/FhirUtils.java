@@ -1,6 +1,5 @@
 package org.openmrs.module.fgh.mpi;
 
-import static java.util.Collections.singletonList;
 import static org.openmrs.module.fgh.mpi.MpiConstants.DATETIME_FORMATTER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ADDRESS;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_CODE;
@@ -33,6 +32,8 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.GP_PERSON_UUID_EXT_URL;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_CONCEPT_MAP_A;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_CONCEPT_MAP_B;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_SYSTEM;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_MESSAGE_HEADER_EVENT_URI;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_MESSAGE_HEADER_FOCUS_REFERENCE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_UUID_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.HEALTH_CENTER_ATTRIB_TYPE_UUID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.IDENTIFIER;
@@ -40,7 +41,14 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.NAME;
 import static org.openmrs.module.fgh.mpi.MpiConstants.UUID_PREFIX;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.ID_PLACEHOLDER;
 import static org.openmrs.module.fgh.mpi.MpiUtils.executeQuery;
+import static java.util.Collections.singletonList;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,6 +57,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 import org.apache.commons.lang3.StringUtils;
 import org.openmrs.Location;
 import org.openmrs.PatientIdentifierType;
@@ -113,6 +123,10 @@ public class FhirUtils {
 	
 	private static Map<String, TypeConcept> uuidIdentifierTypeMap;
 	
+	public static String santeMessageHeaderFocusReference;
+	
+	public static String santeMessageHeaderEventUri;
+	
 	/**
 	 * Builds a map of fields and values with patient details that can be serialized as a fhir json
 	 * message. This method looks up the up to date patient details from the DB bypassing any hibernate
@@ -168,6 +182,7 @@ public class FhirUtils {
 		fhirRes.put(FIELD_ADDRESS, getAddresses(id, existingAddressCount, true));
 		fhirRes.put(FIELD_TELECOM, getPhones(id, mpiPatient));
 		fhirRes.put(FIELD_CONTACT, getRelationships(id, mpiPatient));
+		
 		/*List<Map<String, Object>> heathCenter = getHealthCenter(id, mpiPatient);
 		if (heathCenter != null) {
 			fhirRes.put(MpiConstants.FIELD_EXTENSION, heathCenter);
@@ -615,7 +630,7 @@ public class FhirUtils {
 	/**
 	 * Loads and caches the necessary global property values
 	 */
-	private synchronized static void initializeCachesIfNecessary() {
+	protected synchronized static void initializeCachesIfNecessary() {
 		if (idTypeSystem == null) {
 			idTypeSystem = MpiUtils.getGlobalPropertyValue(GP_IDENTIFIER_TYPE_SYSTEM);
 		}
@@ -670,6 +685,100 @@ public class FhirUtils {
 				}
 			}
 		}
+		
+		if (santeMessageHeaderEventUri == null) {
+			santeMessageHeaderEventUri = MpiUtils.getGlobalPropertyValue(GP_SANTE_MESSAGE_HEADER_EVENT_URI);
+		}
+		
+		if (santeMessageHeaderFocusReference == null) {
+			santeMessageHeaderFocusReference = MpiUtils.getGlobalPropertyValue(GP_SANTE_MESSAGE_HEADER_FOCUS_REFERENCE);
+		}
+	}
+	
+	/**
+	 * Generates a fhir map for Message Header needed by santeMPI when submit a bundle
+	 * 
+	 * @return a map containing the the message header objects
+	 */
+	public static Map<String, Object> generateMessageHeader() {
+		Map<String, Object> messageHeader = new HashMap<String, Object>();
+		
+		List<Map<String, Object>> focus = new ArrayList<Map<String, Object>>();
+		focus.add(fastCreateMap("reference", santeMessageHeaderFocusReference));
+		
+		Map<String, Object> resourceMap = fastCreateMap("resourceType", "MessageHeader", "id", "1", "eventUri",
+		    santeMessageHeaderEventUri, "focus", focus);
+		
+		messageHeader.put("resource", resourceMap);
+		
+		return messageHeader;
+	}
+	
+	/**
+	 * Create a map populated with an initial entries passed by parameter
+	 * 
+	 * @param params the entries which will populate the map. It's an array which emulate a map entries
+	 *            in this format [key1, val1, key2, val2, key3, val3, ..]
+	 * @return the generated map
+	 * @throws APIException when the params array length is not odd
+	 */
+	public static Map<String, Object> fastCreateMap(Object... params) throws APIException {
+		if (params.length % 2 != 0)
+			throw new APIException("The parameters for fastCreatMap must be pars <K1, V1>, <K2, V2>");
+		
+		Map<String, Object> map = new HashMap<>();
+		
+		int paramsSize = params.length / 2;
+		
+		for (int set = 1; set <= paramsSize; set++) {
+			int pos = set * 2 - 1;
+			
+			map.put(((String) params[pos - 1]), params[pos]);
+		}
+		
+		return map;
+	}
+	
+	/**
+	 * Retrieves an object from a map as a {@link Map}
+	 * 
+	 * @param key the key of the map object which is being retrieved
+	 * @param map the map from where the object will be retrieved from
+	 * @return the map object retrieved
+	 * @throws ClassCastException if the correspondent object for key is not a map
+	 */
+	public static Map<String, Object> getObjectInMapAsMap(String key, Map<String, Object> map) throws ClassCastException {
+		return (Map<String, Object>) map.get(key);
+		
+	}
+	
+	/**
+	 * Retrieves an object from a map as a {@link List}
+	 * 
+	 * @param key the key of the object which is being retrieved
+	 * @param map the map from where the object will be retrieved from
+	 * @return the list object retrieved
+	 * @throws ClassCastException if the correspondent object for key is not a list
+	 */
+	public static List<Map<String, Object>> getObjectOnMapAsListOfMap(String key, Map<String, Object> map)
+	        throws ClassCastException {
+		return (List<Map<String, Object>>) map.get(key);
+	}
+	
+	public static KeyStore getKeyStoreInstanceByType(String keyStoreType, String keyStorePath, char[] keyStorePassArray)
+	        throws KeyStoreException, IOException, CertificateException, NoSuchAlgorithmException {
+		KeyStore ks = KeyStore.getInstance(keyStoreType);
+		ks.load(new FileInputStream(keyStorePath), keyStorePassArray);
+		
+		return ks;
+	}
+	
+	public static KeyManagerFactory getKeyManagerFactoryInstance(String algorithm) throws NoSuchAlgorithmException {
+		return KeyManagerFactory.getInstance(algorithm);
+	}
+	
+	public static SSLContext getSslContextByProtocol(String protocol) throws NoSuchAlgorithmException {
+		return SSLContext.getInstance("TLSv1.2");
 	}
 	
 	private static class TypeConcept {
