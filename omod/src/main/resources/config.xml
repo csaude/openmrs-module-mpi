@@ -165,7 +165,7 @@
     <globalProperty>
         <property>${project.parent.artifactId}.authentication.type</property>
 	<description>
-	    Specify the authentication type used to authenticate to the mpi system. OpenCR: SSL, SanteDB: OAUTH
+	    Specify the authentication type used to authenticate to the mpi system. OpenCR: CERTIFICATE, SanteDB: OAUTH
 	</description>
 	<defaultValue>OAUTH</defaultValue>
     </globalProperty>

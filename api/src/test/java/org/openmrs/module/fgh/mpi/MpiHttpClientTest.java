@@ -515,7 +515,6 @@ public class MpiHttpClientTest {
 			references.add("Patient/" + patientA.get(FIELD_VALUE_UUID));
 			references.add("Patient/" + patientB.get(FIELD_VALUE_UUID));
 			
-			Map<String, Object> patientReferences = new HashMap<>();
 			bundleSubmissionResponse.put("reference", references);
 			
 			return bundleSubmissionResponse;
