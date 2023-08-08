@@ -2,7 +2,8 @@ package org.openmrs.module.fgh.mpi;
 
 public enum MpiSystemType {
 	
-	SANTEMPI, OPENCR;
+	SANTEMPI,
+	OPENCR;
 	
 	public boolean isSanteMPI() {
 		return this.equals(SANTEMPI);

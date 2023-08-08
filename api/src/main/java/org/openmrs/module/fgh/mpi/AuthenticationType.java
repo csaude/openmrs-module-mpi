@@ -2,7 +2,8 @@ package org.openmrs.module.fgh.mpi;
 
 public enum AuthenticationType {
 	
-	OAUTH, CERTIFICATE;
+	OAUTH,
+	CERTIFICATE;
 	
 	public boolean isOuath() {
 		return this.equals(OAUTH);

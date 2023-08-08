@@ -35,7 +35,7 @@ public class MpiDebeziumEngineConfig implements DebeziumEngineConfig {
 			if (StringUtils.isNotBlank(num)) {
 				threadCount = Integer.valueOf(num);
 			} else {
-				threadCount = 10;
+				threadCount = Runtime.getRuntime().availableProcessors();
 			}
 			
 			eventProcessor = new SnapshotEventProcessor(threadCount);
