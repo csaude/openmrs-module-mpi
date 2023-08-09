@@ -191,4 +191,11 @@ public class MpiUtils {
 		return connection;
 	}
 	
+	/**
+	 * @see Paths#get(String, String...)
+	 */
+	public static Path createPath(String parent, String... additionalPaths) {
+		return Paths.get(parent, additionalPaths);
+	}
+	
 }

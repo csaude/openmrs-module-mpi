@@ -20,11 +20,13 @@ public abstract class BaseEventHandler {
 	protected MpiIntegrationProcessor processor;
 	
 	public Map<String, Object> handle(DatabaseEvent event) throws Exception {
-		log.info("Looking up patient Id associated to the event");
+		log.info("Getting the id of the patient associated to the change event");
 		
 		Integer patientId = getPatientId(event);
 		
-		log.info("Patient id: " + patientId);
+		if (log.isDebugEnabled()) {
+			log.debug("Patient id: " + patientId);
+		}
 		
 		return processor.process(patientId, event);
 	}
@@ -33,7 +35,7 @@ public abstract class BaseEventHandler {
 	 * Retrieve the patient id from the specified event instance
 	 * 
 	 * @param event DatabaseEvent object
-	 * @return the Patient Id
+	 * @return the patient id
 	 * @throws Exception
 	 */
 	public abstract Integer getPatientId(DatabaseEvent event);

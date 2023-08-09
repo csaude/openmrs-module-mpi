@@ -1,23 +1,24 @@
 package org.openmrs.module.fgh.mpi;
 
+import static java.lang.Boolean.valueOf;
 import static org.openmrs.module.debezium.DatabaseOperation.CREATE;
 import static org.openmrs.module.debezium.DatabaseOperation.DELETE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ACTIVE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_CONTACT;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_RELATIONSHIP;
-import static java.lang.Boolean.valueOf;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.openmrs.module.debezium.DatabaseEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * An instance of this class takes a patient uuid, loads the patient record, generates the fhir json
@@ -50,7 +51,9 @@ public class MpiIntegrationProcessor {
 	 * @throws Exception
 	 */
 	public Map<String, Object> process(Integer patientId, DatabaseEvent e) throws Exception {
-		log.info("Processing patient with id: " + patientId);
+		if (log.isDebugEnabled()) {
+			log.debug("Processing change event: " + e + " for patient with id: " + patientId);
+		}
 		
 		if ("person".equalsIgnoreCase(e.getTableName()) && e.getOperation() == CREATE) {
 			log.info("Ignoring person insert event");
