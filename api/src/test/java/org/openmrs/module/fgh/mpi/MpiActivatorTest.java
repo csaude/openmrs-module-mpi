@@ -3,6 +3,10 @@ package org.openmrs.module.fgh.mpi;
 import static org.apache.commons.lang3.reflect.ConstructorUtils.getAccessibleConstructor;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.openmrs.module.fgh.mpi.MpiActivator.DIR_LOGS;
+import static org.openmrs.module.fgh.mpi.MpiActivator.DIR_MPI;
+import static org.openmrs.module.fgh.mpi.MpiActivator.LOG_FILE;
+import static org.openmrs.module.fgh.mpi.MpiActivator.LOG_FILE_DATE_FORMAT;
 import static org.openmrs.module.fgh.mpi.MpiActivator.MPI_APPENDER_NAME;
 import static org.powermock.api.mockito.PowerMockito.whenNew;
 
@@ -55,7 +59,7 @@ public class MpiActivatorTest {
 		PowerMockito.mockStatic(MpiUtils.class);
 		when(OpenmrsUtil.getApplicationDataDirectory()).thenReturn(TEST_APP_DIR);
 		when(mockFile.getAbsolutePath()).thenReturn(TEST_LOG_FILE);
-		when(MpiUtils.createPath(TEST_APP_DIR, "mpi", "logs", "mpi.log")).thenReturn(mockPath);
+		when(MpiUtils.createPath(TEST_APP_DIR, DIR_MPI, DIR_LOGS, LOG_FILE)).thenReturn(mockPath);
 		when(mockPath.toFile()).thenReturn(mockFile);
 		testAppender = new DailyRollingFileAppender();
 		activator = new MpiActivator();
@@ -68,7 +72,7 @@ public class MpiActivatorTest {
 		whenNew(layoutConstructor).withArguments(MpiActivator.LAYOUT).thenReturn(mockLayout);
 		Constructor<DailyRollingFileAppender> appenderConstructor = getAccessibleConstructor(DailyRollingFileAppender.class,
 		    Layout.class, String.class, String.class);
-		whenNew(appenderConstructor).withArguments(mockLayout, TEST_LOG_FILE, "'.'yyyy-MM-dd").thenReturn(testAppender);
+		whenNew(appenderConstructor).withArguments(mockLayout, TEST_LOG_FILE, LOG_FILE_DATE_FORMAT).thenReturn(testAppender);
 		testAppender.setName(MPI_APPENDER_NAME);
 		activator = Mockito.spy(activator);
 		when(activator.getMpiLogger()).thenReturn(mockMpiLogger);

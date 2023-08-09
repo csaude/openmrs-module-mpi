@@ -27,7 +27,15 @@ public class MpiActivator extends BaseModuleActivator {
 	
 	protected static final String MPI_APPENDER_NAME = "MPI_APPENDER";
 	
+	protected static final String DIR_MPI = "mpi";
+	
+	protected static final String DIR_LOGS = "logs";
+	
+	protected static final String LOG_FILE = "mpi.log";
+	
 	protected static final String LAYOUT = "%-5p %t - %C{1}.%M(%L) |%d{ISO8601}| %m%n";
+	
+	protected static final String LOG_FILE_DATE_FORMAT = "'.'yyyy-MM-dd";
 	
 	/**
 	 * @see BaseModuleActivator#started()
@@ -37,11 +45,11 @@ public class MpiActivator extends BaseModuleActivator {
 		log.info("MPI module started");
 		log.info("Adding MPI log file to log4j configuration");
 		
-		File mpiLogFile = MpiUtils.createPath(getApplicationDataDirectory(), "mpi", "logs", "mpi.log").toFile();
+		File mpiLogFile = MpiUtils.createPath(getApplicationDataDirectory(), DIR_MPI, DIR_LOGS, LOG_FILE).toFile();
 		
 		try {
 			DailyRollingFileAppender mpiAppender = new DailyRollingFileAppender(new PatternLayout(LAYOUT),
-			        mpiLogFile.getAbsolutePath(), "'.'yyyy-MM-dd");
+			        mpiLogFile.getAbsolutePath(), LOG_FILE_DATE_FORMAT);
 			mpiAppender.setName(MPI_APPENDER_NAME);
 			org.apache.log4j.Logger mpiLogger = getMpiLogger();
 			mpiLogger.setAdditivity(false);
