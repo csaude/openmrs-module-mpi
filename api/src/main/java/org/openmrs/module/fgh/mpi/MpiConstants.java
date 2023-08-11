@@ -10,13 +10,9 @@ public class MpiConstants {
 	public final static String MODULE_ID = "mpi";
 	
 	public final static String[] WATCHED_TABLES = new String[] { "person", "patient", "person_name", "person_address",
-	        "patient_identifier", "person_attribute", "relationship" };
+	        "patient_identifier", "person_attribute" };
 	
 	public final static String GP_INITIAL = MODULE_ID + ".initial.loading";
-	
-	public final static String GP_HEALTH_CENTER_EXT_URL = MODULE_ID + ".patient.health.center.url";
-	
-	public final static String GP_PERSON_UUID_EXT_URL = MODULE_ID + ".person.uuid.url";
 	
 	public final static String PATIENT_ID_OFFSET_FILE = ".patientIdOffset.txt";
 	
@@ -35,20 +31,6 @@ public class MpiConstants {
 	public final static String GP_UUID_SYSTEM = MODULE_ID + ".patient.uuid.system.uri";
 	
 	public final static String GP_ID_TYPE_SYSTEM_MAP = MODULE_ID + ".identifier.type.system.uri.mappings";
-	
-	public final static String GP_IDENTIFIER_TYPE_SYSTEM = MODULE_ID + ".identifier.type.terminology.system.uri";
-	
-	public final static String GP_IDENTIFIER_TYPE_CONCEPT_MAP = MODULE_ID + ".identifier.type.concept.mappings";
-	
-	public final static String GP_RELATIONSHIP_TYPE_SYSTEM = MODULE_ID + ".relationship.type.terminology.system.uri";
-	
-	public final static String GP_RELATIONSHIP_TYPE_CONCEPT_MAP_A = MODULE_ID
-	        + ".relationship.type.personA.concept.mappings";
-	
-	public final static String GP_RELATIONSHIP_TYPE_CONCEPT_MAP_B = MODULE_ID
-	        + ".relationship.type.personB.concept.mappings";
-	
-	public final static String GP_OPENMRS_UUID_CONCEPT_MAP = MODULE_ID + ".patient.uuid.concept.map";
 	
 	public final static String GP_INITIAL_BATCH_SIZE = MODULE_ID + ".initial.loading.batch.size";
 	
@@ -121,14 +103,6 @@ public class MpiConstants {
 	public final static String FIELD_CONTACT = "contact";
 	
 	public final static String FIELD_RELATIONSHIP = "relationship";
-	
-	public final static String FIELD_CODING = "coding";
-	
-	public final static String FIELD_TEXT = "text";
-	
-	public final static String FIELD_CODE = "code";
-	
-	public final static String FIELD_DISPLAY = "display";
 	
 	public final static String PATIENT = "Patient";
 	

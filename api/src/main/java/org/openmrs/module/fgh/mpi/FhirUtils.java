@@ -1,37 +1,22 @@
 package org.openmrs.module.fgh.mpi;
 
+import static java.util.Collections.singletonList;
 import static org.openmrs.module.fgh.mpi.MpiConstants.DATETIME_FORMATTER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ADDRESS;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_CODE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_CODING;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_CONTACT;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_DISPLAY;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_END;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_EXTENSION;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_GENDER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_NAME;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_PERIOD;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_RELATIONSHIP;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_START;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_TELECOM;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_TEXT;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_TYPE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_URL;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_USE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE_STR;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE_UUID;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_HEALTH_CENTER_EXT_URL;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_IDENTIFIER_TYPE_CONCEPT_MAP;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_IDENTIFIER_TYPE_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_ID_TYPE_SYSTEM_MAP;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_OPENMRS_UUID_CONCEPT_MAP;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_PERSON_UUID_EXT_URL;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_CONCEPT_MAP_A;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_CONCEPT_MAP_B;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_RELATIONSHIP_TYPE_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_MESSAGE_HEADER_EVENT_URI;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_MESSAGE_HEADER_FOCUS_REFERENCE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_UUID_SYSTEM;
@@ -41,7 +26,6 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.NAME;
 import static org.openmrs.module.fgh.mpi.MpiConstants.UUID_PREFIX;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.ID_PLACEHOLDER;
 import static org.openmrs.module.fgh.mpi.MpiUtils.executeQuery;
-import static java.util.Collections.singletonList;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -59,11 +43,10 @@ import java.util.Map;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+
 import org.apache.commons.lang3.StringUtils;
 import org.openmrs.Location;
-import org.openmrs.PatientIdentifierType;
 import org.openmrs.PersonAttributeType;
-import org.openmrs.RelationshipType;
 import org.openmrs.api.APIException;
 import org.openmrs.api.LocationService;
 import org.openmrs.api.context.Context;
@@ -93,35 +76,11 @@ public class FhirUtils {
 	protected final static String ATTR_QUERY = "SELECT value, uuid FROM person_attribute WHERE person_id = " + ID_PLACEHOLDER
 	        + " AND person_attribute_type_id = " + ATTR_TYPE_ID_PLACEHOLDER + " AND voided = 0";
 	
-	protected final static String RELATIONSHIP_QUERY = "SELECT r.person_a, r.person_b, r.start_date, r.end_date, r.uuid, "
-	        + "t.uuid FROM relationship r, relationship_type t WHERE r.relationship = t.relationship_type_id AND (r.person_a = "
-	        + ID_PLACEHOLDER + " OR r.person_b = " + ID_PLACEHOLDER + ") AND r.voided = 0 ORDER BY r.voided ASC";
-	
-	public final static String CONTACT_PERSON_QUERY = "SELECT gender, uuid FROM person WHERE person_id = " + ID_PLACEHOLDER;
-	
 	private final static Map<String, String> ATTR_TYPE_GP_ID_MAP = new HashMap(2);
-	
-	private static String healthCenterExtUrl;
-	
-	private static String personUuidExtUrl;
-	
-	private static String relationshipTypeSystem;
-	
-	private static String idTypeSystem;
 	
 	private static String openmrsUuidSystem;
 	
 	private static Map<String, String> idSystemMap;
-	
-	private static String openmrsUuidCode;
-	
-	private static String openmrsUuidDisplay;
-	
-	private static Map<String, TypeConcept> uuidRelationshipTypePersonAConceptMap;
-	
-	private static Map<String, TypeConcept> uuidRelationshipTypePersonBConceptMap;
-	
-	private static Map<String, TypeConcept> uuidIdentifierTypeMap;
 	
 	public static String santeMessageHeaderFocusReference;
 	
@@ -181,7 +140,7 @@ public class FhirUtils {
 		
 		fhirRes.put(FIELD_ADDRESS, getAddresses(id, existingAddressCount, true));
 		fhirRes.put(FIELD_TELECOM, getPhones(id, mpiPatient));
-		fhirRes.put(FIELD_CONTACT, getRelationships(id, mpiPatient));
+		//fhirRes.put(FIELD_CONTACT, getRelationships(id, mpiPatient));
 		
 		/*List<Map<String, Object>> heathCenter = getHealthCenter(id, mpiPatient);
 		if (heathCenter != null) {
@@ -200,17 +159,9 @@ public class FhirUtils {
 	 * @return list of the patient identifiers
 	 */
 	private static List<Map<String, Object>> getIds(String patientId, List<Object> person, Map<String, Object> mpiPatient) {
-		Map codingResource = new HashMap();
-		codingResource.put(FIELD_SYSTEM, idTypeSystem);
-		codingResource.put(FIELD_CODE, openmrsUuidCode);
-		codingResource.put(FIELD_DISPLAY, openmrsUuidDisplay);
-		Map sourceIdTypeResource = new HashMap();
-		sourceIdTypeResource.put(FIELD_CODING, singletonList(codingResource));
-		sourceIdTypeResource.put(FIELD_TEXT, MpiConstants.OPENMRS_UUID);
 		Map<String, Object> sourceIdRes = new HashMap();
 		sourceIdRes.put(FIELD_SYSTEM, openmrsUuidSystem);
 		sourceIdRes.put(FIELD_VALUE, person.get(4));
-		sourceIdRes.put(FIELD_TYPE, sourceIdTypeResource);
 		List<Map<String, Object>> identifiers = new ArrayList();
 		identifiers.add(sourceIdRes);
 		
@@ -225,21 +176,6 @@ public class FhirUtils {
 			
 			idResource.put(FIELD_SYSTEM, idSystemMap.get(identifierTypeUuid));
 			idResource.put(FIELD_VALUE, idRow.get(0));
-			
-			TypeConcept concept = uuidIdentifierTypeMap.get(identifierTypeUuid);
-			if (concept == null) {
-				throw new APIException("No concept mapped to patient identifier type with uuid: " + identifierTypeUuid);
-			}
-			
-			Map idCodingResource = new HashMap();
-			idCodingResource.put(FIELD_SYSTEM, idTypeSystem);
-			idCodingResource.put(FIELD_CODE, concept.code);
-			idCodingResource.put(FIELD_DISPLAY, concept.display);
-			Map idTypeResource = new HashMap();
-			idTypeResource.put(FIELD_CODING, singletonList(idCodingResource));
-			idTypeResource.put(FIELD_TEXT, concept.text);
-			idResource.put(FIELD_TYPE, idTypeResource);
-			
 			identifiers.add(idResource);
 		});
 		
@@ -420,7 +356,7 @@ public class FhirUtils {
 			nameExt.put(FIELD_URL, NAME);
 			nameExt.put(FIELD_VALUE_STR, location.getName());
 			Map<String, Object> healthCenterExt = new HashMap(2);
-			healthCenterExt.put(FIELD_URL, healthCenterExtUrl);
+			//healthCenterExt.put(FIELD_URL, healthCenterExtUrl);
 			healthCenterExt.put(FIELD_EXTENSION, Arrays.asList(uuidExt, nameExt));
 			
 			return singletonList(healthCenterExt);
@@ -432,7 +368,7 @@ public class FhirUtils {
 			nameExt.put(FIELD_URL, NAME);
 			nameExt.put(FIELD_VALUE_STR, null);
 			Map<String, Object> healthCenterExt = new HashMap(2);
-			healthCenterExt.put(FIELD_URL, healthCenterExtUrl);
+			//healthCenterExt.put(FIELD_URL, healthCenterExtUrl);
 			healthCenterExt.put(FIELD_EXTENSION, Arrays.asList(uuidExt, nameExt));
 			
 			return singletonList(healthCenterExt);
@@ -470,92 +406,7 @@ public class FhirUtils {
 	}
 	
 	/**
-	 * Generates and returns the patient relationship list i.e contacts in fhir
-	 *
-	 * @param patientId id the patient id
-	 * @param mpiPatient a map of patient fields and values from the MPI
-	 * @return list of the patient relationships
-	 */
-	private static List<Map> getRelationships(String patientId, Map<String, Object> mpiPatient) {
-		List<List<Object>> relationshipRows = executeQuery(RELATIONSHIP_QUERY.replace(ID_PLACEHOLDER, patientId));
-		List<Map> relationships = new ArrayList();
-		for (List<Object> relationshipRow : relationshipRows) {
-			final String relationshipTypeUuid = relationshipRow.get(5).toString();
-			Integer otherPersonId;
-			boolean isPersonA = false;
-			if (patientId.equals(relationshipRow.get(0).toString())) {
-				otherPersonId = (Integer) (relationshipRow.get(1));
-			} else {
-				isPersonA = true;
-				otherPersonId = (Integer) (relationshipRow.get(0));
-			}
-			
-			TypeConcept concept = getRelationshipTypeConcept(relationshipTypeUuid, isPersonA);
-			if (concept == null) {
-				throw new APIException("No concept mapped to person " + (isPersonA ? "A" : "B")
-				        + " of the relationship type with uuid: " + relationshipTypeUuid);
-			}
-			
-			Map codingResource = new HashMap();
-			codingResource.put(FIELD_SYSTEM, relationshipTypeSystem);
-			codingResource.put(FIELD_CODE, concept.code);
-			codingResource.put(FIELD_DISPLAY, concept.display);
-			Map relationshipTypeResource = new HashMap();
-			relationshipTypeResource.put(FIELD_CODING, singletonList(codingResource));
-			relationshipTypeResource.put(FIELD_TEXT, concept.text);
-			Map<String, Object> resource = new HashMap();
-			resource.put(FIELD_RELATIONSHIP, relationshipTypeResource);
-			List<List<Object>> otherPersonDetails = executeQuery(
-			    CONTACT_PERSON_QUERY.replace(ID_PLACEHOLDER, otherPersonId.toString()));
-			final String relationshipUuid = relationshipRow.get(4).toString();
-			resource.put(FIELD_ID, relationshipUuid);
-			String gender = otherPersonDetails.get(0).get(0) != null ? otherPersonDetails.get(0).get(0).toString() : null;
-			resource.put(FIELD_GENDER, convertToFhirGender(gender));
-			Map personUuidExt = new HashMap(2);
-			personUuidExt.put(FIELD_URL, personUuidExtUrl);
-			personUuidExt.put(FIELD_VALUE_UUID, UUID_PREFIX + otherPersonDetails.get(0).get(1));
-			resource.put(FIELD_EXTENSION, singletonList(personUuidExt));
-			
-			Map existingContact = null;
-			if (mpiPatient != null && mpiPatient.get(FIELD_CONTACT) != null) {
-				List<Map> contacts = (List) mpiPatient.get(FIELD_CONTACT);
-				existingContact = getExistingContactByUuid(relationshipUuid, contacts);
-			}
-			
-			resource.put(FIELD_NAME, getNames(otherPersonId.toString(), 1, false).get(0));
-			resource.put(FIELD_ADDRESS, getAddresses(otherPersonId.toString(), 1, false).get(0));
-			resource.put(FIELD_TELECOM, getPhones(otherPersonId.toString(), existingContact));
-			
-			Map<String, Object> period = new HashMap();
-			String startDate = null;
-			if (relationshipRow.get(2) != null && StringUtils.isNotBlank(relationshipRow.get(2).toString())) {
-				startDate = DATETIME_FORMATTER.format(Timestamp.valueOf(relationshipRow.get(2).toString()));
-			}
-			
-			String endDate = null;
-			if (relationshipRow.get(3) != null && StringUtils.isNotBlank(relationshipRow.get(3).toString())) {
-				endDate = DATETIME_FORMATTER.format(Timestamp.valueOf(relationshipRow.get(3).toString()));
-			}
-			
-			period.put(FIELD_START, startDate);
-			period.put(FIELD_END, endDate);
-			resource.put(FIELD_PERIOD, period);
-			
-			relationships.add(resource);
-		}
-		
-		if (mpiPatient != null && mpiPatient.get(FIELD_CONTACT) != null) {
-			int mpiRelationshipLength = ((List) mpiPatient.get(FIELD_CONTACT)).size();
-			while (relationships.size() < mpiRelationshipLength) {
-				relationships.add(null);
-			}
-		}
-		
-		return relationships;
-	}
-	
-	/**
-	 * Converts a the specified gender value to the fhir equivalent
+	 * Converts the specified gender value to the fhir equivalent
 	 * 
 	 * @param openmrsGender the OpenMRS gender value to convert
 	 * @return the fhir gender value
@@ -595,67 +446,11 @@ public class FhirUtils {
 	}
 	
 	/**
-	 * Gets the {@link TypeConcept} associated to the OpenMRS RelationshipType with the specified uuid
-	 * 
-	 * @param relationshipTypeUuid the relationship type uuid to match
-	 * @param isPersonA specifies the person's side of the relationship type the concept maps to
-	 * @return FhirRelationshipType object
-	 */
-	private synchronized static TypeConcept getRelationshipTypeConcept(String relationshipTypeUuid, boolean isPersonA) {
-		Map<String, TypeConcept> relMap = isPersonA ? uuidRelationshipTypePersonAConceptMap
-		        : uuidRelationshipTypePersonBConceptMap;
-		
-		if (relMap == null) {
-			relMap = new HashMap();
-			final String gpName = isPersonA ? GP_RELATIONSHIP_TYPE_CONCEPT_MAP_A : GP_RELATIONSHIP_TYPE_CONCEPT_MAP_B;
-			String maps = MpiUtils.getGlobalPropertyValue(gpName);
-			if (StringUtils.isNotBlank(maps)) {
-				for (String map : maps.trim().split(",")) {
-					String[] details = map.trim().split(":");
-					final String uuid = details[0].trim();
-					RelationshipType type = Context.getPersonService().getRelationshipTypeByUuid(uuid);
-					if (type == null) {
-						throw new APIException("No relationship type found with uuid: " + uuid);
-					}
-					
-					final String text = isPersonA ? type.getaIsToB() : type.getbIsToA();
-					relMap.put(uuid, new TypeConcept(details[1].trim(), details[2].trim(), text));
-				}
-			}
-		}
-		
-		return relMap.get(relationshipTypeUuid);
-	}
-	
-	/**
 	 * Loads and caches the necessary global property values
 	 */
 	protected synchronized static void initializeCachesIfNecessary() {
-		if (idTypeSystem == null) {
-			idTypeSystem = MpiUtils.getGlobalPropertyValue(GP_IDENTIFIER_TYPE_SYSTEM);
-		}
-		
 		if (openmrsUuidSystem == null) {
 			openmrsUuidSystem = MpiUtils.getGlobalPropertyValue(GP_UUID_SYSTEM);
-		}
-		
-		if (healthCenterExtUrl == null) {
-			healthCenterExtUrl = MpiUtils.getGlobalPropertyValue(GP_HEALTH_CENTER_EXT_URL);
-		}
-		
-		if (personUuidExtUrl == null) {
-			personUuidExtUrl = MpiUtils.getGlobalPropertyValue(GP_PERSON_UUID_EXT_URL);
-		}
-		
-		if (relationshipTypeSystem == null) {
-			relationshipTypeSystem = MpiUtils.getGlobalPropertyValue(GP_RELATIONSHIP_TYPE_SYSTEM);
-		}
-		
-		if (openmrsUuidCode == null || openmrsUuidDisplay == null) {
-			String openmrsUuidConceptMap = MpiUtils.getGlobalPropertyValue(GP_OPENMRS_UUID_CONCEPT_MAP);
-			String[] mapDetails = openmrsUuidConceptMap.trim().split(":");
-			openmrsUuidCode = mapDetails[0];
-			openmrsUuidDisplay = mapDetails[1];
 		}
 		
 		if (idSystemMap == null) {
@@ -665,23 +460,6 @@ public class FhirUtils {
 				for (String map : maps.trim().split(",")) {
 					String[] details = map.trim().split("\\^");
 					idSystemMap.put(details[0].trim(), details[1].trim());
-				}
-			}
-		}
-		
-		if (uuidIdentifierTypeMap == null) {
-			uuidIdentifierTypeMap = new HashMap();
-			String maps = MpiUtils.getGlobalPropertyValue(GP_IDENTIFIER_TYPE_CONCEPT_MAP);
-			if (StringUtils.isNotBlank(maps)) {
-				for (String map : maps.trim().split(",")) {
-					String[] details = map.trim().split(":");
-					final String uuid = details[0].trim();
-					PatientIdentifierType type = Context.getPatientService().getPatientIdentifierTypeByUuid(uuid);
-					if (type == null) {
-						throw new APIException("No patient identifier type found with uuid: " + uuid);
-					}
-					
-					uuidIdentifierTypeMap.put(uuid, new TypeConcept(details[1].trim(), details[2].trim(), type.getName()));
 				}
 			}
 		}
