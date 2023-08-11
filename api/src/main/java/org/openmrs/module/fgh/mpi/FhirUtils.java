@@ -140,7 +140,6 @@ public class FhirUtils {
 		
 		fhirRes.put(FIELD_ADDRESS, getAddresses(id, existingAddressCount, true));
 		fhirRes.put(FIELD_TELECOM, getPhones(id, mpiPatient));
-		//fhirRes.put(FIELD_CONTACT, getRelationships(id, mpiPatient));
 		
 		/*List<Map<String, Object>> heathCenter = getHealthCenter(id, mpiPatient);
 		if (heathCenter != null) {
@@ -356,7 +355,6 @@ public class FhirUtils {
 			nameExt.put(FIELD_URL, NAME);
 			nameExt.put(FIELD_VALUE_STR, location.getName());
 			Map<String, Object> healthCenterExt = new HashMap(2);
-			//healthCenterExt.put(FIELD_URL, healthCenterExtUrl);
 			healthCenterExt.put(FIELD_EXTENSION, Arrays.asList(uuidExt, nameExt));
 			
 			return singletonList(healthCenterExt);
@@ -368,7 +366,6 @@ public class FhirUtils {
 			nameExt.put(FIELD_URL, NAME);
 			nameExt.put(FIELD_VALUE_STR, null);
 			Map<String, Object> healthCenterExt = new HashMap(2);
-			//healthCenterExt.put(FIELD_URL, healthCenterExtUrl);
 			healthCenterExt.put(FIELD_EXTENSION, Arrays.asList(uuidExt, nameExt));
 			
 			return singletonList(healthCenterExt);
