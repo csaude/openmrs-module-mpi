@@ -473,7 +473,7 @@ public class FhirUtils {
 	/**
 	 * Generates a fhir map for Message Header needed by santeMPI when submit a bundle
 	 * 
-	 * @return a map containing the the message header objects
+	 * @return a map containing the message header objects
 	 */
 	public static Map<String, Object> generateMessageHeader() {
 		Map<String, Object> messageHeader = new HashMap<String, Object>();
@@ -554,26 +554,6 @@ public class FhirUtils {
 	
 	public static SSLContext getSslContextByProtocol(String protocol) throws NoSuchAlgorithmException {
 		return SSLContext.getInstance("TLSv1.2");
-	}
-	
-	private static class TypeConcept {
-		
-		private String code;
-		
-		private String display;
-		
-		private String text;
-		
-		private TypeConcept(String code, String display, String text) {
-			this.code = code;
-			this.display = display;
-			this.text = text;
-		}
-		
-		@Override
-		public String toString() {
-			return "code=" + code + ", display=" + display + ", text=" + text;
-		}
 	}
 	
 }
