@@ -64,8 +64,8 @@
         <property>${project.parent.artifactId}.patient.uuid.system.uri</property>
         <description>
             Specifies the URI of the namespace for the patient uuids, this will be set as the value of the system
-            property for the patient uuid identifier, the value MUST match the internalId URL value defined in the
-            OpenCR config file under the systems section.
+            property for the patient uuid identifier. For OpenCR the value must match the internalId URL value defined
+            in the OpenCR config file under the systems section. For Sante MPI it must match system value for an id domain.
         </description>
     </globalProperty>
     <globalProperty>
@@ -138,6 +138,20 @@
 	<description>
 	     The event URI for Sante Message Header Bundle
 	</description>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.health.center.id.system.uri</property>
+        <description>
+            Specifies the system URI for the identifier used for patient health center, applies only to Sante MPI and it
+            must match system value for an id domain.
+        </description>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.health.center.encounter.type.uuid</property>
+        <description>
+            Specifies the uuid of encounter type to use when resolving the location associated to a patient's most
+            recent encounter.
+        </description>
     </globalProperty>
 </module>
 
