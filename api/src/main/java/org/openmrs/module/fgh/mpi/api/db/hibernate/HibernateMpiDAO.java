@@ -1,7 +1,12 @@
 package org.openmrs.module.fgh.mpi.api.db.hibernate;
 
+import org.hibernate.Criteria;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Projections;
+import org.hibernate.criterion.Restrictions;
+import org.openmrs.Encounter;
 import org.openmrs.EncounterType;
 import org.openmrs.Location;
 import org.openmrs.Patient;
@@ -26,7 +31,16 @@ public class HibernateMpiDAO implements MpiDAO {
 	
 	@Override
 	public Location getMostRecentLocation(Patient patient, EncounterType encounterType) {
-		return null;
+		Criteria criteria = getCurrentSession().createCriteria(Encounter.class);
+		criteria.add(Restrictions.eq("patient", patient));
+		criteria.add(Restrictions.eq("encounterType", encounterType));
+		criteria.add(Restrictions.isNotNull("location"));
+		criteria.add(Restrictions.eq("voided", false));
+		criteria.setProjection(Projections.property("location"));
+		criteria.addOrder(Order.desc("encounterDatetime"));
+		criteria.setMaxResults(1);
+		
+		return (Location) criteria.uniqueResult();
 	}
 	
 }
