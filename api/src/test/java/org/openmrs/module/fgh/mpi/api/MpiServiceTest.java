@@ -13,7 +13,9 @@ import org.openmrs.api.APIException;
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.PatientService;
 import org.openmrs.module.fgh.mpi.MpiConstants;
+import org.openmrs.module.fgh.mpi.api.impl.MpiServiceImpl;
 import org.openmrs.test.BaseModuleContextSensitiveTest;
+import org.powermock.reflect.Whitebox;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class MpiServiceTest extends BaseModuleContextSensitiveTest {
@@ -44,7 +46,8 @@ public class MpiServiceTest extends BaseModuleContextSensitiveTest {
 	}
 	
 	@Test
-	public void getMostRecentLocation_shouldFailIfTheNoEncounterMatchesTheConfiguredUuid() {
+	public void getMostRecentLocation_shouldFailIfTheNoEncounterMatchesTheConfiguredUuid() throws Exception {
+		Whitebox.setInternalState(MpiServiceImpl.class, "healthCenterEncType", (Object) null);
 		final String encTypeUuid = "some-enc-type";
 		GlobalProperty gp = new GlobalProperty(MpiConstants.GP_HEALTH_CENTER_ENC_TYPE_UUID, encTypeUuid);
 		adminService.saveGlobalProperty(gp);
