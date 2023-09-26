@@ -10,9 +10,8 @@ import org.openmrs.api.OpenmrsService;
 public interface MpiService extends OpenmrsService {
 	
 	/**
-	 * Gets the location associated to a patient's most recent encounter of the type matching the uuid
-	 * specified via the {@link org.openmrs.module.fgh.mpi.MpiConstants#GP_FICHA_RESUMO_ENC_TYPE_UUID}
-	 * global property.
+	 * Gets the location associated to a patient's most recent encounter of type Ficha Resumo or
+	 * clinical process with Ficha Resumo having higer priority.
 	 * 
 	 * @param patient the patient to match
 	 * @return the most recent location

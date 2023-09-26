@@ -152,5 +152,23 @@
             Specifies the uuid of the ficha resumo encounter type.
         </description>
     </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.ficha.resumo.encounter.type.uuid</property>
+        <description>
+            Specifies the uuid of the ficha resumo encounter type.
+        </description>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.adult.clinical.process.encounter.type.uuid</property>
+        <description>
+            Specifies the uuid of the adult clinical process encounter type.
+        </description>
+    </globalProperty>
+    <globalProperty>
+        <property>${project.parent.artifactId}.child.clinical.process.encounter.type.uuid</property>
+        <description>
+            Specifies the uuid of the child clinical process encounter type.
+        </description>
+    </globalProperty>
 </module>
 

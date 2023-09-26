@@ -1,12 +1,12 @@
 package org.openmrs.module.fgh.mpi.api.impl;
 
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_ADULT_PROCESS_ENC_TYPE_UUID;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_CHILD_PROCESS_ENC_TYPE_UUID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_FICHA_RESUMO_ENC_TYPE_UUID;
 
 import org.openmrs.EncounterType;
 import org.openmrs.Location;
 import org.openmrs.Patient;
-import org.openmrs.api.APIException;
-import org.openmrs.api.context.Context;
 import org.openmrs.api.impl.BaseOpenmrsService;
 import org.openmrs.module.fgh.mpi.MpiUtils;
 import org.openmrs.module.fgh.mpi.api.MpiService;
@@ -24,6 +24,10 @@ public class MpiServiceImpl extends BaseOpenmrsService implements MpiService {
 	
 	private static EncounterType facilityEncType;
 	
+	private static EncounterType adultProcessEncType;
+	
+	private static EncounterType childProcessEncType;
+	
 	/**
 	 * Sets the dao
 	 *
@@ -38,21 +42,38 @@ public class MpiServiceImpl extends BaseOpenmrsService implements MpiService {
 	 */
 	@Override
 	public Location getMostRecentLocation(Patient patient) {
-		final String encTypeUuid = MpiUtils.getGlobalPropertyValue(GP_FICHA_RESUMO_ENC_TYPE_UUID);
-		if (log.isDebugEnabled()) {
-			log.debug("Patient health center encounter type uuid: " + encTypeUuid);
+		Location location;
+		if (facilityEncType == null) {
+			facilityEncType = MpiUtils.getEncounterTypeByGlobalProperty(GP_FICHA_RESUMO_ENC_TYPE_UUID);
 		}
 		
-		if (facilityEncType == null) {
-			EncounterType type = Context.getEncounterService().getEncounterTypeByUuid(encTypeUuid);
-			if (type == null) {
-				throw new APIException("No encounter found matching uuid: " + encTypeUuid);
+		if (adultProcessEncType == null) {
+			adultProcessEncType = MpiUtils.getEncounterTypeByGlobalProperty(GP_ADULT_PROCESS_ENC_TYPE_UUID);
+		}
+		
+		if (childProcessEncType == null) {
+			childProcessEncType = MpiUtils.getEncounterTypeByGlobalProperty(GP_CHILD_PROCESS_ENC_TYPE_UUID);
+		}
+		
+		location = dao.getMostRecentLocation(patient, facilityEncType);
+		if (location == null) {
+			if (log.isDebugEnabled()) {
+				log.debug("No location found for encounter of type " + facilityEncType.getName(),
+				    ", looking up one for type " + adultProcessEncType.getName());
 			}
 			
-			facilityEncType = type;
+			location = dao.getMostRecentLocation(patient, adultProcessEncType);
+			if (location == null) {
+				if (log.isDebugEnabled()) {
+					log.debug("No location found for encounter of type " + adultProcessEncType.getName(),
+					    ", looking up one for type " + childProcessEncType.getName());
+				}
+				
+				location = dao.getMostRecentLocation(patient, childProcessEncType);
+			}
 		}
 		
-		return dao.getMostRecentLocation(patient, facilityEncType);
+		return location;
 	}
 	
 }

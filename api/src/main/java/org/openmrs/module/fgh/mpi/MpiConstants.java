@@ -160,5 +160,9 @@ public class MpiConstants {
 	
 	public final static String GP_FICHA_RESUMO_ENC_TYPE_UUID = MODULE_ID + ".ficha.resumo.encounter.type.uuid";
 	
+	public final static String GP_ADULT_PROCESS_ENC_TYPE_UUID = MODULE_ID + ".adult.clinical.process.encounter.type.uuid";
+	
+	public final static String GP_CHILD_PROCESS_ENC_TYPE_UUID = MODULE_ID + ".child.clinical.process.encounter.type.uuid";
+	
 	public final static Range<Integer> HTTP_REQUEST_SUCCESS_RANGE = Range.between(200, 299);
 }

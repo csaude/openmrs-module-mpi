@@ -26,6 +26,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.SessionFactory;
 import org.hibernate.internal.SessionFactoryImpl;
+import org.openmrs.EncounterType;
 import org.openmrs.api.APIException;
 import org.openmrs.api.context.Context;
 import org.openmrs.api.db.DAOException;
@@ -169,6 +170,23 @@ public class MpiUtils {
 		}
 		
 		return value;
+	}
+	
+	/**
+	 * Gets the encounter type matching the uuid defined as the value of the specified global property
+	 * name.
+	 *
+	 * @param gpName the global property name
+	 * @return the encounter type
+	 */
+	public static EncounterType getEncounterTypeByGlobalProperty(String gpName) {
+		final String encTypeUuid = MpiUtils.getGlobalPropertyValue(gpName);
+		EncounterType type = Context.getEncounterService().getEncounterTypeByUuid(encTypeUuid);
+		if (type == null) {
+			throw new APIException("No encounter found matching uuid: " + encTypeUuid);
+		}
+		
+		return type;
 	}
 	
 	/**
