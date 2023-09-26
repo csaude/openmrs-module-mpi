@@ -1,6 +1,6 @@
 package org.openmrs.module.fgh.mpi.api.impl;
 
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_HEALTH_CENTER_ENC_TYPE_UUID;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_FICHA_RESUMO_ENC_TYPE_UUID;
 
 import org.openmrs.EncounterType;
 import org.openmrs.GlobalProperty;
@@ -40,7 +40,7 @@ public class MpiServiceImpl extends BaseOpenmrsService implements MpiService, Gl
 	 */
 	@Override
 	public boolean supportsPropertyName(String propertyName) {
-		return GP_HEALTH_CENTER_ENC_TYPE_UUID.equals(propertyName);
+		return GP_FICHA_RESUMO_ENC_TYPE_UUID.equals(propertyName);
 	}
 	
 	/**
@@ -64,7 +64,7 @@ public class MpiServiceImpl extends BaseOpenmrsService implements MpiService, Gl
 	 */
 	@Override
 	public Location getMostRecentLocation(Patient patient) {
-		final String encTypeUuid = MpiUtils.getGlobalPropertyValue(GP_HEALTH_CENTER_ENC_TYPE_UUID);
+		final String encTypeUuid = MpiUtils.getGlobalPropertyValue(GP_FICHA_RESUMO_ENC_TYPE_UUID);
 		if (log.isDebugEnabled()) {
 			log.debug("Patient health center encounter type uuid: " + encTypeUuid);
 		}

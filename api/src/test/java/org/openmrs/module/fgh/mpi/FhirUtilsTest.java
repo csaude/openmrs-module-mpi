@@ -33,7 +33,7 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_FEMALE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_MALE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_OTHER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_UNKNOWN;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_HEALTH_CENTER_SYSTEM_URI;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_HEALTH_FACILITY_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_ID_TYPE_SYSTEM_MAP;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_PHONE_HOME;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_PHONE_MOBILE;
@@ -237,7 +237,7 @@ public class FhirUtilsTest {
 		Patient mockPatient = Mockito.mock(Patient.class);
 		when(mockPatientService.getPatient(Integer.valueOf(patientId))).thenReturn(mockPatient);
 		when(mockMpiService.getMostRecentLocation(mockPatient)).thenReturn(mostRecentLoc);
-		when(MpiUtils.getGlobalPropertyValue(GP_HEALTH_CENTER_SYSTEM_URI)).thenReturn(healthCenterIdSystem);
+		when(MpiUtils.getGlobalPropertyValue(GP_HEALTH_FACILITY_SYSTEM)).thenReturn(healthCenterIdSystem);
 		
 		Map<String, Object> resource = FhirUtils.buildPatient(patientId, patientVoided, personDetails, null);
 		

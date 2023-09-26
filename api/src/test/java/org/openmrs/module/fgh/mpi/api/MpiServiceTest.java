@@ -49,7 +49,7 @@ public class MpiServiceTest extends BaseModuleContextSensitiveTest {
 	public void getMostRecentLocation_shouldFailIfTheNoEncounterMatchesTheConfiguredUuid() throws Exception {
 		Whitebox.setInternalState(MpiServiceImpl.class, "healthCenterEncType", (Object) null);
 		final String encTypeUuid = "some-enc-type";
-		GlobalProperty gp = new GlobalProperty(MpiConstants.GP_HEALTH_CENTER_ENC_TYPE_UUID, encTypeUuid);
+		GlobalProperty gp = new GlobalProperty(MpiConstants.GP_FICHA_RESUMO_ENC_TYPE_UUID, encTypeUuid);
 		adminService.saveGlobalProperty(gp);
 		expectedException.expect(APIException.class);
 		expectedException.expectMessage(Matchers.equalTo("No encounter found matching uuid: " + encTypeUuid));

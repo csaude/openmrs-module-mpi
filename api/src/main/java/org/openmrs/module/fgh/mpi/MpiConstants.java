@@ -156,9 +156,9 @@ public class MpiConstants {
 	
 	public final static String GP_SANTE_MESSAGE_HEADER_EVENT_URI = MODULE_ID + ".sante.message.header.event.uri";
 	
-	public final static String GP_HEALTH_CENTER_SYSTEM_URI = MODULE_ID + ".health.center.id.system.uri";
+	public final static String GP_HEALTH_FACILITY_SYSTEM = MODULE_ID + ".health.facility.id.system.uri";
 	
-	public final static String GP_HEALTH_CENTER_ENC_TYPE_UUID = MODULE_ID + ".health.center.encounter.type.uuid";
+	public final static String GP_FICHA_RESUMO_ENC_TYPE_UUID = MODULE_ID + ".ficha.resumo.encounter.type.uuid";
 	
 	public final static Range<Integer> HTTP_REQUEST_SUCCESS_RANGE = Range.between(200, 299);
 }

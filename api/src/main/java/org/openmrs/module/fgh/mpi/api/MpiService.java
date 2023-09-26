@@ -11,7 +11,7 @@ public interface MpiService extends OpenmrsService {
 	
 	/**
 	 * Gets the location associated to a patient's most recent encounter of the type matching the uuid
-	 * specified via the {@link org.openmrs.module.fgh.mpi.MpiConstants#GP_HEALTH_CENTER_ENC_TYPE_UUID}
+	 * specified via the {@link org.openmrs.module.fgh.mpi.MpiConstants#GP_FICHA_RESUMO_ENC_TYPE_UUID}
 	 * global property.
 	 * 
 	 * @param patient the patient to match

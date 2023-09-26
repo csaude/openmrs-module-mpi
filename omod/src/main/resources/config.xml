@@ -140,17 +140,16 @@
 	</description>
     </globalProperty>
     <globalProperty>
-        <property>${project.parent.artifactId}.health.center.id.system.uri</property>
+        <property>${project.parent.artifactId}.health.facility.id.system.uri</property>
         <description>
-            Specifies the system URI for the identifier used for patient health center, applies only to Sante MPI and it
-            must match system value for an id domain.
+            Specifies the system URI for the identifier used for patient health facility, applies only to Sante MPI and
+            it must match system value for an id domain.
         </description>
     </globalProperty>
     <globalProperty>
-        <property>${project.parent.artifactId}.health.center.encounter.type.uuid</property>
+        <property>${project.parent.artifactId}.ficha.resumo.encounter.type.uuid</property>
         <description>
-            Specifies the uuid of encounter type to use when resolving the location associated to a patient's most
-            recent encounter.
+            Specifies the uuid of the ficha resumo encounter type.
         </description>
     </globalProperty>
 </module>
