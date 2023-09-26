@@ -228,16 +228,16 @@ public class FhirUtilsTest {
 		    ATTR_QUERY.replace(ID_PLACEHOLDER, patientId).replace(ATTR_TYPE_ID_PLACEHOLDER, homeAttrTypeId.toString())))
 		            .thenReturn(singletonList(homePhoneAttr));
 		
-		final String healthCenterLocUuid = "location-uuid";
-		final String healthCenterLocName = "location-name";
-		final String healthCenterIdSystem = "health-center-id-system-uri";
+		final String facilityLocUuid = "facility-uuid";
+		final String facilityLocName = "facility-name";
+		final String facilityIdSystem = "facility-id-system-uri";
 		Location mostRecentLoc = new Location();
-		mostRecentLoc.setUuid(healthCenterLocUuid);
-		mostRecentLoc.setName(healthCenterLocName);
+		mostRecentLoc.setUuid(facilityLocUuid);
+		mostRecentLoc.setName(facilityLocName);
 		Patient mockPatient = Mockito.mock(Patient.class);
 		when(mockPatientService.getPatient(Integer.valueOf(patientId))).thenReturn(mockPatient);
 		when(mockMpiService.getMostRecentLocation(mockPatient)).thenReturn(mostRecentLoc);
-		when(MpiUtils.getGlobalPropertyValue(GP_HEALTH_FACILITY_SYSTEM)).thenReturn(healthCenterIdSystem);
+		when(MpiUtils.getGlobalPropertyValue(GP_HEALTH_FACILITY_SYSTEM)).thenReturn(facilityIdSystem);
 		
 		Map<String, Object> resource = FhirUtils.buildPatient(patientId, patientVoided, personDetails, null);
 		
@@ -259,9 +259,9 @@ public class FhirUtilsTest {
 		assertEquals(idTypeSystem2, resourceIds.get(2).get(MpiConstants.FIELD_SYSTEM));
 		assertEquals(identifier2, resourceIds.get(2).get(MpiConstants.FIELD_VALUE));
 		assertEquals(idUuid2, resourceIds.get(2).get(FIELD_ID));
-		assertEquals(healthCenterIdSystem, resourceIds.get(3).get(MpiConstants.FIELD_SYSTEM));
-		assertEquals(healthCenterLocName, resourceIds.get(3).get(MpiConstants.FIELD_VALUE));
-		assertEquals(healthCenterLocUuid, resourceIds.get(3).get(FIELD_ID));
+		assertEquals(facilityIdSystem, resourceIds.get(3).get(MpiConstants.FIELD_SYSTEM));
+		assertEquals(facilityLocName, resourceIds.get(3).get(MpiConstants.FIELD_VALUE));
+		assertEquals(facilityLocUuid, resourceIds.get(3).get(FIELD_ID));
 		
 		List<Map> resourceNames = (List) resource.get(FIELD_NAME);
 		assertEquals(2, resourceNames.size());

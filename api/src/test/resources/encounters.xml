@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <dataset>
-    <global_property property="mpi.health.center.encounter.type.uuid" property_value="61ae96f4-6afe-4351-b6f8-cd4fc383cce1" uuid="036b173e-fe10-4693-8aff-f53c0f1f3824" />
+    <global_property property="mpi.ficha.resumo.encounter.type.uuid" property_value="61ae96f4-6afe-4351-b6f8-cd4fc383cce1" uuid="036b173e-fe10-4693-8aff-f53c0f1f3824" />
 
     <!-- Different encounter type -->
     <encounter encounter_id="2001" encounter_type="2" patient_id="6" encounter_datetime="2023-09-24 00:06:00" location_id="1" creator="1" date_created="2023-09-24 00:00:00" voided="0" uuid="1619d653-393b-4118-9e83-a3715b82d5aa" />

@@ -47,7 +47,7 @@ public class MpiServiceTest extends BaseModuleContextSensitiveTest {
 	
 	@Test
 	public void getMostRecentLocation_shouldFailIfTheNoEncounterMatchesTheConfiguredUuid() throws Exception {
-		Whitebox.setInternalState(MpiServiceImpl.class, "healthCenterEncType", (Object) null);
+		Whitebox.setInternalState(MpiServiceImpl.class, "facilityEncType", (Object) null);
 		final String encTypeUuid = "some-enc-type";
 		GlobalProperty gp = new GlobalProperty(MpiConstants.GP_FICHA_RESUMO_ENC_TYPE_UUID, encTypeUuid);
 		adminService.saveGlobalProperty(gp);
