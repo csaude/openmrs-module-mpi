@@ -16,6 +16,7 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_USE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE_STR;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE_UUID;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_HEALTH_CENTER_SYSTEM_URI;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_ID_TYPE_SYSTEM_MAP;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_MESSAGE_HEADER_EVENT_URI;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_MESSAGE_HEADER_FOCUS_REFERENCE;
@@ -46,10 +47,12 @@ import javax.net.ssl.SSLContext;
 
 import org.apache.commons.lang3.StringUtils;
 import org.openmrs.Location;
+import org.openmrs.Patient;
 import org.openmrs.PersonAttributeType;
 import org.openmrs.api.APIException;
 import org.openmrs.api.LocationService;
 import org.openmrs.api.context.Context;
+import org.openmrs.module.fgh.mpi.api.MpiService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -177,6 +180,16 @@ public class FhirUtils {
 			idResource.put(FIELD_VALUE, idRow.get(0));
 			identifiers.add(idResource);
 		});
+		
+		Patient patient = Context.getPatientService().getPatient(Integer.valueOf(patientId));
+		Location location = Context.getService(MpiService.class).getMostRecentLocation(patient);
+		if (location != null) {
+			Map<String, Object> healthCenterIdResource = new HashMap();
+			healthCenterIdResource.put(FIELD_ID, location.getUuid());
+			healthCenterIdResource.put(FIELD_SYSTEM, MpiUtils.getGlobalPropertyValue(GP_HEALTH_CENTER_SYSTEM_URI));
+			healthCenterIdResource.put(FIELD_VALUE, location.getName());
+			identifiers.add(healthCenterIdResource);
+		}
 		
 		//We need to overwrite all ids at all indices for an existing patient otherwise OpenCR(hapi fhir) will write 
 		//each identifier data by matching indices of our list with the existing list which will be problematic if our

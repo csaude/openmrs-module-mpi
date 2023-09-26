@@ -60,6 +60,8 @@ public abstract class BaseEventProcessor {
 			Context.addProxyPrivilege(PrivilegeConstants.GET_IDENTIFIER_TYPES);
 			Context.addProxyPrivilege(PrivilegeConstants.GET_LOCATIONS);
 			Context.addProxyPrivilege(PrivilegeConstants.GET_RELATIONSHIP_TYPES);
+			Context.addProxyPrivilege(PrivilegeConstants.GET_PATIENTS);
+			Context.addProxyPrivilege(PrivilegeConstants.GET_ENCOUNTER_TYPES);
 			
 			switch (event.getTableName()) {
 				case "person":
@@ -90,6 +92,8 @@ public abstract class BaseEventProcessor {
 				Context.removeProxyPrivilege(PrivilegeConstants.GET_IDENTIFIER_TYPES);
 				Context.removeProxyPrivilege(PrivilegeConstants.GET_LOCATIONS);
 				Context.removeProxyPrivilege(PrivilegeConstants.GET_RELATIONSHIP_TYPES);
+				Context.removeProxyPrivilege(PrivilegeConstants.GET_PATIENTS);
+				Context.removeProxyPrivilege(PrivilegeConstants.GET_ENCOUNTER_TYPES);
 			}
 			finally {
 				Context.closeSession();

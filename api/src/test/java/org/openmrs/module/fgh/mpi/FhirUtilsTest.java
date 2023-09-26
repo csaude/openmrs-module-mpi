@@ -33,6 +33,7 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_FEMALE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_MALE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_OTHER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_UNKNOWN;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_HEALTH_CENTER_SYSTEM_URI;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_ID_TYPE_SYSTEM_MAP;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_PHONE_HOME;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_PHONE_MOBILE;
@@ -60,7 +61,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.openmrs.Location;
+import org.openmrs.Patient;
 import org.openmrs.PatientIdentifierType;
 import org.openmrs.PersonAttributeType;
 import org.openmrs.api.APIException;
@@ -68,6 +71,7 @@ import org.openmrs.api.LocationService;
 import org.openmrs.api.PatientService;
 import org.openmrs.api.PersonService;
 import org.openmrs.api.context.Context;
+import org.openmrs.module.fgh.mpi.api.MpiService;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
@@ -85,6 +89,9 @@ public class FhirUtilsTest {
 	
 	@Mock
 	private LocationService mockLocationService;
+	
+	@Mock
+	private MpiService mockMpiService;
 	
 	private static final String UUID_SYSTEM = "http://test.openmrs.id/uuid";
 	
@@ -109,6 +116,7 @@ public class FhirUtilsTest {
 		when(Context.getPersonService()).thenReturn(mockPersonService);
 		when(Context.getPatientService()).thenReturn(mockPatientService);
 		when(Context.getLocationService()).thenReturn(mockLocationService);
+		when(Context.getService(MpiService.class)).thenReturn(mockMpiService);
 		when(MpiUtils.getGlobalPropertyValue(GP_PHONE_MOBILE)).thenReturn("test-mobile-uuid");
 		when(MpiUtils.getGlobalPropertyValue(GP_PHONE_HOME)).thenReturn("test-home-uuid");
 		when(mockPersonService.getPersonAttributeTypeByUuid(anyString())).thenReturn(new PersonAttributeType(0));
@@ -220,21 +228,16 @@ public class FhirUtilsTest {
 		    ATTR_QUERY.replace(ID_PLACEHOLDER, patientId).replace(ATTR_TYPE_ID_PLACEHOLDER, homeAttrTypeId.toString())))
 		            .thenReturn(singletonList(homePhoneAttr));
 		
-		final Integer locationId = 1;
-		final String locationUuid = "location-uuid";
-		final String locationName = "Location";
-		final Integer healthCtrAttrTypeId = 6;
-		List<Object> healthCenter = asList(locationId.toString(), "attrib-uuid");
-		PersonAttributeType healthCenterAttrType = new PersonAttributeType(healthCtrAttrTypeId);
-		when(mockPersonService.getPersonAttributeTypeByUuid(HEALTH_CENTER_ATTRIB_TYPE_UUID))
-		        .thenReturn(healthCenterAttrType);
-		when(executeQuery(
-		    ATTR_QUERY.replace(ID_PLACEHOLDER, patientId).replace(ATTR_TYPE_ID_PLACEHOLDER, healthCtrAttrTypeId.toString())))
-		            .thenReturn(singletonList(healthCenter));
-		Location location = new Location(locationId);
-		location.setName(locationName);
-		location.setUuid(locationUuid);
-		when(mockLocationService.getLocation(locationId)).thenReturn(location);
+		final String healthCenterLocUuid = "location-uuid";
+		final String healthCenterLocName = "location-name";
+		final String healthCenterIdSystem = "health-center-id-system-uri";
+		Location mostRecentLoc = new Location();
+		mostRecentLoc.setUuid(healthCenterLocUuid);
+		mostRecentLoc.setName(healthCenterLocName);
+		Patient mockPatient = Mockito.mock(Patient.class);
+		when(mockPatientService.getPatient(Integer.valueOf(patientId))).thenReturn(mockPatient);
+		when(mockMpiService.getMostRecentLocation(mockPatient)).thenReturn(mostRecentLoc);
+		when(MpiUtils.getGlobalPropertyValue(GP_HEALTH_CENTER_SYSTEM_URI)).thenReturn(healthCenterIdSystem);
 		
 		Map<String, Object> resource = FhirUtils.buildPatient(patientId, patientVoided, personDetails, null);
 		
@@ -247,7 +250,7 @@ public class FhirUtilsTest {
 		assertNull(resource.get(MpiConstants.FIELD_DECEASED_DATE));
 		
 		List<Map> resourceIds = (List) resource.get(MpiConstants.FIELD_IDENTIFIER);
-		assertEquals(3, resourceIds.size());
+		assertEquals(4, resourceIds.size());
 		assertEquals(UUID_SYSTEM, resourceIds.get(0).get(FIELD_SYSTEM));
 		assertEquals(patientUuid, resourceIds.get(0).get(MpiConstants.FIELD_VALUE));
 		assertEquals(idTypeSystem1, resourceIds.get(1).get(MpiConstants.FIELD_SYSTEM));
@@ -256,6 +259,9 @@ public class FhirUtilsTest {
 		assertEquals(idTypeSystem2, resourceIds.get(2).get(MpiConstants.FIELD_SYSTEM));
 		assertEquals(identifier2, resourceIds.get(2).get(MpiConstants.FIELD_VALUE));
 		assertEquals(idUuid2, resourceIds.get(2).get(FIELD_ID));
+		assertEquals(healthCenterIdSystem, resourceIds.get(3).get(MpiConstants.FIELD_SYSTEM));
+		assertEquals(healthCenterLocName, resourceIds.get(3).get(MpiConstants.FIELD_VALUE));
+		assertEquals(healthCenterLocUuid, resourceIds.get(3).get(FIELD_ID));
 		
 		List<Map> resourceNames = (List) resource.get(FIELD_NAME);
 		assertEquals(2, resourceNames.size());
@@ -312,15 +318,6 @@ public class FhirUtilsTest {
 		assertEquals(MpiConstants.HOME, resourceTelecoms.get(1).get(FIELD_USE));
 		assertEquals(home, resourceTelecoms.get(1).get(MpiConstants.FIELD_VALUE));
 		assertEquals(attributeUuid2, resourceTelecoms.get(1).get(FIELD_ID));
-		
-		/*List<Map> extensions = (List) resource.get(MpiConstants.FIELD_EXTENSION);
-		assertEquals(1, extensions.size());
-		assertEquals(HC_EXT_URL, extensions.get(0).get(MpiConstants.FIELD_URL));
-		extensions = (List) extensions.get(0).get(MpiConstants.FIELD_EXTENSION);
-		assertEquals(IDENTIFIER, extensions.get(0).get(MpiConstants.FIELD_URL));
-		assertEquals(UUID_PREFIX + locationUuid, extensions.get(0).get(MpiConstants.FIELD_VALUE_UUID));
-		assertEquals(NAME, extensions.get(1).get(MpiConstants.FIELD_URL));
-		assertEquals(locationName, extensions.get(1).get(MpiConstants.FIELD_VALUE_STR));*/
 	}
 	
 	@Test
