@@ -78,7 +78,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.reflect.Whitebox;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({ Context.class, MpiUtils.class })
+@PrepareForTest({ Context.class, MpiUtils.class, MpiContext.class })
 public class FhirUtilsTest {
 	
 	@Mock
@@ -92,6 +92,9 @@ public class FhirUtilsTest {
 	
 	@Mock
 	private MpiService mockMpiService;
+	
+	@Mock
+	private MpiContext mockMpiContext;
 	
 	private static final String UUID_SYSTEM = "http://test.openmrs.id/uuid";
 	
@@ -110,6 +113,7 @@ public class FhirUtilsTest {
 	public void setup() {
 		PowerMockito.mockStatic(Context.class);
 		PowerMockito.mockStatic(MpiUtils.class);
+		PowerMockito.mockStatic(MpiContext.class);
 		Whitebox.setInternalState(FhirUtils.class, "ATTR_TYPE_GP_ID_MAP", new HashMap(2));
 		Whitebox.setInternalState(FhirUtils.class, "idSystemMap", (Object) null);
 		Whitebox.setInternalState(FhirUtils.class, "openmrsUuidSystem", (Object) null);
@@ -123,7 +127,8 @@ public class FhirUtilsTest {
 		when(MpiUtils.getGlobalPropertyValue(GP_UUID_SYSTEM)).thenReturn(UUID_SYSTEM);
 		when(MpiUtils.getGlobalPropertyValue(GP_SANTE_MESSAGE_HEADER_FOCUS_REFERENCE)).thenReturn(MESSAGE_HEADER_REFERENCE);
 		when(MpiUtils.getGlobalPropertyValue(GP_SANTE_MESSAGE_HEADER_EVENT_URI)).thenReturn(MESSAGE_HEADER_EVENT_URI);
-		
+		Whitebox.setInternalState(MpiContext.class, MpiContext.class, mockMpiContext);
+		when(mockMpiContext.getMpiSystem()).thenReturn(MpiSystemType.SANTEMPI);
 	}
 	
 	@Test
@@ -626,6 +631,18 @@ public class FhirUtilsTest {
 		List<Map<String, Object>> focus = FhirUtils.getObjectOnMapAsListOfMap("focus", resource);
 		assertTrue(!focus.isEmpty());
 		assertEquals(focus.get(0).get("reference"), MESSAGE_HEADER_REFERENCE);
+	}
+	
+	@Test
+	public void buildPatient_shouldExcludeHealthFacilityForOpenCR() {
+		List<Object> personDetails = asList(null, null, true, null, null, false);
+		when(mockMpiContext.getMpiSystem()).thenReturn(MpiSystemType.OPENCR);
+		
+		Map<String, Object> resource = FhirUtils.buildPatient("1", false, personDetails, null);
+		
+		assertEquals(1, ((List) resource.get(MpiConstants.FIELD_IDENTIFIER)).size());
+		Mockito.verifyZeroInteractions(mockPatientService);
+		Mockito.verifyZeroInteractions(mockMpiService);
 	}
 	
 }

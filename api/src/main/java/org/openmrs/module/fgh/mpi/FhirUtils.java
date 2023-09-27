@@ -181,14 +181,16 @@ public class FhirUtils {
 			identifiers.add(idResource);
 		});
 		
-		Patient patient = Context.getPatientService().getPatient(Integer.valueOf(patientId));
-		Location location = Context.getService(MpiService.class).getMostRecentLocation(patient);
-		if (location != null) {
-			Map<String, Object> healthCenterIdResource = new HashMap();
-			healthCenterIdResource.put(FIELD_ID, location.getUuid());
-			healthCenterIdResource.put(FIELD_SYSTEM, MpiUtils.getGlobalPropertyValue(GP_HEALTH_FACILITY_SYSTEM));
-			healthCenterIdResource.put(FIELD_VALUE, location.getName());
-			identifiers.add(healthCenterIdResource);
+		if (MpiContext.mpiContext.getMpiSystem().isSanteMPI()) {
+			Patient patient = Context.getPatientService().getPatient(Integer.valueOf(patientId));
+			Location location = Context.getService(MpiService.class).getMostRecentLocation(patient);
+			if (location != null) {
+				Map<String, Object> healthCenterIdResource = new HashMap();
+				healthCenterIdResource.put(FIELD_ID, location.getUuid());
+				healthCenterIdResource.put(FIELD_SYSTEM, MpiUtils.getGlobalPropertyValue(GP_HEALTH_FACILITY_SYSTEM));
+				healthCenterIdResource.put(FIELD_VALUE, location.getName());
+				identifiers.add(healthCenterIdResource);
+			}
 		}
 		
 		//We need to overwrite all ids at all indices for an existing patient otherwise OpenCR(hapi fhir) will write 

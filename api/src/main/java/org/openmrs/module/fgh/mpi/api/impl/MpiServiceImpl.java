@@ -22,7 +22,7 @@ public class MpiServiceImpl extends BaseOpenmrsService implements MpiService {
 	
 	private MpiDAO dao;
 	
-	private static EncounterType facilityEncType;
+	private static EncounterType fichaEncType;
 	
 	private static EncounterType adultProcessEncType;
 	
@@ -43,8 +43,8 @@ public class MpiServiceImpl extends BaseOpenmrsService implements MpiService {
 	@Override
 	public Location getMostRecentLocation(Patient patient) {
 		Location location;
-		if (facilityEncType == null) {
-			facilityEncType = MpiUtils.getEncounterTypeByGlobalProperty(GP_FICHA_RESUMO_ENC_TYPE_UUID);
+		if (fichaEncType == null) {
+			fichaEncType = MpiUtils.getEncounterTypeByGlobalProperty(GP_FICHA_RESUMO_ENC_TYPE_UUID);
 		}
 		
 		if (adultProcessEncType == null) {
@@ -55,18 +55,18 @@ public class MpiServiceImpl extends BaseOpenmrsService implements MpiService {
 			childProcessEncType = MpiUtils.getEncounterTypeByGlobalProperty(GP_CHILD_PROCESS_ENC_TYPE_UUID);
 		}
 		
-		location = dao.getMostRecentLocation(patient, facilityEncType);
+		location = dao.getMostRecentLocation(patient, fichaEncType);
 		if (location == null) {
 			if (log.isDebugEnabled()) {
-				log.debug("No location found for encounter of type " + facilityEncType.getName(),
-				    ", looking up one for type " + adultProcessEncType.getName());
+				log.debug("No location found for encounter of type " + fichaEncType.getName() + ", looking up one for "
+				        + "type " + adultProcessEncType.getName());
 			}
 			
 			location = dao.getMostRecentLocation(patient, adultProcessEncType);
 			if (location == null) {
 				if (log.isDebugEnabled()) {
-					log.debug("No location found for encounter of type " + adultProcessEncType.getName(),
-					    ", looking up one for type " + childProcessEncType.getName());
+					log.debug("No location found for encounter of type " + adultProcessEncType.getName()
+					        + ", looking up one for type " + childProcessEncType.getName());
 				}
 				
 				location = dao.getMostRecentLocation(patient, childProcessEncType);
