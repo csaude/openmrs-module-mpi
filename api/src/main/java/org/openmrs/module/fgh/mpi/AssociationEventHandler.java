@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Handler for table events of patient association entities i.e. patient_identifier, person_name and
- * person_address
+ * person_address, encounter
  */
 @Component("associationEventHandler")
 public class AssociationEventHandler extends BaseEventHandler {
@@ -22,7 +22,11 @@ public class AssociationEventHandler extends BaseEventHandler {
 			log.debug("Handling " + tableName + " event -> " + event);
 		}
 		
-		final String columnName = "patient_identifier".equalsIgnoreCase(tableName) ? "patient_id" : "person_id";
+		String columnName = "person_id";
+		if ("patient_identifier".equalsIgnoreCase(tableName) || "encounter".equalsIgnoreCase(tableName)) {
+			columnName = "patient_id";
+		}
+		
 		Object patientId;
 		if (DatabaseOperation.DELETE == event.getOperation()) {
 			patientId = event.getPreviousState().get(columnName);

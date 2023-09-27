@@ -10,7 +10,7 @@ public class MpiConstants {
 	public final static String MODULE_ID = "mpi";
 	
 	public final static String[] WATCHED_TABLES = new String[] { "person", "patient", "person_name", "person_address",
-	        "patient_identifier", "person_attribute" };
+	        "patient_identifier", "person_attribute", "encounter" };
 	
 	public final static String GP_INITIAL = MODULE_ID + ".initial.loading";
 	

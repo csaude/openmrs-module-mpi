@@ -72,6 +72,7 @@ public abstract class BaseEventProcessor {
 				case "person_address":
 				case "patient_identifier":
 				case "person_attribute":
+				case "encounter":
 					resource = assocHandler.handle(event);
 					break;
 				case "relationship":
