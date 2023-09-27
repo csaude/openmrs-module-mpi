@@ -37,7 +37,7 @@ public class HibernateMpiDAO implements MpiDAO {
 		criteria.add(Restrictions.isNotNull("location"));
 		criteria.add(Restrictions.eq("voided", false));
 		criteria.setProjection(Projections.property("location"));
-		criteria.addOrder(Order.desc("encounterDatetime"));
+		criteria.addOrder(Order.asc("encounterDatetime"));
 		criteria.setMaxResults(1);
 		
 		return (Location) criteria.uniqueResult();
