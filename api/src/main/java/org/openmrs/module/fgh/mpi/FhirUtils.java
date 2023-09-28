@@ -183,7 +183,7 @@ public class FhirUtils {
 		
 		if (MpiContext.mpiContext.getMpiSystem().isSanteMPI()) {
 			Patient patient = Context.getPatientService().getPatient(Integer.valueOf(patientId));
-			Location location = Context.getService(MpiService.class).getMostRecentLocation(patient);
+			Location location = Context.getService(MpiService.class).getHealthFacility(patient);
 			if (location != null) {
 				Map<String, Object> healthCenterIdResource = new HashMap();
 				healthCenterIdResource.put(FIELD_ID, location.getUuid());

@@ -236,12 +236,12 @@ public class FhirUtilsTest {
 		final String facilityLocUuid = "facility-uuid";
 		final String facilityLocName = "facility-name";
 		final String facilityIdSystem = "facility-id-system-uri";
-		Location mostRecentLoc = new Location();
-		mostRecentLoc.setUuid(facilityLocUuid);
-		mostRecentLoc.setName(facilityLocName);
+		Location oldestLoc = new Location();
+		oldestLoc.setUuid(facilityLocUuid);
+		oldestLoc.setName(facilityLocName);
 		Patient mockPatient = Mockito.mock(Patient.class);
 		when(mockPatientService.getPatient(Integer.valueOf(patientId))).thenReturn(mockPatient);
-		when(mockMpiService.getMostRecentLocation(mockPatient)).thenReturn(mostRecentLoc);
+		when(mockMpiService.getHealthFacility(mockPatient)).thenReturn(oldestLoc);
 		when(MpiUtils.getGlobalPropertyValue(GP_HEALTH_FACILITY_SYSTEM)).thenReturn(facilityIdSystem);
 		
 		Map<String, Object> resource = FhirUtils.buildPatient(patientId, patientVoided, personDetails, null);
