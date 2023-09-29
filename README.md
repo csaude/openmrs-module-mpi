@@ -9,11 +9,11 @@ in OpenCR.
 2. [Module Technical Overview](#module-technical-overview)
 3. [Assumptions](#assumptions)
 4. [OpenCR Installation](#opencr-installation)
-    1. [Setting Up Certificates](#setting-up-certificates)
+    1. [Setting Up OpenCR Certificates](#setting-up-opencr-certificates)
     2. [Update Config File](#update-config-file)
-    3. [Patient Matching Configuration](#patient-matching-configuration)
+    3. [OpenCR Patient Matching Configuration](#opencr-patient-matching-configuration)
 5. [Build and Install](#build-and-install)
-6. [OpenMRS Configuration](#openmrs-configuration)
+6. [OpenMRS Configuration For OpenCR](#openmrs-configuration-for-opencr)
     1. [Global properties](#global-properties)
     2. [Logging](#logging)
 7. [Initial Loading Of Existing Patients](#initial-loading-of-existing-patients)
@@ -33,7 +33,10 @@ TODO
 - You have a patient identifier type used to capture NIDs and that every patient has been assigned an NID
 - You have a running instance of OpenCR
 - You have created a client certificate for the OpenMRS instance(Central) where the module will be deployed, the 
-  certificate will be required to communicate with OpenCR.
+  certificate will be required in case you chose to integrate with OpenCR.
+
+**NOTE**
+The module can be configured to integrate with SanteMPI or OpenCR via a global property.
 
 ### OpenCR Installation
 [OpenCR](https://intrahealth.github.io/client-registry/) is the master patient(client registry) implementation we are
@@ -52,7 +55,7 @@ using for this integration, the steps below are based on [system admin documenta
 **IMPORTANT**
 - For security reasons, **DO NOT** expose the OpenCR instance on the public internet
 
-### Setting Up Certificates
+### Setting Up OpenCR Certificates
 - Generate OpenCR server certificates and a client certificate for OpenMRS instance using [this guide](https://github.com/intrahealth/client-registry/tree/master/server/serverCertificates) 
 and please keep note of the locations of the generated files, they will be needed in later steps.
 - Copy the generated OpenCR server certificates to the directory containing the `docker-compose.prod.yml` file.   
@@ -88,7 +91,7 @@ Open the `config_production.json` and make the following changes,
   fhir server to store all records pushed to OpenCR.
 - It's also highly recommended to backup the debezium offset and history files daily.
 
-#### Patient Matching Configuration
+#### OpenCR Patient Matching Configuration
 The production docker compose template comes with a built-in patient matching configuration defined in the
 `decisionRule.json` file with the following rules,
 - **Rule 1**: Any 2 or more patients with the same NID, gender, date of birth, given and family name should be auto
@@ -113,11 +116,12 @@ mvn clean install
 ```
 Take the generated .omod file in the `omod/target` folder and install it in the central OpenMRS instance
 
-### OpenMRS Configuration
+### OpenMRS Configuration For OpenCR
 Import the OpenCR server certificate into the JVM's trust store for the OpenMRS instance using the following steps,
-- Find the OpenCR public key file that you generated under [Setting Up Certificates](#setting-up-certificates) section.
-  Alternatively, you can fetch the OpenCR server certificate by running the command below which saves the certificate to 
-  a file named `opencr_server.pem` where {OPENCR_HOST} and {OPENCR_PORT} are placeholders for OpenCR host and port,
+- Find the OpenCR public key file that you generated under [Setting Up OpenCR Certificates](#setting-up-opencr-certificates) 
+  section. Alternatively, you can fetch the OpenCR server certificate by running the command below which saves the 
+  certificate to a file named `opencr_server.pem` where {OPENCR_HOST} and {OPENCR_PORT} are placeholders for OpenCR host 
+  and port,
     ```
     echo "Q" | openssl s_client -connect {OPENCR_HOST}:{OPENCR_PORT} | openssl x509 > opencr_server.pem
     ```
