@@ -17,6 +17,7 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE_STR;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE_UUID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_HEALTH_FACILITY_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_ID_TYPE_SYSTEM_MAP;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_MESSAGE_HEADER_EVENT_URI;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_MESSAGE_HEADER_FOCUS_REFERENCE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_UUID_SYSTEM;
@@ -217,6 +218,8 @@ public class FhirUtils {
 		final String query = getAll ? NAME_QUERY : NAME_QUERY + " LIMIT 1";
 		List<List<Object>> nameRows = executeQuery(query.replace(ID_PLACEHOLDER, personId));
 		List<Map<String, Object>> names = new ArrayList();
+		String mpiSystem = MpiUtils.getGlobalPropertyValue(GP_MPI_SYSTEM);
+		
 		boolean foundPreferred = false;
 		for (List<Object> nameRow : nameRows) {
 			Map<String, Object> nameRes = new HashMap();
@@ -226,15 +229,20 @@ public class FhirUtils {
 			List<Object> givenNames = new ArrayList(2);
 			givenNames.add(nameRow.get(1));
 			givenNames.add(nameRow.get(2));
-
-			// Workaround because of treatments that sante has with given and middle names in match feature
-			List<String> convertedGivenNames = givenNames.stream().map(Object::toString).collect(Collectors.toList());
-			String joinedNames = String.join(" ", convertedGivenNames);
-			List<Object> namesToMpi = new ArrayList(2);
-			namesToMpi.add(joinedNames);
-			// Workaround because of treatments that sante has with given and middle names in match feature
-
-			nameRes.put(MpiConstants.FIELD_GIVEN, namesToMpi);
+			
+			if (!StringUtils.isEmpty(mpiSystem) && mpiSystem.equals(MpiSystemType.SANTEMPI.toString())) {
+				
+				// Workaround because of treatments that sante has with given and middle names in match feature
+				List<String> convertedGivenNames = givenNames.stream().map(Object::toString).collect(Collectors.toList());
+				String joinedNames = String.join(" ", convertedGivenNames);
+				List<Object> namesToMpi = new ArrayList(2);
+				namesToMpi.add(joinedNames);
+				// Workaround because of treatments that sante has with given and middle names in match feature
+				nameRes.put(MpiConstants.FIELD_GIVEN, namesToMpi);
+			} else {
+				nameRes.put(MpiConstants.FIELD_GIVEN, givenNames);
+			}
+			
 			nameRes.put(MpiConstants.FIELD_FAMILY, nameRow.get(3));
 			//TODO Add family name suffix and degree as suffix fields
 			
