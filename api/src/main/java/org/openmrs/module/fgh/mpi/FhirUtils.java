@@ -1,6 +1,5 @@
 package org.openmrs.module.fgh.mpi;
 
-import static java.util.Collections.singletonList;
 import static org.openmrs.module.fgh.mpi.MpiConstants.DATETIME_FORMATTER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ADDRESS;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_END;
@@ -27,6 +26,7 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.NAME;
 import static org.openmrs.module.fgh.mpi.MpiConstants.UUID_PREFIX;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.ID_PLACEHOLDER;
 import static org.openmrs.module.fgh.mpi.MpiUtils.executeQuery;
+import static java.util.Collections.singletonList;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -41,10 +41,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-
 import org.apache.commons.lang3.StringUtils;
 import org.openmrs.Location;
 import org.openmrs.Patient;
@@ -226,8 +226,15 @@ public class FhirUtils {
 			List<Object> givenNames = new ArrayList(2);
 			givenNames.add(nameRow.get(1));
 			givenNames.add(nameRow.get(2));
-			
-			nameRes.put(MpiConstants.FIELD_GIVEN, givenNames);
+
+			// Workaround because of treatments that sante has with given and middle names in match feature
+			List<String> convertedGivenNames = givenNames.stream().map(Object::toString).collect(Collectors.toList());
+			String joinedNames = String.join(" ", convertedGivenNames);
+			List<Object> namesToMpi = new ArrayList(2);
+			namesToMpi.add(joinedNames);
+			// Workaround because of treatments that sante has with given and middle names in match feature
+
+			nameRes.put(MpiConstants.FIELD_GIVEN, namesToMpi);
 			nameRes.put(MpiConstants.FIELD_FAMILY, nameRow.get(3));
 			//TODO Add family name suffix and degree as suffix fields
 			
