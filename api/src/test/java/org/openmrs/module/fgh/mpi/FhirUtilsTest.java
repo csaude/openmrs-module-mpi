@@ -672,7 +672,7 @@ public class FhirUtilsTest {
 	}
 	
 	@Test
-	public void buildPatient_shouldJoinGivenAndMiddleNameForOpenCR() {
+	public void buildPatient_shouldNotJoinGivenAndMiddleNameForOpenCR() {
 		when(MpiUtils.getGlobalPropertyValue(GP_MPI_SYSTEM)).thenReturn(MpiSystemType.OPENCR.toString());
 		List<Object> personDetails = asList(null, null, false, null, null, false);
 		final String patientId = "1";
