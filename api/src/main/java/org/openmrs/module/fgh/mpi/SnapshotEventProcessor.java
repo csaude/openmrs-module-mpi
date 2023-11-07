@@ -19,7 +19,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang3.time.DurationFormatUtils;
-import org.apache.kafka.common.errors.ApiException;
 import org.openmrs.api.APIException;
 import org.openmrs.module.debezium.DatabaseEvent;
 import org.openmrs.module.debezium.Utils;
@@ -63,7 +62,7 @@ public class SnapshotEventProcessor extends BaseEventProcessor {
 			mpiContext = MpiContext.initIfNecessary();
 		}
 		catch (Exception e) {
-			throw new ApiException(e);
+			throw new APIException(e);
 		}
 		
 		if (start == null) {

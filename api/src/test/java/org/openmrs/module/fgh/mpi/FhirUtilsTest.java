@@ -24,6 +24,7 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_GENDER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_GIVEN;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_NAME;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_FAMILY;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_PREFIX;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_START;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_SYSTEM;
@@ -35,6 +36,7 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_OTHER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GENDER_UNKNOWN;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_HEALTH_FACILITY_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_ID_TYPE_SYSTEM_MAP;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_PHONE_HOME;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_PHONE_MOBILE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_MESSAGE_HEADER_EVENT_URI;
@@ -645,4 +647,50 @@ public class FhirUtilsTest {
 		Mockito.verifyZeroInteractions(mockMpiService);
 	}
 	
+	@Test
+	public void buildPatient_shouldJoinGivenAndMiddleNameForSante() {
+		when(MpiUtils.getGlobalPropertyValue(GP_MPI_SYSTEM)).thenReturn(MpiSystemType.SANTEMPI.toString());
+		List<Object> personDetails = asList(null, null, false, null, null, false);
+		final String patientId = "1";
+		final String givenName = "John";
+		final String middleName = "Deep";
+		final String familyName = "Doe";
+		
+		List<List<Object>> ids = asList(asList(null, givenName, middleName, familyName, null));
+		when(executeQuery(NAME_QUERY.replace(ID_PLACEHOLDER, patientId))).thenReturn(ids);
+		Map<String, Object> mpiPatient = singletonMap(FIELD_NAME, asList(null, null, null));
+		
+		Map<String, Object> res = FhirUtils.buildPatient(patientId, false, personDetails, mpiPatient);
+		
+		List<Object> expectedGivenNames = singletonList(String.join(" ", asList(givenName, middleName)));
+		
+		List names = (List) res.get(FIELD_NAME);
+		
+		assertEquals(3, names.size());
+		assertEquals(expectedGivenNames, ((Map) names.get(0)).get(FIELD_GIVEN));
+		assertEquals(familyName, ((Map) names.get(0)).get(FIELD_FAMILY));
+	}
+	
+	@Test
+	public void buildPatient_shouldNotJoinGivenAndMiddleNameForOpenCR() {
+		when(MpiUtils.getGlobalPropertyValue(GP_MPI_SYSTEM)).thenReturn(MpiSystemType.OPENCR.toString());
+		List<Object> personDetails = asList(null, null, false, null, null, false);
+		final String patientId = "1";
+		final String givenName = "John";
+		final String middleName = "Deep";
+		final String familyName = "Doe";
+		
+		List<List<Object>> ids = asList(asList(null, givenName, middleName, familyName, null));
+		when(executeQuery(NAME_QUERY.replace(ID_PLACEHOLDER, patientId))).thenReturn(ids);
+		Map<String, Object> mpiPatient = singletonMap(FIELD_NAME, asList(null, null, null));
+		
+		Map<String, Object> res = FhirUtils.buildPatient(patientId, false, personDetails, mpiPatient);
+		
+		List names = (List) res.get(FIELD_NAME);
+		List expectedNames = asList(givenName, middleName);
+		
+		assertEquals(3, names.size());
+		assertEquals(expectedNames, ((Map) names.get(0)).get(FIELD_GIVEN));
+		assertEquals(familyName, ((Map) names.get(0)).get(FIELD_FAMILY));
+	}
 }

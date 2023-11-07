@@ -1,6 +1,5 @@
 package org.openmrs.module.fgh.mpi;
 
-import static java.util.Collections.singletonList;
 import static org.openmrs.module.fgh.mpi.MpiConstants.DATETIME_FORMATTER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ADDRESS;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_END;
@@ -18,6 +17,7 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE_STR;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_VALUE_UUID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_HEALTH_FACILITY_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_ID_TYPE_SYSTEM_MAP;
+import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_MESSAGE_HEADER_EVENT_URI;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_MESSAGE_HEADER_FOCUS_REFERENCE;
 import static org.openmrs.module.fgh.mpi.MpiConstants.GP_UUID_SYSTEM;
@@ -27,6 +27,7 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.NAME;
 import static org.openmrs.module.fgh.mpi.MpiConstants.UUID_PREFIX;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.ID_PLACEHOLDER;
 import static org.openmrs.module.fgh.mpi.MpiUtils.executeQuery;
+import static java.util.Collections.singletonList;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -41,10 +42,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-
 import org.apache.commons.lang3.StringUtils;
 import org.openmrs.Location;
 import org.openmrs.Patient;
@@ -217,6 +218,8 @@ public class FhirUtils {
 		final String query = getAll ? NAME_QUERY : NAME_QUERY + " LIMIT 1";
 		List<List<Object>> nameRows = executeQuery(query.replace(ID_PLACEHOLDER, personId));
 		List<Map<String, Object>> names = new ArrayList();
+		String mpiSystem = MpiUtils.getGlobalPropertyValue(GP_MPI_SYSTEM);
+		
 		boolean foundPreferred = false;
 		for (List<Object> nameRow : nameRows) {
 			Map<String, Object> nameRes = new HashMap();
@@ -227,7 +230,19 @@ public class FhirUtils {
 			givenNames.add(nameRow.get(1));
 			givenNames.add(nameRow.get(2));
 			
-			nameRes.put(MpiConstants.FIELD_GIVEN, givenNames);
+			if (!StringUtils.isEmpty(mpiSystem) && mpiSystem.equals(MpiSystemType.SANTEMPI.toString())) {
+				
+				// Workaround because of treatments that sante has with given and middle names in match feature
+				List<String> convertedGivenNames = givenNames.stream().map(Object::toString).collect(Collectors.toList());
+				String joinedNames = String.join(" ", convertedGivenNames);
+				List<Object> namesToMpi = new ArrayList(2);
+				namesToMpi.add(joinedNames);
+				// Workaround because of treatments that sante has with given and middle names in match feature
+				nameRes.put(MpiConstants.FIELD_GIVEN, namesToMpi);
+			} else {
+				nameRes.put(MpiConstants.FIELD_GIVEN, givenNames);
+			}
+			
 			nameRes.put(MpiConstants.FIELD_FAMILY, nameRow.get(3));
 			//TODO Add family name suffix and degree as suffix fields
 			
