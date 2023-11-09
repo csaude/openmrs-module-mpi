@@ -10,6 +10,7 @@ jobs:
         name: Clone debezium module repo
         with:
           repository: csaude/openmrs-module-debezium
+          path: openmrs-module-debezium
       - uses: actions/checkout@v4
         name: Clone MPI module repo
       - name: Setup JDK 8
