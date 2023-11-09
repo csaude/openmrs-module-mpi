@@ -18,7 +18,7 @@ jobs:
           path: openmrs-module-debezium
       - name: Install debezium module
         working-directory: ./openmrs-module-debezium
-        run: pwd && ls && mvn install
+        run: mvn install
       - uses: actions/checkout@v4
         name: Clone MPI module repo
       - name: Build and test with maven
