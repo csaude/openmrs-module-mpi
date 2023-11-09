@@ -10,7 +10,7 @@ jobs:
         name: Clone debezium module repo
         with:
           repository: csaude/openmrs-module-debezium
-          path: openmrs-module-debezium
+          path: ./openmrs-module-debezium
       - uses: actions/checkout@v4
         name: Clone MPI module repo
       - name: Setup JDK 8
@@ -19,7 +19,7 @@ jobs:
           java-version: 8
           distribution: temurin
       - name: Install debezium module
-        working-directory: openmrs-module-debezium
-        run: mvn install
+        working-directory: ./openmrs-module-debezium
+        run: pwd && mvn install
       - name: Build and test with maven
         run: mvn test
