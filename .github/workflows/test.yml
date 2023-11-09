@@ -6,19 +6,19 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        name: Clone debezium module repo
-        with:
-          repository: csaude/openmrs-module-debezium
-          path: openmrs-module-debezium
-      - uses: actions/checkout@v4
-        name: Clone MPI module repo
       - name: Setup JDK 8
         uses: actions/setup-java@v3
         with:
           java-version: 8
           distribution: temurin
+      - uses: actions/checkout@v4
+        name: Clone debezium module repo
+        with:
+          repository: csaude/openmrs-module-debezium
+          path: openmrs-module-debezium
       - name: Install debezium module
         run: pwd && ls && mvn install
+      - uses: actions/checkout@v4
+        name: Clone MPI module repo
       - name: Build and test with maven
         run: mvn test
