@@ -19,7 +19,6 @@ jobs:
           java-version: 8
           distribution: temurin
       - name: Install debezium module
-        working-directory: ./openmrs-module-debezium
-        run: pwd && mvn install
+        run: pwd && ls && mvn install
       - name: Build and test with maven
         run: mvn test
