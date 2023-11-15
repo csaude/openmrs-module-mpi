@@ -227,8 +227,13 @@ public class FhirUtils {
 			nameRes.put(MpiConstants.FIELD_PREFIX, nameRow.get(0));
 			
 			List<Object> givenNames = new ArrayList(2);
-			givenNames.add(nameRow.get(1));
-			givenNames.add(nameRow.get(2));
+			if (nameRow.get(1) != null && !nameRow.get(1).toString().isEmpty()) {
+				givenNames.add(nameRow.get(1));
+			}
+			
+			if (nameRow.get(2) != null && !nameRow.get(2).toString().isEmpty()) {
+				givenNames.add(nameRow.get(2));
+			}
 			
 			if (!StringUtils.isEmpty(mpiSystem) && mpiSystem.equals(MpiSystemType.SANTEMPI.toString())) {
 				
