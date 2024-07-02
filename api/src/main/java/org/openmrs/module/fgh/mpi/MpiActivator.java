@@ -12,10 +12,18 @@ package org.openmrs.module.fgh.mpi;
 import static org.openmrs.util.OpenmrsUtil.getApplicationDataDirectory;
 
 import java.io.File;
-import java.io.IOException;
 
-import org.apache.log4j.DailyRollingFileAppender;
-import org.apache.log4j.PatternLayout;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.appender.RollingFileAppender;
+import org.apache.logging.log4j.core.appender.rolling.CompositeTriggeringPolicy;
+import org.apache.logging.log4j.core.appender.rolling.SizeBasedTriggeringPolicy;
+import org.apache.logging.log4j.core.appender.rolling.TimeBasedTriggeringPolicy;
+import org.apache.logging.log4j.core.appender.rolling.TriggeringPolicy;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.openmrs.api.APIException;
 import org.openmrs.module.BaseModuleActivator;
 import org.slf4j.Logger;
@@ -35,7 +43,7 @@ public class MpiActivator extends BaseModuleActivator {
 	
 	protected static final String LAYOUT = "%-5p %t - %C{1}.%M(%L) |%d{ISO8601}| %m%n";
 	
-	protected static final String LOG_FILE_DATE_FORMAT = "'.'yyyy-MM-dd";
+	protected static final String LOG_FILE_PATTERN = "mpi-%d{yyyy-MM-dd}.log";
 	
 	/**
 	 * @see BaseModuleActivator#started()
@@ -45,17 +53,27 @@ public class MpiActivator extends BaseModuleActivator {
 		log.info("MPI module started");
 		log.info("Adding MPI log file to log4j configuration");
 		
-		File mpiLogFile = MpiUtils.createPath(getApplicationDataDirectory(), DIR_MPI, DIR_LOGS, LOG_FILE).toFile();
-		
 		try {
-			DailyRollingFileAppender mpiAppender = new DailyRollingFileAppender(new PatternLayout(LAYOUT),
-			        mpiLogFile.getAbsolutePath(), LOG_FILE_DATE_FORMAT);
-			mpiAppender.setName(MPI_APPENDER_NAME);
-			org.apache.log4j.Logger mpiLogger = getMpiLogger();
-			mpiLogger.setAdditivity(false);
-			mpiLogger.addAppender(mpiAppender);
+            File mpiLogFile = MpiUtils.createPath(getApplicationDataDirectory(), DIR_MPI, DIR_LOGS, LOG_FILE).toFile();
+            String logFileName = mpiLogFile.getAbsolutePath();
+            LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+			Configuration config = ctx.getConfiguration();
+			PatternLayout layout = PatternLayout.newBuilder().withPattern(LAYOUT).build();
+			TriggeringPolicy timePolicy = TimeBasedTriggeringPolicy.newBuilder().build();
+			TriggeringPolicy sizePolicy = SizeBasedTriggeringPolicy.createPolicy("10MB");
+			TriggeringPolicy policy = CompositeTriggeringPolicy.createPolicy(timePolicy, sizePolicy);
+			RollingFileAppender mpiAppender = RollingFileAppender.newBuilder().setConfiguration(config)
+			        .setName(MPI_APPENDER_NAME).withFileName(logFileName).setLayout(layout).withAppend(true)
+			        .withFilePattern(LOG_FILE_PATTERN).withPolicy(policy).build();
+			final String name = getClass().getPackage().getName();
+			LoggerConfig cfg = LoggerConfig.newBuilder().withConfig(config).withLoggerName(name).withAdditivity(true)
+			        .withLevel(Level.INFO).build();
+			config.addLogger(MPI_APPENDER_NAME, cfg);
+			mpiAppender.start();
+			config.addAppender(mpiAppender);
+			ctx.updateLoggers();
 		}
-		catch (IOException e) {
+		catch (Exception e) {
 			throw new APIException(e);
 		}
 		
