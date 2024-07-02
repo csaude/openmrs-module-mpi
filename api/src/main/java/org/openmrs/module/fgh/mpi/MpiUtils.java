@@ -25,13 +25,13 @@ import javax.sql.DataSource;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.SessionFactory;
-import org.hibernate.internal.SessionFactoryImpl;
 import org.openmrs.EncounterType;
 import org.openmrs.api.APIException;
 import org.openmrs.api.context.Context;
 import org.openmrs.api.db.DAOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.orm.hibernate5.SessionFactoryUtils;
 
 /**
  * Contains utility methods
@@ -195,8 +195,7 @@ public class MpiUtils {
 	 * @return javax.sql.DataSource object
 	 */
 	private static DataSource getDataSource() {
-		SessionFactory sf = Context.getRegisteredComponents(SessionFactory.class).get(0);
-		return ((SessionFactoryImpl) sf).getConnectionProvider().unwrap(DataSource.class);
+		return SessionFactoryUtils.getDataSource(Context.getRegisteredComponents(SessionFactory.class).get(0));
 	}
 	
 	public static HttpURLConnection openConnection(String url) throws IOException {
