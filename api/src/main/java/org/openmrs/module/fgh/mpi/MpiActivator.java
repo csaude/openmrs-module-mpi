@@ -13,7 +13,6 @@ import static org.openmrs.util.OpenmrsUtil.getApplicationDataDirectory;
 
 import java.io.File;
 
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.appender.RollingFileAppender;
@@ -21,6 +20,7 @@ import org.apache.logging.log4j.core.appender.rolling.CompositeTriggeringPolicy;
 import org.apache.logging.log4j.core.appender.rolling.SizeBasedTriggeringPolicy;
 import org.apache.logging.log4j.core.appender.rolling.TimeBasedTriggeringPolicy;
 import org.apache.logging.log4j.core.appender.rolling.TriggeringPolicy;
+import org.apache.logging.log4j.core.config.AppenderRef;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.layout.PatternLayout;
@@ -39,11 +39,15 @@ public class MpiActivator extends BaseModuleActivator {
 	
 	protected static final String DIR_LOGS = "logs";
 	
-	protected static final String LOG_FILE = "mpi.log";
+	protected static final String LOG_FILE_NAME = "mpi";
+	
+	protected static final String LOG_FILE_EXT = "log";
+	
+	protected static final String LOG_FILE = LOG_FILE_NAME + "." + LOG_FILE_EXT;
 	
 	protected static final String LAYOUT = "%-5p %t - %C{1}.%M(%L) |%d{ISO8601}| %m%n";
 	
-	protected static final String LOG_FILE_PATTERN = "mpi-%d{yyyy-MM-dd}.log";
+	protected static final String LOG_FILE_PATTERN = LOG_FILE_NAME + "-%d{yyyy-MM-dd}-%i." + LOG_FILE_EXT;
 	
 	/**
 	 * @see BaseModuleActivator#started()
@@ -54,24 +58,26 @@ public class MpiActivator extends BaseModuleActivator {
 		log.info("Adding MPI log file to log4j configuration");
 		
 		try {
-            File mpiLogFile = MpiUtils.createPath(getApplicationDataDirectory(), DIR_MPI, DIR_LOGS, LOG_FILE).toFile();
-            String logFileName = mpiLogFile.getAbsolutePath();
-            LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-			Configuration config = ctx.getConfiguration();
+			File mpiLogFile = MpiUtils.createPath(getApplicationDataDirectory(), DIR_MPI, DIR_LOGS, LOG_FILE).toFile();
+			String logFileName = mpiLogFile.getAbsolutePath();
+			String logFilePattern = MpiUtils.createPath(mpiLogFile.getParent(), LOG_FILE_PATTERN).toFile().getAbsolutePath();
+			LoggerContext context = (LoggerContext) LogManager.getContext(false);
+			Configuration cfg = context.getConfiguration();
 			PatternLayout layout = PatternLayout.newBuilder().withPattern(LAYOUT).build();
 			TriggeringPolicy timePolicy = TimeBasedTriggeringPolicy.newBuilder().build();
-			TriggeringPolicy sizePolicy = SizeBasedTriggeringPolicy.createPolicy("10MB");
+			TriggeringPolicy sizePolicy = SizeBasedTriggeringPolicy.createPolicy("20MB");
 			TriggeringPolicy policy = CompositeTriggeringPolicy.createPolicy(timePolicy, sizePolicy);
-			RollingFileAppender mpiAppender = RollingFileAppender.newBuilder().setConfiguration(config)
+			RollingFileAppender mpiAppender = RollingFileAppender.newBuilder().setConfiguration(cfg)
 			        .setName(MPI_APPENDER_NAME).withFileName(logFileName).setLayout(layout).withAppend(true)
-			        .withFilePattern(LOG_FILE_PATTERN).withPolicy(policy).build();
-			final String name = getClass().getPackage().getName();
-			LoggerConfig cfg = LoggerConfig.newBuilder().withConfig(config).withLoggerName(name).withAdditivity(true)
-			        .withLevel(Level.INFO).build();
-			config.addLogger(MPI_APPENDER_NAME, cfg);
+			        .withFilePattern(logFilePattern).withPolicy(policy).build();
+			AppenderRef appenderRef = AppenderRef.createAppenderRef(MPI_APPENDER_NAME, null, null);
+			LoggerConfig loggerCfg = LoggerConfig.newBuilder().withConfig(cfg).withLoggerName(getMpiLoggerName())
+			        .withAdditivity(true).withRefs(new AppenderRef[] { appenderRef }).build();
+			loggerCfg.addAppender(mpiAppender, null, null);
+			cfg.addLogger(getMpiLoggerName(), loggerCfg);
 			mpiAppender.start();
-			config.addAppender(mpiAppender);
-			ctx.updateLoggers();
+			cfg.addAppender(mpiAppender);
+			context.updateLoggers();
 		}
 		catch (Exception e) {
 			throw new APIException(e);
@@ -95,6 +101,10 @@ public class MpiActivator extends BaseModuleActivator {
 	
 	protected org.apache.log4j.Logger getMpiLogger() {
 		return org.apache.log4j.Logger.getLogger(getClass().getPackage().getName());
+	}
+	
+	protected String getMpiLoggerName() {
+		return getClass().getPackage().getName();
 	}
 	
 }
