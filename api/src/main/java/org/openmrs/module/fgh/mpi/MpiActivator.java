@@ -65,7 +65,8 @@ public class MpiActivator extends BaseModuleActivator {
 			Configuration cfg = context.getConfiguration();
 			PatternLayout layout = PatternLayout.newBuilder().withPattern(LAYOUT).build();
 			TriggeringPolicy timePolicy = TimeBasedTriggeringPolicy.newBuilder().build();
-			TriggeringPolicy sizePolicy = SizeBasedTriggeringPolicy.createPolicy("20MB");
+			//TODO Make max file size configurable
+			TriggeringPolicy sizePolicy = SizeBasedTriggeringPolicy.createPolicy("50MB");
 			TriggeringPolicy policy = CompositeTriggeringPolicy.createPolicy(timePolicy, sizePolicy);
 			RollingFileAppender mpiAppender = RollingFileAppender.newBuilder().setConfiguration(cfg)
 			        .setName(MPI_APPENDER_NAME).withFileName(logFileName).setLayout(layout).withAppend(true)
@@ -93,14 +94,12 @@ public class MpiActivator extends BaseModuleActivator {
 		log.info("MPI module stopped");
 		log.info("Removing MPI log file from log4j configuration");
 		
-		org.apache.log4j.Logger mpiLogger = getMpiLogger();
-		if (mpiLogger.getAppender(MPI_APPENDER_NAME) != null) {
-			mpiLogger.removeAppender(MPI_APPENDER_NAME);
-		}
-	}
-	
-	protected org.apache.log4j.Logger getMpiLogger() {
-		return org.apache.log4j.Logger.getLogger(getClass().getPackage().getName());
+		LoggerContext context = (LoggerContext) LogManager.getContext(false);
+		Configuration cfg = context.getConfiguration();
+		cfg.removeLogger(getMpiLoggerName());
+		cfg.getAppender(MPI_APPENDER_NAME).stop();
+		cfg.getAppenders().remove(MPI_APPENDER_NAME);
+		context.updateLoggers();
 	}
 	
 	protected String getMpiLoggerName() {
