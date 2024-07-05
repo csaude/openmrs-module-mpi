@@ -64,38 +64,38 @@ public class BaseEventProcessorTest {
 	
 	@After
 	public void tearDown() {
-		PowerMockito.verifyStatic();
+		PowerMockito.verifyStatic(Context.class);
 		Context.openSession();
-		PowerMockito.verifyStatic();
+		PowerMockito.verifyStatic(Context.class);
 		Context.addProxyPrivilege(PrivilegeConstants.SQL_LEVEL_ACCESS);
-		PowerMockito.verifyStatic();
+		PowerMockito.verifyStatic(Context.class);
 		Context.addProxyPrivilege(PrivilegeConstants.GET_PERSON_ATTRIBUTE_TYPES);
-		PowerMockito.verifyStatic();
+		PowerMockito.verifyStatic(Context.class);
 		Context.addProxyPrivilege(PrivilegeConstants.GET_IDENTIFIER_TYPES);
-		PowerMockito.verifyStatic();
+		PowerMockito.verifyStatic(Context.class);
 		Context.addProxyPrivilege(PrivilegeConstants.GET_LOCATIONS);
-		PowerMockito.verifyStatic();
+		PowerMockito.verifyStatic(Context.class);
 		Context.addProxyPrivilege(PrivilegeConstants.GET_RELATIONSHIP_TYPES);
-		PowerMockito.verifyStatic();
+		PowerMockito.verifyStatic(Context.class);
 		Context.addProxyPrivilege(PrivilegeConstants.GET_PATIENTS);
-		PowerMockito.verifyStatic();
+		PowerMockito.verifyStatic(Context.class);
 		Context.addProxyPrivilege(PrivilegeConstants.GET_ENCOUNTER_TYPES);
 		
-		PowerMockito.verifyStatic();
+		PowerMockito.verifyStatic(Context.class);
 		Context.removeProxyPrivilege(PrivilegeConstants.SQL_LEVEL_ACCESS);
-		PowerMockito.verifyStatic();
+		PowerMockito.verifyStatic(Context.class);
 		Context.removeProxyPrivilege(PrivilegeConstants.GET_PERSON_ATTRIBUTE_TYPES);
-		PowerMockito.verifyStatic();
+		PowerMockito.verifyStatic(Context.class);
 		Context.removeProxyPrivilege(PrivilegeConstants.GET_IDENTIFIER_TYPES);
-		PowerMockito.verifyStatic();
+		PowerMockito.verifyStatic(Context.class);
 		Context.removeProxyPrivilege(PrivilegeConstants.GET_LOCATIONS);
-		PowerMockito.verifyStatic();
+		PowerMockito.verifyStatic(Context.class);
 		Context.removeProxyPrivilege(PrivilegeConstants.GET_RELATIONSHIP_TYPES);
-		PowerMockito.verifyStatic();
+		PowerMockito.verifyStatic(Context.class);
 		Context.removeProxyPrivilege(PrivilegeConstants.GET_PATIENTS);
-		PowerMockito.verifyStatic();
+		PowerMockito.verifyStatic(Context.class);
 		Context.removeProxyPrivilege(PrivilegeConstants.GET_ENCOUNTER_TYPES);
-		PowerMockito.verifyStatic();
+		PowerMockito.verifyStatic(Context.class);
 		Context.closeSession();
 	}
 	

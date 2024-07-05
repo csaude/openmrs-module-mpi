@@ -1,5 +1,10 @@
 package org.openmrs.module.fgh.mpi;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Matchers.anyBoolean;
@@ -20,22 +25,15 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_RELATIONSHIP;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.ID_PLACEHOLDER;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.PATIENT_QUERY;
 import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.PERSON_QUERY;
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentMatcher;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.openmrs.module.debezium.DatabaseEvent;
@@ -44,6 +42,8 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.reflect.Whitebox;
 import org.slf4j.Logger;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({ MpiUtils.class, FhirUtils.class })
@@ -238,27 +238,23 @@ public class MpiIntegrationProcessorTest {
 		
 		processor.process(1, new DatabaseEvent(null, "patient", UPDATE, null, null, null));
 		
-		Mockito.verify(mockMpiHttpClient).submitPatient(Matchers.argThat(new ArgumentMatcher<String>() {
-			
-			@Override
-			public boolean matches(Object json) {
-				try {
-					Map updatedContact1 = new HashMap();
-					updatedContact1.put(FIELD_ID, relationshipUuid1);
-					updatedContact1.put(FIELD_RELATIONSHIP, null);
-					Map updatedContact2 = new HashMap();
-					updatedContact2.put(FIELD_ID, relationshipUuid2);
-					updatedContact2.put(FIELD_RELATIONSHIP, null);
-					Map expectedMpiPatient = new HashMap();
-					expectedMpiPatient.put(FIELD_ACTIVE, true);
-					expectedMpiPatient.put(FIELD_CONTACT,
-					    asList(updatedContact1, singletonMap(FIELD_RELATIONSHIP, emptyMap()), updatedContact2));
-					
-					return expectedMpiPatient.equals(new ObjectMapper().readValue(json.toString(), Map.class));
-				}
-				catch (Exception e) {
-					throw new RuntimeException(e);
-				}
+		Mockito.verify(mockMpiHttpClient).submitPatient(ArgumentMatchers.argThat(json -> {
+			try {
+				Map updatedContact1 = new HashMap();
+				updatedContact1.put(FIELD_ID, relationshipUuid1);
+				updatedContact1.put(FIELD_RELATIONSHIP, null);
+				Map updatedContact2 = new HashMap();
+				updatedContact2.put(FIELD_ID, relationshipUuid2);
+				updatedContact2.put(FIELD_RELATIONSHIP, null);
+				Map expectedMpiPatient = new HashMap();
+				expectedMpiPatient.put(FIELD_ACTIVE, true);
+				expectedMpiPatient.put(FIELD_CONTACT,
+				    asList(updatedContact1, singletonMap(FIELD_RELATIONSHIP, emptyMap()), updatedContact2));
+				
+				return expectedMpiPatient.equals(new ObjectMapper().readValue(json.toString(), Map.class));
+			}
+			catch (Exception e) {
+				throw new RuntimeException(e);
 			}
 		}));
 	}
@@ -330,26 +326,22 @@ public class MpiIntegrationProcessorTest {
 		
 		processor.process(1, new DatabaseEvent(null, "patient", UPDATE, null, null, null));
 		
-		Mockito.verify(mockMpiHttpClient).submitPatient(Matchers.argThat(new ArgumentMatcher<String>() {
-			
-			@Override
-			public boolean matches(Object json) {
-				try {
-					Map updatedContact1 = new HashMap();
-					updatedContact1.put(FIELD_ID, relationshipUuid1);
-					updatedContact1.put(FIELD_RELATIONSHIP, null);
-					Map updatedContact2 = new HashMap();
-					updatedContact2.put(FIELD_ID, relationshipUuid2);
-					updatedContact2.put(FIELD_RELATIONSHIP, emptyMap());
-					Map expectedMpiPatient = new HashMap();
-					expectedMpiPatient.put(FIELD_ACTIVE, true);
-					expectedMpiPatient.put(FIELD_CONTACT, asList(updatedContact1, updatedContact2));
-					
-					return expectedMpiPatient.equals(new ObjectMapper().readValue(json.toString(), Map.class));
-				}
-				catch (Exception e) {
-					throw new RuntimeException(e);
-				}
+		Mockito.verify(mockMpiHttpClient).submitPatient(ArgumentMatchers.argThat(json -> {
+			try {
+				Map updatedContact1 = new HashMap();
+				updatedContact1.put(FIELD_ID, relationshipUuid1);
+				updatedContact1.put(FIELD_RELATIONSHIP, null);
+				Map updatedContact2 = new HashMap();
+				updatedContact2.put(FIELD_ID, relationshipUuid2);
+				updatedContact2.put(FIELD_RELATIONSHIP, emptyMap());
+				Map expectedMpiPatient = new HashMap();
+				expectedMpiPatient.put(FIELD_ACTIVE, true);
+				expectedMpiPatient.put(FIELD_CONTACT, asList(updatedContact1, updatedContact2));
+				
+				return expectedMpiPatient.equals(new ObjectMapper().readValue(json.toString(), Map.class));
+			}
+			catch (Exception e) {
+				throw new RuntimeException(e);
 			}
 		}));
 	}

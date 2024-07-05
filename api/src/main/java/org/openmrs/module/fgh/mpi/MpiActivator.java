@@ -40,15 +40,11 @@ public class MpiActivator extends BaseModuleActivator {
 	
 	protected static final String DIR_LOGS = "logs";
 	
-	protected static final String LOG_FILE_NAME = "mpi";
-	
-	protected static final String LOG_FILE_EXT = "log";
-	
-	protected static final String LOG_FILE = LOG_FILE_NAME + "." + LOG_FILE_EXT;
+	protected static final String LOG_FILE = "mpi.log";
 	
 	protected static final String LAYOUT = "%-5p %t - %C{1}.%M(%L) |%d{ISO8601}| %m%n";
 	
-	protected static final String LOG_FILE_PATTERN = LOG_FILE_NAME + "-%d{yyyy-MM-dd}-%i." + LOG_FILE_EXT;
+	protected static final String LOG_FILE_PATTERN = LOG_FILE + ".%d{yyyy-MM-dd}-%i";
 	
 	/**
 	 * @see BaseModuleActivator#started()
