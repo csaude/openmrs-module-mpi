@@ -13,6 +13,7 @@ import static org.openmrs.util.OpenmrsUtil.getApplicationDataDirectory;
 
 import java.io.File;
 
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.appender.RollingFileAppender;
@@ -66,14 +67,14 @@ public class MpiActivator extends BaseModuleActivator {
 			PatternLayout layout = PatternLayout.newBuilder().withPattern(LAYOUT).build();
 			TriggeringPolicy timePolicy = TimeBasedTriggeringPolicy.newBuilder().build();
 			//TODO Make max file size configurable
-			TriggeringPolicy sizePolicy = SizeBasedTriggeringPolicy.createPolicy("50MB");
+			TriggeringPolicy sizePolicy = SizeBasedTriggeringPolicy.createPolicy("50 MB");
 			TriggeringPolicy policy = CompositeTriggeringPolicy.createPolicy(timePolicy, sizePolicy);
 			RollingFileAppender mpiAppender = RollingFileAppender.newBuilder().setConfiguration(cfg)
 			        .setName(MPI_APPENDER_NAME).withFileName(logFileName).setLayout(layout).withAppend(true)
 			        .withFilePattern(logFilePattern).withPolicy(policy).build();
 			AppenderRef appenderRef = AppenderRef.createAppenderRef(MPI_APPENDER_NAME, null, null);
 			LoggerConfig loggerCfg = LoggerConfig.newBuilder().withConfig(cfg).withLoggerName(getMpiLoggerName())
-			        .withAdditivity(true).withRefs(new AppenderRef[] { appenderRef }).build();
+			        .withAdditivity(false).withLevel(Level.INFO).withRefs(new AppenderRef[] { appenderRef }).build();
 			loggerCfg.addAppender(mpiAppender, null, null);
 			cfg.addLogger(getMpiLoggerName(), loggerCfg);
 			mpiAppender.start();
