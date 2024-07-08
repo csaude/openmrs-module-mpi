@@ -12,10 +12,13 @@ import org.junit.runner.RunWith;
 import org.openmrs.api.context.Context;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.core.classloader.annotations.SuppressStaticInitializationFor;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({ Context.class, MpiUtils.class, FhirUtils.class })
+@SuppressStaticInitializationFor({ "org.openmrs.api.context.Context", "org.openmrs.module.fgh.mpi.MpiUtils",
+        "org.openmrs.module.fgh.mpi.FhirUtils" })
 public class TokenInfoTest {
 	
 	private static final String TOKEN_ID = "TOKEN-ID";

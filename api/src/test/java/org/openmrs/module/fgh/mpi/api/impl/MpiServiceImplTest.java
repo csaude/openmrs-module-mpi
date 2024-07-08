@@ -21,11 +21,13 @@ import org.openmrs.Location;
 import org.openmrs.Patient;
 import org.openmrs.module.fgh.mpi.MpiUtils;
 import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(MpiUtils.class)
+@PowerMockIgnore("javax.management.*")
 public class MpiServiceImplTest {
 	
 	private MpiServiceImpl service = new MpiServiceImpl();

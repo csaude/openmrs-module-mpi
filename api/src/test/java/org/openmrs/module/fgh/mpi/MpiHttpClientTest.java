@@ -1,8 +1,12 @@
 package org.openmrs.module.fgh.mpi;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
@@ -23,9 +27,6 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.GP_UUID_SYSTEM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.OPENMRS_UUID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_PARAM;
 import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_VALUE_REF;
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonMap;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -41,6 +42,7 @@ import java.util.Map;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
+
 import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Before;
 import org.junit.Rule;
@@ -54,11 +56,17 @@ import org.openmrs.api.APIException;
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.context.Context;
 import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.core.classloader.annotations.SuppressStaticInitializationFor;
 import org.powermock.modules.junit4.PowerMockRunner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({ Context.class, MpiUtils.class, MpiContext.class, URL.class })
+@PrepareForTest({ Context.class, MpiUtils.class, MpiContext.class, URL.class, LoggerFactory.class })
+@SuppressStaticInitializationFor({"org.openmrs.module.fgh.mpi.MpiContext", ""})
+@PowerMockIgnore("javax.management.*")
 public class MpiHttpClientTest {
 	
 	private MpiHttpClient mpiHttpClient;
@@ -104,10 +112,12 @@ public class MpiHttpClientTest {
 	
 	@Before
 	public void setup() {
+		PowerMockito.mockStatic(LoggerFactory.class);
 		PowerMockito.mockStatic(Context.class);
 		PowerMockito.mockStatic(MpiUtils.class);
 		PowerMockito.mockStatic(MpiContext.class);
 		PowerMockito.mockStatic(URL.class);
+		when(LoggerFactory.getLogger(any(Class.class))).thenReturn(Mockito.mock(Logger.class));
 		when(Context.getAdministrationService()).thenReturn(adminService);
 		when(adminService.getGlobalProperty(GP_AUTHENTICATION_TYPE)).thenReturn(AUTHENTICATION_TYPE.toString());
 		when(adminService.getGlobalProperty(GP_MPI_BASE_URL)).thenReturn(MPI_BASE_URL);

@@ -20,11 +20,11 @@ import static org.openmrs.module.fgh.mpi.MpiConstants.DATETIME_FORMATTER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ADDRESS;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_END;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_EXTENSION;
+import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_FAMILY;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_GENDER;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_GIVEN;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ID;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_NAME;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_FAMILY;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_PREFIX;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_START;
 import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_SYSTEM;
@@ -75,12 +75,14 @@ import org.openmrs.api.PersonService;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.fgh.mpi.api.MpiService;
 import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.reflect.Whitebox;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({ Context.class, MpiUtils.class, MpiContext.class })
+@PowerMockIgnore("javax.management.*")
 public class FhirUtilsTest {
 	
 	@Mock
