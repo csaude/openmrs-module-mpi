@@ -44,7 +44,7 @@
         <javaCompilerVersion>1.8</javaCompilerVersion>
         <openmrsPlatformVersion>2.6.0</openmrsPlatformVersion>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <debeziumVersion>1.0.0-SNAPSHOT</debeziumVersion>
+        <debeziumVersion>1.0.1-SNAPSHOT</debeziumVersion>
         <httpclientVersion>4.5.13</httpclientVersion>
     </properties>
 
