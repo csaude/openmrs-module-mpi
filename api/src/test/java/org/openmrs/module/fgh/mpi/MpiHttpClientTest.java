@@ -65,7 +65,7 @@ import org.slf4j.LoggerFactory;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({ Context.class, MpiUtils.class, MpiContext.class, URL.class, LoggerFactory.class })
-@SuppressStaticInitializationFor({"org.openmrs.module.fgh.mpi.MpiContext", ""})
+@SuppressStaticInitializationFor({ "org.openmrs.module.fgh.mpi.MpiContext", "" })
 @PowerMockIgnore("javax.management.*")
 public class MpiHttpClientTest {
 	
