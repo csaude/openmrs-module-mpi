@@ -36,6 +36,9 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -90,6 +93,8 @@ public class FhirUtils {
 	
 	public static String santeMessageHeaderEventUri;
 	
+	public static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+	
 	/**
 	 * Builds a map of fields and values with patient details that can be serialized as a fhir json
 	 * message. This method looks up the up to date patient details from the DB bypassing any hibernate
@@ -121,7 +126,10 @@ public class FhirUtils {
 			if (StringUtils.isBlank(deathDateStr)) {
 				fhirRes.put(MpiConstants.FIELD_DECEASED, Boolean.valueOf(dead));
 			} else {
-				Date deathDate = Timestamp.valueOf(deathDateStr);
+				log.info("This is death date time " + deathDateStr);
+				LocalDateTime localDateTime = LocalDateTime.parse(deathDateStr);
+				Date deathDate = Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
+				
 				fhirRes.put(MpiConstants.FIELD_DECEASED_DATE, DATETIME_FORMATTER.format(deathDate));
 			}
 		} else {
