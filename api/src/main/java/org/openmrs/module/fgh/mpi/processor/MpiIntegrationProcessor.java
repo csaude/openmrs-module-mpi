@@ -1,18 +1,21 @@
-package org.openmrs.module.fgh.mpi;
+package org.openmrs.module.fgh.mpi.processor;
 
 import static java.lang.Boolean.valueOf;
 import static org.openmrs.module.debezium.DatabaseOperation.CREATE;
 import static org.openmrs.module.debezium.DatabaseOperation.DELETE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ACTIVE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_CONTACT;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_ID;
-import static org.openmrs.module.fgh.mpi.MpiConstants.FIELD_RELATIONSHIP;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.FIELD_ACTIVE;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.FIELD_CONTACT;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.FIELD_ID;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.FIELD_RELATIONSHIP;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import org.openmrs.module.debezium.DatabaseEvent;
+import org.openmrs.module.fgh.mpi.integ.MpiHttpClient;
+import org.openmrs.module.fgh.mpi.utils.FhirUtils;
+import org.openmrs.module.fgh.mpi.utils.MpiUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

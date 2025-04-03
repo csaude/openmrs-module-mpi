@@ -1,4 +1,4 @@
-package org.openmrs.module.fgh.mpi;
+package org.openmrs.module.fgh.mpi.handler;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.openmrs.module.debezium.DatabaseEvent;
+import org.openmrs.module.fgh.mpi.utils.MpiConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

@@ -1,4 +1,4 @@
-package org.openmrs.module.fgh.mpi;
+package org.openmrs.module.fgh.mpi.handler;
 
 import org.openmrs.module.debezium.DatabaseEvent;
 import org.openmrs.module.debezium.DatabaseOperation;

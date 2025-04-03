@@ -1,15 +1,15 @@
-package org.openmrs.module.fgh.mpi;
+package org.openmrs.module.fgh.mpi.integ;
 
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_AUTHENTICATION_TYPE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PASS;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PATH;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_TYPE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_APP_CONTENT_TYPE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_BASE_URL;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_SYSTEM;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_CLIENT_ID;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_CLIENT_SECRET;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_UUID_SYSTEM;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.GP_AUTHENTICATION_TYPE;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.GP_KEYSTORE_PASS;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.GP_KEYSTORE_PATH;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.GP_KEYSTORE_TYPE;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.GP_MPI_APP_CONTENT_TYPE;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.GP_MPI_BASE_URL;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.GP_MPI_SYSTEM;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.GP_SANTE_CLIENT_ID;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.GP_SANTE_CLIENT_SECRET;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.GP_UUID_SYSTEM;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -30,6 +30,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.openmrs.api.APIException;
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.context.Context;
+import org.openmrs.module.fgh.mpi.entity.AuthenticationType;
+import org.openmrs.module.fgh.mpi.entity.MpiSystemType;
+import org.openmrs.module.fgh.mpi.entity.TokenInfo;
+import org.openmrs.module.fgh.mpi.utils.FhirUtils;
+import org.openmrs.module.fgh.mpi.utils.MpiUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

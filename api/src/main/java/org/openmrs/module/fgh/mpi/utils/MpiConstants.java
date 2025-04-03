@@ -1,4 +1,4 @@
-package org.openmrs.module.fgh.mpi;
+package org.openmrs.module.fgh.mpi.utils;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;

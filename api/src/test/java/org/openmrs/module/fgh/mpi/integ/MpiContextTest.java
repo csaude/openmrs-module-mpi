@@ -1,21 +1,21 @@
-package org.openmrs.module.fgh.mpi;
+package org.openmrs.module.fgh.mpi.integ;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_AUTHENTICATION_TYPE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PASS;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_PATH;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_KEYSTORE_TYPE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_APP_CONTENT_TYPE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_BASE_URL;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_MPI_SYSTEM;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_CLIENT_ID;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_CLIENT_SECRET;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_MESSAGE_HEADER_EVENT_URI;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_SANTE_MESSAGE_HEADER_FOCUS_REFERENCE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_UUID_SYSTEM;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.GP_AUTHENTICATION_TYPE;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.GP_KEYSTORE_PASS;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.GP_KEYSTORE_PATH;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.GP_KEYSTORE_TYPE;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.GP_MPI_APP_CONTENT_TYPE;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.GP_MPI_BASE_URL;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.GP_MPI_SYSTEM;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.GP_SANTE_CLIENT_ID;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.GP_SANTE_CLIENT_SECRET;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.GP_SANTE_MESSAGE_HEADER_EVENT_URI;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.GP_SANTE_MESSAGE_HEADER_FOCUS_REFERENCE;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.GP_UUID_SYSTEM;
 
 import java.security.KeyStore;
 
@@ -28,6 +28,12 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.context.Context;
+import org.openmrs.module.fgh.mpi.processor.BaseEventProcessor;
+import org.openmrs.module.fgh.mpi.processor.SnapshotEventProcessor;
+import org.openmrs.module.fgh.mpi.entity.AuthenticationType;
+import org.openmrs.module.fgh.mpi.entity.MpiSystemType;
+import org.openmrs.module.fgh.mpi.utils.FhirUtils;
+import org.openmrs.module.fgh.mpi.utils.MpiUtils;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;

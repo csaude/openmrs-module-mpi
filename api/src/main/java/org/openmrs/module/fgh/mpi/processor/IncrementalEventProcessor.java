@@ -1,4 +1,4 @@
-package org.openmrs.module.fgh.mpi;
+package org.openmrs.module.fgh.mpi.processor;
 
 import static java.lang.System.currentTimeMillis;
 
@@ -7,6 +7,7 @@ import java.util.Map;
 
 import org.openmrs.api.APIException;
 import org.openmrs.module.debezium.DatabaseEvent;
+import org.openmrs.module.fgh.mpi.utils.MpiConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

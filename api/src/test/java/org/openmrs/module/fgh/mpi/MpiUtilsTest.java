@@ -16,6 +16,7 @@ import org.openmrs.api.APIException;
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.EncounterService;
 import org.openmrs.api.context.Context;
+import org.openmrs.module.fgh.mpi.utils.MpiUtils;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.core.classloader.annotations.SuppressStaticInitializationFor;
@@ -23,7 +24,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(Context.class)
-@SuppressStaticInitializationFor({ "org.openmrs.api.context.Context", "org.openmrs.module.fgh.mpi.MpiUtils" })
+@SuppressStaticInitializationFor({ "org.openmrs.api.context.Context", "org.openmrs.module.fgh.mpi.utils.MpiUtils" })
 public class MpiUtilsTest {
 	
 	@Mock
