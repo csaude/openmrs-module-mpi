@@ -1,7 +1,7 @@
-package org.openmrs.module.fgh.mpi;
+package org.openmrs.module.fgh.mpi.utils;
 
-import static org.openmrs.module.fgh.mpi.MpiConstants.MODULE_ID;
-import static org.openmrs.module.fgh.mpi.MpiConstants.PATIENT_ID_OFFSET_FILE;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.MODULE_ID;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.PATIENT_ID_OFFSET_FILE;
 import static org.openmrs.util.OpenmrsUtil.getApplicationDataDirectory;
 
 import java.io.File;
@@ -29,6 +29,7 @@ import org.openmrs.EncounterType;
 import org.openmrs.api.APIException;
 import org.openmrs.api.context.Context;
 import org.openmrs.api.db.DAOException;
+import org.openmrs.module.fgh.mpi.integ.MpiContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.orm.hibernate5.SessionFactoryUtils;

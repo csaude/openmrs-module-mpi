@@ -1,9 +1,9 @@
-package org.openmrs.module.fgh.mpi;
+package org.openmrs.module.fgh.mpi.integ;
 
-import static org.openmrs.module.fgh.mpi.MpiConstants.HTTP_REQUEST_SUCCESS_RANGE;
-import static org.openmrs.module.fgh.mpi.MpiConstants.REQ_PARAM_SOURCE_ID;
-import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_PARAM;
-import static org.openmrs.module.fgh.mpi.MpiConstants.RESPONSE_FIELD_VALUE_REF;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.HTTP_REQUEST_SUCCESS_RANGE;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.REQ_PARAM_SOURCE_ID;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.RESPONSE_FIELD_PARAM;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.RESPONSE_FIELD_VALUE_REF;
 
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -16,6 +16,8 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.Range;
 import org.openmrs.api.APIException;
+import org.openmrs.module.fgh.mpi.entity.TokenInfo;
+import org.openmrs.module.fgh.mpi.utils.MpiUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

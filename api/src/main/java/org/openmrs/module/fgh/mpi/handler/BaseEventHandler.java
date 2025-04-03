@@ -1,8 +1,9 @@
-package org.openmrs.module.fgh.mpi;
+package org.openmrs.module.fgh.mpi.handler;
 
 import java.util.Map;
 
 import org.openmrs.module.debezium.DatabaseEvent;
+import org.openmrs.module.fgh.mpi.processor.MpiIntegrationProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,9 +1,9 @@
 package org.openmrs.module.fgh.mpi.api.impl;
 
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_ADULT_PROCESS_ENC_TYPE_UUID;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_CHILD_PROCESS_ENC_TYPE_UUID;
-import static org.openmrs.module.fgh.mpi.MpiConstants.GP_FICHA_RESUMO_ENC_TYPE_UUID;
-import static org.openmrs.module.fgh.mpi.MpiIntegrationProcessor.ID_PLACEHOLDER;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.GP_ADULT_PROCESS_ENC_TYPE_UUID;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.GP_CHILD_PROCESS_ENC_TYPE_UUID;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.GP_FICHA_RESUMO_ENC_TYPE_UUID;
+import static org.openmrs.module.fgh.mpi.processor.MpiIntegrationProcessor.ID_PLACEHOLDER;
 
 import java.util.List;
 
@@ -12,7 +12,7 @@ import org.openmrs.Location;
 import org.openmrs.Patient;
 import org.openmrs.api.context.Context;
 import org.openmrs.api.impl.BaseOpenmrsService;
-import org.openmrs.module.fgh.mpi.MpiUtils;
+import org.openmrs.module.fgh.mpi.utils.MpiUtils;
 import org.openmrs.module.fgh.mpi.api.MpiService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,9 +1,13 @@
-package org.openmrs.module.fgh.mpi;
+package org.openmrs.module.fgh.mpi.processor;
 
 import java.util.Map;
 
 import org.openmrs.api.context.Context;
 import org.openmrs.module.debezium.DatabaseEvent;
+import org.openmrs.module.fgh.mpi.handler.AssociationEventHandler;
+import org.openmrs.module.fgh.mpi.handler.PatientAndPersonEventHandler;
+import org.openmrs.module.fgh.mpi.handler.RelationshipEventHandler;
+import org.openmrs.module.fgh.mpi.integ.MpiHttpClient;
 import org.openmrs.util.PrivilegeConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

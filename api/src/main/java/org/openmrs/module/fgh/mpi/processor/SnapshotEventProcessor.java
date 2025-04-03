@@ -1,9 +1,9 @@
-package org.openmrs.module.fgh.mpi;
+package org.openmrs.module.fgh.mpi.processor;
 
-import static org.openmrs.module.fgh.mpi.FhirUtils.fastCreateMap;
-import static org.openmrs.module.fgh.mpi.FhirUtils.generateMessageHeader;
-import static org.openmrs.module.fgh.mpi.FhirUtils.getObjectInMapAsMap;
-import static org.openmrs.module.fgh.mpi.FhirUtils.getObjectOnMapAsListOfMap;
+import static org.openmrs.module.fgh.mpi.utils.FhirUtils.fastCreateMap;
+import static org.openmrs.module.fgh.mpi.utils.FhirUtils.generateMessageHeader;
+import static org.openmrs.module.fgh.mpi.utils.FhirUtils.getObjectInMapAsMap;
+import static org.openmrs.module.fgh.mpi.utils.FhirUtils.getObjectOnMapAsListOfMap;
 import static java.lang.System.currentTimeMillis;
 import static java.util.Collections.synchronizedList;
 
@@ -22,6 +22,10 @@ import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.openmrs.api.APIException;
 import org.openmrs.module.debezium.DatabaseEvent;
 import org.openmrs.module.debezium.Utils;
+import org.openmrs.module.fgh.mpi.utils.MpiConstants;
+import org.openmrs.module.fgh.mpi.integ.MpiContext;
+import org.openmrs.module.fgh.mpi.utils.FhirUtils;
+import org.openmrs.module.fgh.mpi.utils.MpiUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

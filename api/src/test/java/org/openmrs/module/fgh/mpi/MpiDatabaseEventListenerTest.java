@@ -7,6 +7,7 @@ import org.mockito.MockitoAnnotations;
 import org.openmrs.module.debezium.DatabaseEvent;
 import org.openmrs.module.debezium.DatabaseEvent.Snapshot;
 import org.openmrs.module.debezium.DatabaseOperation;
+import org.openmrs.module.fgh.mpi.listener.MpiDebeziumEngineConfig;
 
 public class MpiDatabaseEventListenerTest {
 	

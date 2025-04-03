@@ -1,4 +1,4 @@
-package org.openmrs.module.fgh.mpi;
+package org.openmrs.module.fgh.mpi.entity;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;

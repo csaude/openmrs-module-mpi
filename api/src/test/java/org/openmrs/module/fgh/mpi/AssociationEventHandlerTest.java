@@ -9,6 +9,7 @@ import java.util.Map;
 import org.junit.Test;
 import org.openmrs.module.debezium.DatabaseEvent;
 import org.openmrs.module.debezium.DatabaseOperation;
+import org.openmrs.module.fgh.mpi.handler.AssociationEventHandler;
 
 public class AssociationEventHandlerTest {
 	
