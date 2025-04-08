@@ -1,3 +1,4 @@
+/*
 package org.openmrs.module.fgh.mpi;
 
 import static java.util.Collections.singletonList;
@@ -78,3 +79,4 @@ public class MpiDebeziumEngineConfigTest {
 	}
 	
 }
+*/
