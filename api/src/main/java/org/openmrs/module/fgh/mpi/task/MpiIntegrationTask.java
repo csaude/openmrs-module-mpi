@@ -64,7 +64,7 @@ public class MpiIntegrationTask extends AbstractTask {
 				eventProcessor = new SnapshotEventProcessor(threadCount);
 			} else {
 				
-				Set<DebeziumEventQueue> eventQueueSet = eventQueueService.getEventsByApplicationName(APPLICATION_NAME);
+				Set<DebeziumEventQueue> eventQueueSet = eventQueueService.getApplicationEvents(APPLICATION_NAME);
 				eventQueueSet.forEach((eventQueue) -> {
 					eventProcessor = new IncrementalEventProcessor();
 					eventProcessor.process(this.convertEventQueueToDatabaseEvent(eventQueue));
