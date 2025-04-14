@@ -2,13 +2,13 @@ package org.openmrs.module.fgh.mpi;
 
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
-import static org.openmrs.module.debezium.DatabaseOperation.DELETE;
+import static org.openmrs.module.debezium.entity.DatabaseOperation.DELETE;
 
 import java.util.Map;
 
 import org.junit.Test;
-import org.openmrs.module.debezium.DatabaseEvent;
-import org.openmrs.module.debezium.DatabaseOperation;
+import org.openmrs.module.debezium.entity.DatabaseEvent;
+import org.openmrs.module.debezium.entity.DatabaseOperation;
 import org.openmrs.module.fgh.mpi.handler.AssociationEventHandler;
 
 public class AssociationEventHandlerTest {

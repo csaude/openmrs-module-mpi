@@ -9,10 +9,6 @@
  */
 package org.openmrs.module.fgh.mpi;
 
-import static org.openmrs.util.OpenmrsUtil.getApplicationDataDirectory;
-
-import java.io.File;
-
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
@@ -26,10 +22,20 @@ import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.openmrs.api.APIException;
+import org.openmrs.api.context.Context;
 import org.openmrs.module.BaseModuleActivator;
+import org.openmrs.module.fgh.mpi.task.MpiIntegrationTask;
 import org.openmrs.module.fgh.mpi.utils.MpiUtils;
+import org.openmrs.scheduler.SchedulerException;
+import org.openmrs.scheduler.SchedulerService;
+import org.openmrs.scheduler.TaskDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.util.Date;
+
+import static org.openmrs.util.OpenmrsUtil.getApplicationDataDirectory;
 
 public class MpiActivator extends BaseModuleActivator {
 	
@@ -46,6 +52,8 @@ public class MpiActivator extends BaseModuleActivator {
 	protected static final String LAYOUT = "%-5p %t - %C{1}.%M(%L) |%d{ISO8601}| %m%n";
 	
 	protected static final String LOG_FILE_PATTERN = LOG_FILE + ".%d{yyyy-MM-dd}-%i";
+	
+	protected static final String TASK_NAME = "INCREMENTAL LOAD TASK";
 	
 	/**
 	 * @see BaseModuleActivator#started()
@@ -77,6 +85,8 @@ public class MpiActivator extends BaseModuleActivator {
 			mpiAppender.start();
 			cfg.addAppender(mpiAppender);
 			context.updateLoggers();
+			
+			this.registerTask();
 		}
 		catch (Exception e) {
 			throw new APIException(e);
@@ -102,6 +112,34 @@ public class MpiActivator extends BaseModuleActivator {
 	
 	protected String getMpiLoggerName() {
 		return getClass().getPackage().getName();
+	}
+	
+	private void registerTask() {
+		
+		try {
+			SchedulerService schedulerService = Context.getService(SchedulerService.class);
+			
+			// Check if exists a task running in order to avoid duplicates
+			TaskDefinition existingTask = schedulerService.getTaskByName(TASK_NAME);
+			if (existingTask == null) {
+				TaskDefinition taskDefinition = new TaskDefinition();
+				taskDefinition.setName(TASK_NAME);
+				taskDefinition.setTaskClass(MpiIntegrationTask.class.getName());
+				taskDefinition.setStartTime(new Date());
+				taskDefinition.setRepeatInterval(10L);
+				taskDefinition.setStartOnStartup(true);
+				taskDefinition.setDescription("A task to call debezium event queue service");
+				schedulerService.saveTaskDefinition(taskDefinition);
+				schedulerService.scheduleTask(taskDefinition);
+				log.info("Scheduled task registered and started: {}", taskDefinition.getName());
+			} else {
+				log.info("Task already registered: {}", TASK_NAME);
+			}
+		}
+		catch (SchedulerException e) {
+			log.error("Failed to register scheduled task", e);
+		}
+		
 	}
 	
 }
