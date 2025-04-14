@@ -68,12 +68,12 @@ public class MpiIntegrationTask extends AbstractTask {
 						eventProcessor.process(this.convertEventQueueToDatabaseEvent(eventQueue));
 					});
 					eventQueueService.commitEventQueue(APPLICATION_NAME);
-
+					
 					if (eventQueueSet.isEmpty()) {
 						keepFetching = false;
 					}
 				}
-
+				
 				log.info("Finalized the incremental load");
 			}
 			

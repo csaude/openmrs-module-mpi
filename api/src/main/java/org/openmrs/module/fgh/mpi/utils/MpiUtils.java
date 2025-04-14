@@ -170,7 +170,7 @@ public class MpiUtils {
 				}
 			}
 			return patientsId;
-
+			
 		}
 		catch (SQLException e) {
 			throw new DAOException("Error querying patients", e);

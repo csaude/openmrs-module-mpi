@@ -1,6 +1,5 @@
 package org.openmrs.module.fgh.mpi.processor;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang.time.DurationFormatUtils;
 import org.openmrs.api.APIException;
@@ -32,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import static java.util.Collections.synchronizedList;
 import static org.openmrs.module.fgh.mpi.processor.MpiIntegrationProcessor.ID_PLACEHOLDER;
 import static org.openmrs.module.fgh.mpi.utils.FhirUtils.fastCreateMap;
 import static org.openmrs.module.fgh.mpi.utils.FhirUtils.generateMessageHeader;
@@ -48,13 +48,13 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 	
 	private final ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
 	
-	private final List<CompletableFuture<Map<String, Object>>> futures = new ArrayList<>();
+	private final List<CompletableFuture<Map<String, Object>>> futures = synchronizedList(new ArrayList<>(THREAD_COUNT));
 	
 	private final AtomicInteger successCount = new AtomicInteger(0);
 	
 	private Long start;
 	
-	private Integer lastSubmittedPatientId;
+	private List<Integer> lastSubmittedPatientIds = new ArrayList<>();
 	
 	private final PatientService patientService = Context.getPatientService();
 	
@@ -83,9 +83,8 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 			throw new RuntimeException(e);
 		}
 		
-		MpiContext mpiContext;
 		try {
-			mpiContext = MpiContext.initIfNecessary();
+			MpiContext.initIfNecessary();
 		}
 		catch (Exception e) {
 			throw new APIException("Failed to init MpiContext", e);
@@ -114,16 +113,16 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 					}
 					continueProcessing = false;
 					log.info("No patients found for initial load process");
-				}else {
-
+				} else {
+					
 					//Create a task controller
 					this.initialLoadTaskController = this.createLoadTaskController(initialLoadTaskController, lastId);
 					List<List<Integer>> batches = partitionList(patientsId, BATCH_SIZE);
-
+					
 					for (List<Integer> batch : batches) {
 						processBatch(batch);
 					}
-
+					
 					//after all save the controller
 					this.saveController(patientsId.get(patientsId.size() - 1));
 					executor.shutdown();
@@ -133,8 +132,12 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 		}
 		catch (InterruptedException e) {
 			log.error("Execution shutdown interrupted", e);
+			if (!lastSubmittedPatientIds.isEmpty()) {
+				this.saveController(lastSubmittedPatientIds.get(0));
+			}
+			
 		}
-
+		
 		// Finalize process
 		logFinalizeStats();
 	}
@@ -160,15 +163,16 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 	}
 	
 	private void processBatch(List<Integer> patients) {
-		List<DatabaseEvent> events = patients.stream().map(patientId -> this.convertPatientToDatabaseEvent(patientId,
-		     patients.get(patients.size() - 1).equals(patientId))).collect(Collectors.toList());
+		List<DatabaseEvent> events = patients.stream().map(
+		    patientId -> this.convertPatientToDatabaseEvent(patientId, patients.get(patients.size() - 1).equals(patientId)))
+		        .collect(Collectors.toList());
 		
 		for (DatabaseEvent event : events) {
 			process(event);
 		}
 		
 		CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-		// submitToMpi();
+		submitToMpi();
 	}
 	
 	@Override
@@ -180,6 +184,7 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 				long startSingle = System.currentTimeMillis();
 				Map<String, Object> fhirPatient = createFhirResource(event);
 				log.debug("Duration:  {}", (System.currentTimeMillis() - startSingle));
+				lastSubmittedPatientIds.add((Integer) event.getPrimaryKeyId());
 				
 				return fhirPatient;
 			}
@@ -191,6 +196,7 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 		
 		if (futures.size() == THREAD_COUNT || event.getSnapshot().equals(DatabaseEvent.Snapshot.LAST)) {
 			submitToMpi();
+			lastSubmittedPatientIds.clear();
 		}
 		
 	}
@@ -218,18 +224,17 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 				entry.put(MpiConstants.FIELD_RESOURCE, p);
 				return entry;
 			}).collect(Collectors.toList());
-
-
-			if(fhirPatients.isEmpty()) {
+			
+			if (fhirPatients.isEmpty()) {
 				log.info("The fhir payload of patient is empty du");
-
+				
 			} else if (mpiContext.getMpiSystem().isOpenCr()) {
 				openCrImplementations(fhirPatients);
-
+				
 			} else if (mpiContext.getMpiSystem().isSanteMPI()) {
 				Map<String, Object> messageBundle = santeMpiImplementation(fhirPatients);
 				mpiHttpClient.submitBundle("fhir/Bundle", objectMapper.writeValueAsString(messageBundle), Map.class);
-
+				
 			} else {
 				throw new APIException("Unknown MPISystem [" + mpiContext.getMpiSystem() + "]");
 			}
@@ -242,61 +247,56 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 			futures.clear();
 		}
 	}
-
+	
 	private void openCrImplementations(List<Map<String, Object>> fhirPatients) throws Exception {
 		Map<String, Object> bundle = new HashMap<>();
 		bundle.put(MpiConstants.FIELD_RESOURCE_TYPE, MpiConstants.BUNDLE);
 		bundle.put(MpiConstants.FIELD_TYPE, MpiConstants.BATCH);
 		bundle.put(MpiConstants.FIELD_ENTRY, fhirPatients);
-
-		List<?> response = mpiHttpClient.submitBundle("fhir", objectMapper.writeValueAsString(bundle),
-				List.class);
+		
+		List<?> response = mpiHttpClient.submitBundle("fhir", objectMapper.writeValueAsString(bundle), List.class);
 		int successPatientCount = response.size() / 2;
 		if (fhirPatients.size() != successPatientCount) {
 			throw new APIException((fhirPatients.size() - successPatientCount) + " patients failed");
 		}
 	}
-
+	
 	private Map<String, Object> santeMpiImplementation(List<Map<String, Object>> fhirPatients) {
 		Map<String, Object> fhirMessageHeaderEntry = generateMessageHeader();
-
+		
 		//The entry of resource in message bundle message
 		Map<String, Object> fhirResourceEntry = new HashMap<>(2);
-
+		
 		fhirResourceEntry.put("fullUrl", FhirUtils.santeMessageHeaderFocusReference);
 		fhirResourceEntry.put("resource", new HashMap<>(3));
-
-		getObjectInMapAsMap("resource", fhirResourceEntry).put(MpiConstants.FIELD_RESOURCE_TYPE,
-				MpiConstants.BUNDLE);
-
-		getObjectInMapAsMap("resource", fhirResourceEntry).put(MpiConstants.FIELD_TYPE,
-				MpiConstants.FIELD_TYPE_HISTORY);
-
+		
+		getObjectInMapAsMap("resource", fhirResourceEntry).put(MpiConstants.FIELD_RESOURCE_TYPE, MpiConstants.BUNDLE);
+		
+		getObjectInMapAsMap("resource", fhirResourceEntry).put(MpiConstants.FIELD_TYPE, MpiConstants.FIELD_TYPE_HISTORY);
+		
 		List<Map<String, Object>> fhirPatientsPlusRequest = new ArrayList<Map<String, Object>>(fhirPatients.size());
-
+		
 		for (Map<String, Object> fhirPatient : fhirPatients) {
 			Map<String, Object> resourceEntry = getObjectInMapAsMap(MpiConstants.FIELD_RESOURCE, fhirPatient);
-
-			Object patientUuid = getObjectOnMapAsListOfMap(MpiConstants.FIELD_IDENTIFIER, resourceEntry).get(0)
-					.get("value");
-
+			
+			Object patientUuid = getObjectOnMapAsListOfMap(MpiConstants.FIELD_IDENTIFIER, resourceEntry).get(0).get("value");
+			
 			Map<String, Object> patientEntry = fastCreateMap(MpiConstants.FIELD_RESOURCE, resourceEntry, "request",
-					fastCreateMap("method", "POST", "url", "Patient/" + patientUuid), "fullUrl",
-					"Patient/" + patientUuid);
-
+			    fastCreateMap("method", "POST", "url", "Patient/" + patientUuid), "fullUrl", "Patient/" + patientUuid);
+			
 			fhirPatientsPlusRequest.add(patientEntry);
 		}
-
+		
 		getObjectInMapAsMap("resource", fhirResourceEntry).put(MpiConstants.FIELD_ENTRY, fhirPatientsPlusRequest);
-
+		
 		Map<String, Object> messageBundle = new HashMap<String, Object>();
 		messageBundle.put("resourceType", "Bundle");
 		messageBundle.put("type", "message");
 		messageBundle.put(MpiConstants.FIELD_ENTRY, new ArrayList<Map<String, Object>>(2));
-
+		
 		getObjectOnMapAsListOfMap(MpiConstants.FIELD_ENTRY, messageBundle).add(fhirMessageHeaderEntry);
 		getObjectOnMapAsListOfMap(MpiConstants.FIELD_ENTRY, messageBundle).add(fhirResourceEntry);
-
+		
 		return messageBundle;
 	}
 	
@@ -313,10 +313,11 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 		log.info("Patients submitted: " + successCount.get());
 		log.info("Started at        : " + new Date(start));
 		log.info("Ended at          : " + new Date());
-		log.info("Duration          : " + org.apache.commons.lang3.time.DurationFormatUtils.formatDuration(duration, "HH:mm:ss", true));
+		log.info("Duration          : "
+		        + org.apache.commons.lang3.time.DurationFormatUtils.formatDuration(duration, "HH:mm:ss", true));
 		log.info("======================================================================");
 		log.info("Switching to incremental loading");
-
+		
 		Utils.updateGlobalProperty(MpiConstants.GP_INITIAL, "false");
 	}
 	
