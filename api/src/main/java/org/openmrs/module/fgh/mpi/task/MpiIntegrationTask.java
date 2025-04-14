@@ -1,5 +1,7 @@
 package org.openmrs.module.fgh.mpi.task;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.debezium.entity.DatabaseEvent;
@@ -31,6 +33,9 @@ public class MpiIntegrationTask extends AbstractTask {
 	public static Map<String, DatabaseOperation> DATABASE_OPERATIONS;
 	
 	public static Map<String, DatabaseEvent.Snapshot> SNAPSHOT;
+	
+	private static final ObjectMapper objectMapper = new ObjectMapper();
+	
 	static {
 		DATABASE_OPERATIONS = new HashMap<>();
 		DATABASE_OPERATIONS.put("C", DatabaseOperation.CREATE);
@@ -73,7 +78,7 @@ public class MpiIntegrationTask extends AbstractTask {
 						eventProcessor.process(this.convertEventQueueToDatabaseEvent(eventQueue));
 					});
 					eventQueueService.commitEventQueue(APPLICATION_NAME);
-
+					
 					if (eventQueueSet.isEmpty()) {
 						keepFetching = false;
 					}
@@ -91,9 +96,16 @@ public class MpiIntegrationTask extends AbstractTask {
 	}
 	
 	public DatabaseEvent convertEventQueueToDatabaseEvent(DebeziumEventQueue eventQueue) {
-		return new DatabaseEvent(eventQueue.getPrimaryKeyId(), eventQueue.getTableName(),
-		        DATABASE_OPERATIONS.get(eventQueue.getOperation()), SNAPSHOT.get(String.valueOf(eventQueue.getSnapshot())),
-		        null, null);
-		
+		try {
+			return new DatabaseEvent(eventQueue.getPrimaryKeyId(), eventQueue.getTableName(),
+			        DATABASE_OPERATIONS.get(eventQueue.getOperation()),
+			        SNAPSHOT.get(String.valueOf(eventQueue.getSnapshot())),
+			        objectMapper.readValue(eventQueue.getPreviousState(), new TypeReference<HashMap<String, Object>>() {}),
+			        objectMapper.readValue(eventQueue.getNewState(), new TypeReference<HashMap<String, Object>>() {}));
+		}
+		catch (Exception e) {
+			log.error("Error converting event queue to DB event", e);
+			throw new RuntimeException("Error:  " + e);
+		}
 	}
 }
