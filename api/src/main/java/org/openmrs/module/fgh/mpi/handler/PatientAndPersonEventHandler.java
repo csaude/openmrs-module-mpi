@@ -1,6 +1,6 @@
 package org.openmrs.module.fgh.mpi.handler;
 
-import org.openmrs.module.debezium.entity.DatabaseEvent;
+import org.openmrs.module.debezium.DatabaseEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

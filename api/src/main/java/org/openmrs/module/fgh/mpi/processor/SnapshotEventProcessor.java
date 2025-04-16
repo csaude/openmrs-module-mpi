@@ -20,8 +20,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.openmrs.api.APIException;
-import org.openmrs.module.debezium.entity.DatabaseEvent;
-import org.openmrs.module.debezium.utils.Utils;
+import org.openmrs.module.debezium.DatabaseEvent;
+import org.openmrs.module.debezium.Utils;
 import org.openmrs.module.fgh.mpi.utils.MpiConstants;
 import org.openmrs.module.fgh.mpi.integ.MpiContext;
 import org.openmrs.module.fgh.mpi.utils.FhirUtils;

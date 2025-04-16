@@ -14,7 +14,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.openmrs.api.context.Context;
-import org.openmrs.module.debezium.entity.DatabaseEvent;
+import org.openmrs.module.debezium.DatabaseEvent;
 import org.openmrs.module.fgh.mpi.handler.AssociationEventHandler;
 import org.openmrs.module.fgh.mpi.handler.PatientAndPersonEventHandler;
 import org.openmrs.module.fgh.mpi.handler.RelationshipEventHandler;
