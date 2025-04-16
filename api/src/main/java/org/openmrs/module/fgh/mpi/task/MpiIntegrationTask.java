@@ -33,9 +33,9 @@ public class MpiIntegrationTask extends AbstractTask {
 	public static Map<String, DatabaseOperation> DATABASE_OPERATIONS;
 	
 	public static Map<String, DatabaseEvent.Snapshot> SNAPSHOT;
-
+	
 	private static final ObjectMapper objectMapper = new ObjectMapper();
-
+	
 	static {
 		DATABASE_OPERATIONS = new HashMap<>();
 		DATABASE_OPERATIONS.put("C", DatabaseOperation.CREATE);
@@ -58,7 +58,7 @@ public class MpiIntegrationTask extends AbstractTask {
 			
 			if (getSnapshotMode() == MySqlSnapshotMode.INITIAL) {
 				log.info("Mpi set for initial load");
-
+				
 				MpiHttpClient mpiHttpClient = new MpiHttpClient();
 				InitialLoadProcessor initialLoadProcessor = new InitialLoadProcessor(mpiHttpClient);
 				initialLoadProcessor.runInitialLoad();
@@ -66,7 +66,7 @@ public class MpiIntegrationTask extends AbstractTask {
 				
 				boolean keepFetching = true;
 				eventProcessor = new IncrementalEventProcessor();
-
+				
 				while (keepFetching) {
 					log.info("Mpi set for incremental load");
 					Set<DebeziumEventQueue> eventQueueSet = eventQueueService.getApplicationEvents(APPLICATION_NAME);
@@ -74,12 +74,12 @@ public class MpiIntegrationTask extends AbstractTask {
 						eventProcessor.process(this.convertEventQueueToDatabaseEvent(eventQueue));
 					});
 					eventQueueService.commitEventQueue(APPLICATION_NAME);
-
+					
 					if (eventQueueSet.isEmpty()) {
 						keepFetching = false;
 					}
 				}
-
+				
 				log.info("Finalized the incremental load");
 			}
 			

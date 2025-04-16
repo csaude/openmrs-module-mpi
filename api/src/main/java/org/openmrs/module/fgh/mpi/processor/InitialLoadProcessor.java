@@ -37,6 +37,7 @@ import static org.openmrs.module.fgh.mpi.utils.FhirUtils.fastCreateMap;
 import static org.openmrs.module.fgh.mpi.utils.FhirUtils.generateMessageHeader;
 import static org.openmrs.module.fgh.mpi.utils.FhirUtils.getObjectInMapAsMap;
 import static org.openmrs.module.fgh.mpi.utils.FhirUtils.getObjectOnMapAsListOfMap;
+import static org.openmrs.module.fgh.mpi.utils.MpiConstants.GP_INITIAL_BATCH_SIZE;
 
 public class InitialLoadProcessor extends BaseEventProcessor {
 	
@@ -45,6 +46,8 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 	private static final int THREAD_COUNT = Runtime.getRuntime().availableProcessors();
 	
 	private static final int BATCH_SIZE = 10000;
+	
+	private static final int MPI_BATCH_SIZE = Integer.parseInt(MpiUtils.getGlobalPropertyValue(GP_INITIAL_BATCH_SIZE));
 	
 	private final ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
 	
@@ -80,6 +83,7 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 			}
 		}
 		catch (SQLException e) {
+			log.error("Error while fetching initial load task info", e);
 			throw new RuntimeException(e);
 		}
 		
@@ -87,7 +91,7 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 			MpiContext.initIfNecessary();
 		}
 		catch (Exception e) {
-			throw new APIException("Failed to init MpiContext", e);
+			throw new APIException("Failed to initialize MpiContext", e);
 		}
 		
 		log.info("Starting Patient initial load process");
@@ -98,9 +102,10 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 			while (continueProcessing) {
 				Integer lastId = this.initialLoadTaskController != null ? this.initialLoadTaskController.getPatientOffsetId()
 				        : 0;
+				Integer id = MpiUtils.getLastSubmittedPatientId() != null ? MpiUtils.getLastSubmittedPatientId() : lastId;
 				
 				List<Integer> patientsId = MpiUtils.executePatientQuery(
-				    MpiIntegrationProcessor.PATIENT_QUERY_BOUNDARIES.replace(ID_PLACEHOLDER, String.valueOf(lastId))
+				    MpiIntegrationProcessor.PATIENT_QUERY_BOUNDARIES.replace(ID_PLACEHOLDER, String.valueOf(id))
 				            .replace(MpiIntegrationProcessor.MAXIMUM_RESULT_PLACEHOLDER, String.valueOf(BATCH_SIZE)));
 				
 				log.info("Found {} Patients for initial load process", patientsId.size());
@@ -117,7 +122,7 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 					
 					//Create a task controller
 					this.initialLoadTaskController = this.createLoadTaskController(initialLoadTaskController, lastId);
-					List<List<Integer>> batches = partitionList(patientsId, BATCH_SIZE);
+					List<List<Integer>> batches = partitionList(patientsId, MPI_BATCH_SIZE);
 					
 					for (List<Integer> batch : batches) {
 						processBatch(batch);
@@ -130,12 +135,13 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 				}
 			}
 		}
-		catch (InterruptedException e) {
+		catch (Exception e) {
 			log.error("Execution shutdown interrupted", e);
-			if (!lastSubmittedPatientIds.isEmpty()) {
-				this.saveController(lastSubmittedPatientIds.get(0));
-			}
+			Integer lastProcessedId = MpiUtils.getLastSubmittedPatientId() != null ? MpiUtils.getLastSubmittedPatientId()
+			        : 0;
+			this.saveController(lastProcessedId);
 			
+			throw new APIException("An error occurred processing patient batch ", e);
 		}
 		
 		// Finalize process
@@ -194,7 +200,7 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 			}
 		}, executor));
 		
-		if (futures.size() == THREAD_COUNT || event.getSnapshot().equals(DatabaseEvent.Snapshot.LAST)) {
+		if (futures.size() == MPI_BATCH_SIZE) {
 			submitToMpi();
 			lastSubmittedPatientIds.clear();
 		}
@@ -244,6 +250,9 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 			throw new APIException("MPI SUBMISSION FAILED", e);
 		}
 		finally {
+			if (!lastSubmittedPatientIds.isEmpty()) {
+				MpiUtils.saveLastSubmittedPatientId(lastSubmittedPatientIds.get(lastSubmittedPatientIds.size() - 1));
+			}
 			futures.clear();
 		}
 	}
@@ -318,6 +327,7 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 		log.info("======================================================================");
 		log.info("Switching to incremental loading");
 		
+		MpiUtils.deletePatientIdOffsetFile();
 		Utils.updateGlobalProperty(MpiConstants.GP_INITIAL, "false");
 	}
 	
