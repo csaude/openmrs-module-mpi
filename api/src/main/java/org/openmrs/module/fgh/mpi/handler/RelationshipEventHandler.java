@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.openmrs.module.debezium.DatabaseEvent;
+import org.openmrs.module.debezium.entity.DatabaseEvent;
 import org.openmrs.module.fgh.mpi.utils.MpiConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
