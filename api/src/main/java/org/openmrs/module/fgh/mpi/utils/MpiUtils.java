@@ -29,7 +29,7 @@ import org.openmrs.EncounterType;
 import org.openmrs.api.APIException;
 import org.openmrs.api.context.Context;
 import org.openmrs.api.db.DAOException;
-import org.openmrs.module.fgh.mpi.entity.InitialLoadTaskController;
+import org.openmrs.module.fgh.mpi.entity.InitialLoadTaskStatus;
 import org.openmrs.module.fgh.mpi.integ.MpiContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -235,39 +235,36 @@ public class MpiUtils {
 		return Paths.get(parent, additionalPaths);
 	}
 	
-	public static InitialLoadTaskController fetchInitialLoadTaskController() throws SQLException {
-		
+	public static InitialLoadTaskStatus fetchInitialLoadTaskController() throws SQLException {
+		InitialLoadTaskStatus initialLoadTaskStatus = null;
 		try (Connection conn = getDataSource().getConnection();
-		        PreparedStatement stmt = conn
-		                .prepareStatement("select * from mpi_initial_load_task_controller where is_running = true")) {
+		        PreparedStatement stmt = conn.prepareStatement(
+		            "select * from mpi_initial_load_task_controller where is_running = true and is_active = true and end_date is null")) {
 			
 			try (ResultSet rs = stmt.executeQuery()) {
-				InitialLoadTaskController initialLoadTaskController = new InitialLoadTaskController();
 				while (rs.next()) {
-					initialLoadTaskController.setId(rs.getInt("id"));
-					initialLoadTaskController.setActive(rs.getBoolean("is_active"));
-					initialLoadTaskController.setPatientOffsetId(rs.getInt("patient_offset_id"));
-					initialLoadTaskController.setStartDate(rs.getTimestamp("start_date"));
-					initialLoadTaskController.setEndDate(rs.getTimestamp("end_date"));
-					initialLoadTaskController.setRunning(rs.getBoolean("is_running"));
+					initialLoadTaskStatus = new InitialLoadTaskStatus();
+					initialLoadTaskStatus.setId(rs.getInt("id"));
+					initialLoadTaskStatus.setActive(rs.getBoolean("is_active"));
+					initialLoadTaskStatus.setPatientOffsetId(rs.getInt("patient_offset_id"));
+					initialLoadTaskStatus.setStartDate(rs.getTimestamp("start_date"));
+					initialLoadTaskStatus.setEndDate(rs.getTimestamp("end_date"));
+					initialLoadTaskStatus.setRunning(rs.getBoolean("is_running"));
+					initialLoadTaskStatus.setLocked(rs.getBoolean("is_locked"));
 				}
 				
-				if (initialLoadTaskController.getStartDate() == null) {
-					return null;
-				}
-				
-				return initialLoadTaskController;
+				return initialLoadTaskStatus;
 				
 			}
 		}
 		catch (SQLException e) {
-			throw new DAOException("Error querying patients", e);
+			throw new DAOException("Error querying InitialLoadTaskStatus", e);
 		}
 	}
 	
-	public static void createInitialLoadTaskController(InitialLoadTaskController controller) {
-		String query = "INSERT INTO mpi_initial_load_task_controller (is_active, patient_offset_id, start_date, is_running) "
-		        + "VALUES (?, ?, ?, ?)";
+	public static void createInitialLoadTaskController(InitialLoadTaskStatus controller) {
+		String query = "INSERT INTO mpi_initial_load_task_controller (is_active, patient_offset_id, start_date, is_running, is_locked) "
+		        + "VALUES (?, ?, ?, ?, ?)";
 		
 		try (Connection conn = getDataSource().getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
 			
@@ -275,18 +272,20 @@ public class MpiUtils {
 			stmt.setInt(2, controller.getPatientOffsetId());
 			stmt.setTimestamp(3, new java.sql.Timestamp(controller.getStartDate().getTime()));
 			stmt.setBoolean(4, controller.isRunning());
+			stmt.setBoolean(5, controller.isLocked());
 			
 			stmt.executeUpdate();
 			
 		}
 		catch (SQLException e) {
-			throw new DAOException("Error creating InitialLoadTaskController", e);
+			throw new DAOException("Error creating InitialLoadTaskStatus", e);
 		}
 	}
 	
-	public static void updateInitialLoadTaskController(InitialLoadTaskController controller) {
+	public static void updateInitialLoadTaskController(InitialLoadTaskStatus controller) {
 		String query = "UPDATE mpi_initial_load_task_controller SET "
-		        + "is_active = ?, patient_offset_id = ?, start_date = ?, end_date = ?, is_running = ? " + " WHERE id = ?";
+		        + "is_active = ?, patient_offset_id = ?, start_date = ?, end_date = ?, is_running = ?, is_locked = ? "
+		        + " WHERE id = ?";
 		
 		try (Connection conn = getDataSource().getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
 			
@@ -296,17 +295,18 @@ public class MpiUtils {
 			stmt.setTimestamp(4,
 			    controller.getEndDate() != null ? new java.sql.Timestamp(controller.getEndDate().getTime()) : null);
 			stmt.setBoolean(5, controller.isRunning());
-			stmt.setInt(6, controller.getId());
+			stmt.setBoolean(6, controller.isLocked());
+			stmt.setInt(7, controller.getId());
 			
 			int rowsUpdated = stmt.executeUpdate();
 			
 			if (rowsUpdated == 0) {
-				throw new DAOException("No InitialLoadTaskController record found with id " + controller.getId());
+				throw new DAOException("No InitialLoadTaskStatus record found with id " + controller.getId());
 			}
 			
 		}
 		catch (SQLException e) {
-			throw new DAOException("Error updating InitialLoadTaskController", e);
+			throw new DAOException("Error updating InitialLoadTaskStatus", e);
 		}
 	}
 	

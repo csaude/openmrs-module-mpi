@@ -67,11 +67,15 @@ public class MpiIntegrationTask extends AbstractTask {
 				boolean keepFetching = true;
 				eventProcessor = new IncrementalEventProcessor();
 				
+				log.info("Mpi set for incremental load");
 				while (keepFetching) {
-					log.info("Mpi set for incremental load");
 					Set<DebeziumEventQueue> eventQueueSet = eventQueueService.getApplicationEvents(APPLICATION_NAME);
 					eventQueueSet.forEach((eventQueue) -> {
+						log.debug("Running incremental load for event {}", eventQueue);
+						
 						eventProcessor.process(this.convertEventQueueToDatabaseEvent(eventQueue));
+						
+						log.debug("Finalized the incremental load for event");
 					});
 					eventQueueService.commitEventQueue(APPLICATION_NAME);
 					
@@ -79,8 +83,6 @@ public class MpiIntegrationTask extends AbstractTask {
 						keepFetching = false;
 					}
 				}
-				
-				log.info("Finalized the incremental load");
 			}
 			
 		} else {

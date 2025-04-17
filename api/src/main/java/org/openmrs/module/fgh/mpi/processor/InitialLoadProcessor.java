@@ -8,7 +8,7 @@ import org.openmrs.api.context.Context;
 import org.openmrs.module.debezium.entity.DatabaseEvent;
 import org.openmrs.module.debezium.entity.DatabaseOperation;
 import org.openmrs.module.debezium.utils.Utils;
-import org.openmrs.module.fgh.mpi.entity.InitialLoadTaskController;
+import org.openmrs.module.fgh.mpi.entity.InitialLoadTaskStatus;
 import org.openmrs.module.fgh.mpi.integ.MpiContext;
 import org.openmrs.module.fgh.mpi.integ.MpiHttpClient;
 import org.openmrs.module.fgh.mpi.utils.FhirUtils;
@@ -65,7 +65,7 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 	
 	private final ObjectMapper objectMapper = new ObjectMapper();
 	
-	private InitialLoadTaskController initialLoadTaskController;
+	private InitialLoadTaskStatus initialLoadTaskStatus;
 	
 	public InitialLoadProcessor(MpiHttpClient mpiHttpClient) {
 		super(true);
@@ -74,98 +74,99 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 	
 	public void runInitialLoad() {
 		try {
-			this.initialLoadTaskController = MpiUtils.fetchInitialLoadTaskController();
-			
-			if (this.initialLoadTaskController != null && this.initialLoadTaskController.isRunning()
-			        && this.initialLoadTaskController.getEndDate() != null) {
-				log.info("Initial load task is already running");
-				return;
-			}
+			initialLoadTaskStatus = MpiUtils.fetchInitialLoadTaskController();
 		}
 		catch (SQLException e) {
 			log.error("Error while fetching initial load task info", e);
 			throw new RuntimeException(e);
 		}
 		
-		try {
-			MpiContext.initIfNecessary();
-		}
-		catch (Exception e) {
-			throw new APIException("Failed to initialize MpiContext", e);
-		}
-		
-		log.info("Starting Patient initial load process");
-		start = System.currentTimeMillis();
-		boolean continueProcessing = true;
-		
-		try {
-			while (continueProcessing) {
-				Integer lastId = this.initialLoadTaskController != null ? this.initialLoadTaskController.getPatientOffsetId()
-				        : 0;
-				Integer id = MpiUtils.getLastSubmittedPatientId() != null ? MpiUtils.getLastSubmittedPatientId() : lastId;
-				
-				List<Integer> patientsId = MpiUtils.executePatientQuery(
-				    MpiIntegrationProcessor.PATIENT_QUERY_BOUNDARIES.replace(ID_PLACEHOLDER, String.valueOf(id))
-				            .replace(MpiIntegrationProcessor.MAXIMUM_RESULT_PLACEHOLDER, String.valueOf(BATCH_SIZE)));
-				
-				log.info("Found {} Patients for initial load process", patientsId.size());
-				if (patientsId.isEmpty()) {
-					if (this.initialLoadTaskController != null) {
-						this.initialLoadTaskController.setRunning(false);
-						this.initialLoadTaskController.setEndDate(new Date());
-						this.initialLoadTaskController.setActive(Boolean.FALSE);
-						MpiUtils.updateInitialLoadTaskController(this.initialLoadTaskController);
+		if (initialLoadTaskStatus != null && initialLoadTaskStatus.isLocked()) {
+			log.info("Initial load task is already running");
+		} else {
+			
+			try {
+				MpiContext.initIfNecessary();
+			}
+			catch (Exception e) {
+				throw new APIException("Failed to initialize MpiContext", e);
+			}
+			
+			log.info("Starting Patient initial load process");
+			start = System.currentTimeMillis();
+			boolean continueProcessing = true;
+			
+			try {
+				while (continueProcessing) {
+					Integer lastId = this.initialLoadTaskStatus != null ? this.initialLoadTaskStatus.getPatientOffsetId()
+					        : 0;
+					Integer id = MpiUtils.getLastSubmittedPatientId() != null ? MpiUtils.getLastSubmittedPatientId()
+					        : lastId;
+					
+					List<Integer> patientsId = MpiUtils.executePatientQuery(
+					    MpiIntegrationProcessor.PATIENT_QUERY_BOUNDARIES.replace(ID_PLACEHOLDER, String.valueOf(id))
+					            .replace(MpiIntegrationProcessor.MAXIMUM_RESULT_PLACEHOLDER, String.valueOf(BATCH_SIZE)));
+					
+					log.info("Found {} Patients for initial load process", patientsId.size());
+					if (patientsId.isEmpty()) {
+						if (this.initialLoadTaskStatus != null) {
+							this.initialLoadTaskStatus.setRunning(false);
+							this.initialLoadTaskStatus.setEndDate(new Date());
+							this.initialLoadTaskStatus.setActive(Boolean.FALSE);
+							MpiUtils.updateInitialLoadTaskController(this.initialLoadTaskStatus);
+						}
+						continueProcessing = false;
+						log.info("No patients found for initial load process");
+					} else {
+						
+						//Create a task controller
+						if (this.initialLoadTaskStatus == null) {
+							this.createLoadTaskController(lastId);
+						}
+						
+						List<List<Integer>> batches = partitionList(patientsId, MPI_BATCH_SIZE);
+						
+						for (List<Integer> batch : batches) {
+							processBatch(batch);
+						}
+						
+						//after all save the controller
+						this.saveController(patientsId.get(patientsId.size() - 1), Boolean.TRUE);
+						executor.shutdown();
+						executor.awaitTermination(1, TimeUnit.HOURS);
 					}
-					continueProcessing = false;
-					log.info("No patients found for initial load process");
-				} else {
-					
-					//Create a task controller
-					this.initialLoadTaskController = this.createLoadTaskController(initialLoadTaskController, lastId);
-					List<List<Integer>> batches = partitionList(patientsId, MPI_BATCH_SIZE);
-					
-					for (List<Integer> batch : batches) {
-						processBatch(batch);
-					}
-					
-					//after all save the controller
-					this.saveController(patientsId.get(patientsId.size() - 1));
-					executor.shutdown();
-					executor.awaitTermination(1, TimeUnit.HOURS);
 				}
 			}
-		}
-		catch (Exception e) {
-			log.error("Execution shutdown interrupted", e);
-			Integer lastProcessedId = MpiUtils.getLastSubmittedPatientId() != null ? MpiUtils.getLastSubmittedPatientId()
-			        : 0;
-			this.saveController(lastProcessedId);
+			catch (Exception e) {
+				log.error("Execution shutdown interrupted", e);
+				Integer lastProcessedId = MpiUtils.getLastSubmittedPatientId() != null ? MpiUtils.getLastSubmittedPatientId()
+				        : 0;
+				this.saveController(lastProcessedId, Boolean.FALSE);
+				
+				throw new APIException("An error occurred processing patient batch ", e);
+			}
 			
-			throw new APIException("An error occurred processing patient batch ", e);
+			// Finalize process
+			logFinalizeStats();
 		}
-		
-		// Finalize process
-		logFinalizeStats();
 	}
 	
-	private void saveController(Integer lastProcessedPatientId) {
-		this.initialLoadTaskController.setPatientOffsetId(lastProcessedPatientId);
-		MpiUtils.updateInitialLoadTaskController(initialLoadTaskController);
+	private void saveController(Integer lastProcessedPatientId, Boolean isLocked) {
+		this.initialLoadTaskStatus.setPatientOffsetId(lastProcessedPatientId);
+		this.initialLoadTaskStatus.setLocked(isLocked);
+		MpiUtils.updateInitialLoadTaskController(initialLoadTaskStatus);
 	}
 	
-	private InitialLoadTaskController createLoadTaskController(InitialLoadTaskController initialLoadTaskController,
-	        Integer patientId) {
-		if (initialLoadTaskController == null) {
-			initialLoadTaskController = new InitialLoadTaskController();
-			initialLoadTaskController.setStartDate(new Date());
-			initialLoadTaskController.setEndDate(null);
-			initialLoadTaskController.setActive(Boolean.TRUE);
-			initialLoadTaskController.setRunning(Boolean.TRUE);
-			initialLoadTaskController.setPatientOffsetId(patientId);
-			MpiUtils.createInitialLoadTaskController(initialLoadTaskController);
-		}
+	private void createLoadTaskController(Integer patientId) {
 		
-		return initialLoadTaskController;
+		initialLoadTaskStatus = new InitialLoadTaskStatus();
+		initialLoadTaskStatus.setStartDate(new Date());
+		initialLoadTaskStatus.setEndDate(null);
+		initialLoadTaskStatus.setActive(Boolean.TRUE);
+		initialLoadTaskStatus.setRunning(Boolean.TRUE);
+		initialLoadTaskStatus.setPatientOffsetId(patientId);
+		initialLoadTaskStatus.setLocked(Boolean.TRUE);
+		MpiUtils.createInitialLoadTaskController(initialLoadTaskStatus);
 	}
 	
 	private void processBatch(List<Integer> patients) {

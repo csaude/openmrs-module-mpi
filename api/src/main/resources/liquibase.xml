@@ -34,6 +34,10 @@
             <column name="is_active" type="BOOLEAN">
                 <constraints nullable="false"/>
             </column>
+
+            <column name="is_locked" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
         </createTable>
 
     </changeSet>

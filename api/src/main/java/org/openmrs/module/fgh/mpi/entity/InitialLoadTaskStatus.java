@@ -2,7 +2,7 @@ package org.openmrs.module.fgh.mpi.entity;
 
 import java.util.Date;
 
-public class InitialLoadTaskController {
+public class InitialLoadTaskStatus {
 	
 	private Integer id;
 	
@@ -15,6 +15,8 @@ public class InitialLoadTaskController {
 	private Date endDate;
 	
 	private boolean isActive;
+	
+	private boolean isLocked;
 	
 	public Integer getId() {
 		return id;
@@ -62,5 +64,13 @@ public class InitialLoadTaskController {
 	
 	public void setActive(boolean active) {
 		isActive = active;
+	}
+	
+	public boolean isLocked() {
+		return isLocked;
+	}
+	
+	public void setLocked(boolean locked) {
+		isLocked = locked;
 	}
 }
