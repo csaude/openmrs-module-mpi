@@ -34,10 +34,15 @@ public class MpiIntegrationProcessor {
 	
 	public final static String ID_PLACEHOLDER = "{PATIENT_ID}";
 	
+	public final static String MAXIMUM_RESULT_PLACEHOLDER = "{MAXIMUM_RESULT}";
+	
 	public final static String PATIENT_QUERY = "SELECT voided FROM patient WHERE patient_id = " + ID_PLACEHOLDER;
 	
 	public final static String PERSON_QUERY = "SELECT gender, birthdate, dead, death_date, uuid, voided FROM person WHERE "
 	        + "person_id = " + ID_PLACEHOLDER;
+	
+	public static final String PATIENT_QUERY_BOUNDARIES = "SELECT patient_id FROM patient WHERE patient_id > "
+	        + ID_PLACEHOLDER + " AND voided = false LIMIT " + MAXIMUM_RESULT_PLACEHOLDER;
 	
 	@Autowired
 	private MpiHttpClient mpiHttpClient;

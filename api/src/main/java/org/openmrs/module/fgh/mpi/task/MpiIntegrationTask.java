@@ -2,7 +2,6 @@ package org.openmrs.module.fgh.mpi.task;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang3.StringUtils;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.debezium.entity.DatabaseEvent;
 import org.openmrs.module.debezium.entity.DatabaseOperation;
@@ -10,9 +9,10 @@ import org.openmrs.module.debezium.entity.DebeziumEventQueue;
 import org.openmrs.module.debezium.mysql.MySqlSnapshotMode;
 import org.openmrs.module.debezium.mysql.SnapshotMode;
 import org.openmrs.module.debezium.service.DebeziumEventQueueService;
+import org.openmrs.module.fgh.mpi.integ.MpiHttpClient;
 import org.openmrs.module.fgh.mpi.processor.BaseEventProcessor;
 import org.openmrs.module.fgh.mpi.processor.IncrementalEventProcessor;
-import org.openmrs.module.fgh.mpi.processor.SnapshotEventProcessor;
+import org.openmrs.module.fgh.mpi.processor.InitialLoadProcessor;
 import org.openmrs.module.fgh.mpi.utils.MpiConstants;
 import org.openmrs.scheduler.tasks.AbstractTask;
 import org.slf4j.Logger;
@@ -54,28 +54,28 @@ public class MpiIntegrationTask extends AbstractTask {
 		if (!isExecuting) {
 			
 			DebeziumEventQueueService eventQueueService = Context.getService(DebeziumEventQueueService.class);
-			
 			log.info("Executing Mpi Integration Task");
 			
 			if (getSnapshotMode() == MySqlSnapshotMode.INITIAL) {
-				String num = Context.getAdministrationService().getGlobalProperty(MpiConstants.GP_INITIAL_BATCH_SIZE);
-				int threadCount;
-				if (StringUtils.isNotBlank(num)) {
-					threadCount = Integer.valueOf(num);
-				} else {
-					threadCount = Runtime.getRuntime().availableProcessors();
-				}
+				log.info("Mpi set for initial load");
 				
-				eventProcessor = new SnapshotEventProcessor(threadCount);
+				MpiHttpClient mpiHttpClient = new MpiHttpClient();
+				InitialLoadProcessor initialLoadProcessor = new InitialLoadProcessor(mpiHttpClient);
+				initialLoadProcessor.runInitialLoad();
 			} else {
 				
 				boolean keepFetching = true;
 				eventProcessor = new IncrementalEventProcessor();
 				
+				log.info("Mpi set for incremental load");
 				while (keepFetching) {
 					Set<DebeziumEventQueue> eventQueueSet = eventQueueService.getApplicationEvents(APPLICATION_NAME);
 					eventQueueSet.forEach((eventQueue) -> {
+						log.debug("Running incremental load for event {}", eventQueue);
+						
 						eventProcessor.process(this.convertEventQueueToDatabaseEvent(eventQueue));
+						
+						log.debug("Finalized the incremental load for event");
 					});
 					eventQueueService.commitEventQueue(APPLICATION_NAME);
 					
