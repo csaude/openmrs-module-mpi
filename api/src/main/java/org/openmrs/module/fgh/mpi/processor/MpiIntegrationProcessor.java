@@ -41,7 +41,7 @@ public class MpiIntegrationProcessor {
 	public final static String PERSON_QUERY = "SELECT gender, birthdate, dead, death_date, uuid, voided FROM person WHERE "
 	        + "person_id = " + ID_PLACEHOLDER;
 	
-	public static final String PATIENT_QUERY_BOUNDARIES = "SELECT patient_id FROM patient WHERE patient_id > "
+	public static final String PATIENT_QUERY_BOUNDARIES = "SELECT patient_id FROM patient WHERE patient_id >= "
 	        + ID_PLACEHOLDER + " AND voided = false LIMIT " + MAXIMUM_RESULT_PLACEHOLDER;
 	
 	@Autowired

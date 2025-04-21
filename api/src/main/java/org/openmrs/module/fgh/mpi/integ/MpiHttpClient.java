@@ -151,7 +151,8 @@ public class MpiHttpClient {
 			if (!mpiContext.getTokenInfo().isValid(LocalDateTime.now())) {
 				//Implement a refresh token method
 				data = "grant_type=refresh_token&refresh_token=" + mpiContext.getTokenInfo().getRefreshToken() + "&"
-				        + "client_secret=" + mpiContext.getClientSecret() + "&" + "client_id=" + mpiContext.getClientId();
+				        + "client_secret=" + mpiContext.getClientSecret() + "&" + "client_id=" + mpiContext.getClientId()
+				        + "&" + "scope=*";
 				this.doAuthentication(data);
 			}
 		} else {
