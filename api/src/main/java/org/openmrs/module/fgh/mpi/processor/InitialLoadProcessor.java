@@ -108,11 +108,13 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 					            .replace(MpiIntegrationProcessor.MAXIMUM_RESULT_PLACEHOLDER, String.valueOf(BATCH_SIZE)));
 					
 					log.info("Found {} Patients for initial load process", patientsId.size());
-					if (patientsId.isEmpty()) {
+					if (patientsId.isEmpty()
+					        || (patientsId.size() == 1 && patientsId.get(0).equals(MpiUtils.getLastSubmittedPatientId()))) {
 						if (this.initialLoadTaskStatus != null) {
 							this.initialLoadTaskStatus.setRunning(false);
 							this.initialLoadTaskStatus.setEndDate(new Date());
 							this.initialLoadTaskStatus.setActive(Boolean.FALSE);
+							this.initialLoadTaskStatus.setLocked(Boolean.FALSE);
 							MpiUtils.updateInitialLoadTaskController(this.initialLoadTaskStatus);
 						}
 						continueProcessing = false;
@@ -130,12 +132,11 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 							processBatch(batch);
 						}
 						
-						//after all save the controller
 						this.saveController(patientsId.get(patientsId.size() - 1), Boolean.TRUE);
-						executor.shutdown();
-						executor.awaitTermination(1, TimeUnit.HOURS);
 					}
 				}
+				executor.shutdown();
+				executor.awaitTermination(1, TimeUnit.HOURS);
 			}
 			catch (Exception e) {
 				log.error("Execution shutdown interrupted", e);
