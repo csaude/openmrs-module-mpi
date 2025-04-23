@@ -235,17 +235,16 @@ public class MpiUtils {
 		return Paths.get(parent, additionalPaths);
 	}
 	
-	public static InitialLoadTaskStatus fetchInitialLoadTaskController() throws SQLException {
+	public static InitialLoadTaskStatus fetchInitialLoadTaskStatus() throws SQLException {
 		InitialLoadTaskStatus initialLoadTaskStatus = null;
 		try (Connection conn = getDataSource().getConnection();
 		        PreparedStatement stmt = conn.prepareStatement(
-		            "select * from mpi_initial_load_task_controller where is_running = true and is_active = true and end_date is null")) {
+		            "select * from mpi_initial_load_task_status where is_running = true and end_date is null")) {
 			
 			try (ResultSet rs = stmt.executeQuery()) {
 				while (rs.next()) {
 					initialLoadTaskStatus = new InitialLoadTaskStatus();
 					initialLoadTaskStatus.setId(rs.getInt("id"));
-					initialLoadTaskStatus.setActive(rs.getBoolean("is_active"));
 					initialLoadTaskStatus.setPatientOffsetId(rs.getInt("patient_offset_id"));
 					initialLoadTaskStatus.setStartDate(rs.getTimestamp("start_date"));
 					initialLoadTaskStatus.setEndDate(rs.getTimestamp("end_date"));
@@ -262,17 +261,16 @@ public class MpiUtils {
 		}
 	}
 	
-	public static void createInitialLoadTaskController(InitialLoadTaskStatus controller) {
-		String query = "INSERT INTO mpi_initial_load_task_controller (is_active, patient_offset_id, start_date, is_running, is_locked) "
-		        + "VALUES (?, ?, ?, ?, ?)";
+	public static void createInitialLoadTaskStatus(InitialLoadTaskStatus loadTaskStatus) {
+		String query = "INSERT INTO mpi_initial_load_task_status (patient_offset_id, start_date, is_running, is_locked) "
+		        + "VALUES (?, ?, ?, ?)";
 		
 		try (Connection conn = getDataSource().getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
 			
-			stmt.setBoolean(1, controller.isActive());
-			stmt.setInt(2, controller.getPatientOffsetId());
-			stmt.setTimestamp(3, new java.sql.Timestamp(controller.getStartDate().getTime()));
-			stmt.setBoolean(4, controller.isRunning());
-			stmt.setBoolean(5, controller.isLocked());
+			stmt.setInt(1, loadTaskStatus.getPatientOffsetId());
+			stmt.setTimestamp(2, new java.sql.Timestamp(loadTaskStatus.getStartDate().getTime()));
+			stmt.setBoolean(3, loadTaskStatus.isRunning());
+			stmt.setBoolean(4, loadTaskStatus.isLocked());
 			
 			stmt.executeUpdate();
 			
@@ -282,26 +280,24 @@ public class MpiUtils {
 		}
 	}
 	
-	public static void updateInitialLoadTaskController(InitialLoadTaskStatus controller) {
-		String query = "UPDATE mpi_initial_load_task_controller SET "
-		        + "is_active = ?, patient_offset_id = ?, start_date = ?, end_date = ?, is_running = ?, is_locked = ? "
-		        + " WHERE id = ?";
+	public static void updateInitialLoadTaskStatus(InitialLoadTaskStatus loadTaskStatus) {
+		String query = "UPDATE mpi_initial_load_task_status SET "
+		        + "patient_offset_id = ?, start_date = ?, end_date = ?, is_running = ?, is_locked = ? " + " WHERE id = ?";
 		
 		try (Connection conn = getDataSource().getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
 			
-			stmt.setBoolean(1, controller.isActive());
-			stmt.setInt(2, controller.getPatientOffsetId());
-			stmt.setTimestamp(3, new java.sql.Timestamp(controller.getStartDate().getTime()));
-			stmt.setTimestamp(4,
-			    controller.getEndDate() != null ? new java.sql.Timestamp(controller.getEndDate().getTime()) : null);
-			stmt.setBoolean(5, controller.isRunning());
-			stmt.setBoolean(6, controller.isLocked());
-			stmt.setInt(7, controller.getId());
+			stmt.setInt(1, loadTaskStatus.getPatientOffsetId());
+			stmt.setTimestamp(2, new java.sql.Timestamp(loadTaskStatus.getStartDate().getTime()));
+			stmt.setTimestamp(3,
+			    loadTaskStatus.getEndDate() != null ? new java.sql.Timestamp(loadTaskStatus.getEndDate().getTime()) : null);
+			stmt.setBoolean(4, loadTaskStatus.isRunning());
+			stmt.setBoolean(5, loadTaskStatus.isLocked());
+			stmt.setInt(6, loadTaskStatus.getId());
 			
 			int rowsUpdated = stmt.executeUpdate();
 			
 			if (rowsUpdated == 0) {
-				throw new DAOException("No InitialLoadTaskStatus record found with id " + controller.getId());
+				throw new DAOException("No InitialLoadTaskStatus record found with id " + loadTaskStatus.getId());
 			}
 			
 		}

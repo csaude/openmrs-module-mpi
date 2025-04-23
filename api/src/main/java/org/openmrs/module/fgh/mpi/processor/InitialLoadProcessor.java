@@ -3,8 +3,6 @@ package org.openmrs.module.fgh.mpi.processor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang.time.DurationFormatUtils;
 import org.openmrs.api.APIException;
-import org.openmrs.api.PatientService;
-import org.openmrs.api.context.Context;
 import org.openmrs.module.debezium.entity.DatabaseEvent;
 import org.openmrs.module.debezium.entity.DatabaseOperation;
 import org.openmrs.module.debezium.utils.Utils;
@@ -59,8 +57,6 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 	
 	private List<Integer> lastSubmittedPatientIds = new ArrayList<>();
 	
-	private final PatientService patientService = Context.getPatientService();
-	
 	private final MpiHttpClient mpiHttpClient;
 	
 	private final ObjectMapper objectMapper = new ObjectMapper();
@@ -74,7 +70,10 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 	
 	public void runInitialLoad() {
 		try {
-			initialLoadTaskStatus = MpiUtils.fetchInitialLoadTaskController();
+			this.initialLoadTaskStatus = MpiUtils.fetchInitialLoadTaskStatus();
+			if (this.initialLoadTaskStatus == null) {
+				this.initialLoadTaskStatus = this.createLoadTaskStatus(0);
+			}
 		}
 		catch (SQLException e) {
 			log.error("Error while fetching initial load task info", e);
@@ -98,8 +97,7 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 			
 			try {
 				while (continueProcessing) {
-					Integer lastId = this.initialLoadTaskStatus != null ? this.initialLoadTaskStatus.getPatientOffsetId()
-					        : 0;
+					Integer lastId = this.initialLoadTaskStatus.getPatientOffsetId();
 					Integer id = MpiUtils.getLastSubmittedPatientId() != null ? MpiUtils.getLastSubmittedPatientId()
 					        : lastId;
 					
@@ -108,23 +106,18 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 					            .replace(MpiIntegrationProcessor.MAXIMUM_RESULT_PLACEHOLDER, String.valueOf(BATCH_SIZE)));
 					
 					log.info("Found {} Patients for initial load process", patientsId.size());
-					if (patientsId.isEmpty()
-					        || (patientsId.size() == 1 && patientsId.get(0).equals(MpiUtils.getLastSubmittedPatientId()))) {
+					if ((patientsId == null || patientsId.isEmpty())
+					        || (patientsId.size() == 1 && (MpiUtils.getLastSubmittedPatientId() != null
+					                && patientsId.get(0).equals(MpiUtils.getLastSubmittedPatientId())))) {
 						if (this.initialLoadTaskStatus != null) {
 							this.initialLoadTaskStatus.setRunning(false);
 							this.initialLoadTaskStatus.setEndDate(new Date());
-							this.initialLoadTaskStatus.setActive(Boolean.FALSE);
 							this.initialLoadTaskStatus.setLocked(Boolean.FALSE);
-							MpiUtils.updateInitialLoadTaskController(this.initialLoadTaskStatus);
+							MpiUtils.updateInitialLoadTaskStatus(this.initialLoadTaskStatus);
 						}
 						continueProcessing = false;
 						log.info("No patients found for initial load process");
 					} else {
-						
-						//Create a task controller
-						if (this.initialLoadTaskStatus == null) {
-							this.createLoadTaskController(lastId);
-						}
 						
 						List<List<Integer>> batches = partitionList(patientsId, MPI_BATCH_SIZE);
 						
@@ -132,7 +125,7 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 							processBatch(batch);
 						}
 						
-						this.saveController(patientsId.get(patientsId.size() - 1), Boolean.TRUE);
+						this.saveInitialLoadTaskStatus(patientsId.get(patientsId.size() - 1), Boolean.TRUE);
 					}
 				}
 				executor.shutdown();
@@ -142,7 +135,7 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 				log.error("Execution shutdown interrupted", e);
 				Integer lastProcessedId = MpiUtils.getLastSubmittedPatientId() != null ? MpiUtils.getLastSubmittedPatientId()
 				        : 0;
-				this.saveController(lastProcessedId, Boolean.FALSE);
+				this.saveInitialLoadTaskStatus(lastProcessedId, Boolean.FALSE);
 				
 				throw new APIException("An error occurred processing patient batch ", e);
 			}
@@ -152,22 +145,22 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 		}
 	}
 	
-	private void saveController(Integer lastProcessedPatientId, Boolean isLocked) {
+	private void saveInitialLoadTaskStatus(Integer lastProcessedPatientId, Boolean isLocked) {
 		this.initialLoadTaskStatus.setPatientOffsetId(lastProcessedPatientId);
 		this.initialLoadTaskStatus.setLocked(isLocked);
-		MpiUtils.updateInitialLoadTaskController(initialLoadTaskStatus);
+		MpiUtils.updateInitialLoadTaskStatus(initialLoadTaskStatus);
 	}
 	
-	private void createLoadTaskController(Integer patientId) {
+	private InitialLoadTaskStatus createLoadTaskStatus(Integer patientId) {
 		
 		initialLoadTaskStatus = new InitialLoadTaskStatus();
 		initialLoadTaskStatus.setStartDate(new Date());
 		initialLoadTaskStatus.setEndDate(null);
-		initialLoadTaskStatus.setActive(Boolean.TRUE);
 		initialLoadTaskStatus.setRunning(Boolean.TRUE);
 		initialLoadTaskStatus.setPatientOffsetId(patientId);
 		initialLoadTaskStatus.setLocked(Boolean.TRUE);
-		MpiUtils.createInitialLoadTaskController(initialLoadTaskStatus);
+		MpiUtils.createInitialLoadTaskStatus(initialLoadTaskStatus);
+		return initialLoadTaskStatus;
 	}
 	
 	private void processBatch(List<Integer> patients) {
@@ -318,14 +311,14 @@ public class InitialLoadProcessor extends BaseEventProcessor {
 	
 	private void logFinalizeStats() {
 		long duration = System.currentTimeMillis() - start;
-		log.info("Patients submitted: " + successCount.get());
-		log.info("Duration: " + DurationFormatUtils.formatDuration(duration, "HH:mm:ss", true));
+		log.info("Patients submitted: {}", successCount.get());
+		log.info("Duration: {}", DurationFormatUtils.formatDuration(duration, "HH:mm:ss", true));
 		log.info("============================= Statistics =============================");
-		log.info("Patients submitted: " + successCount.get());
-		log.info("Started at        : " + new Date(start));
-		log.info("Ended at          : " + new Date());
-		log.info("Duration          : "
-		        + org.apache.commons.lang3.time.DurationFormatUtils.formatDuration(duration, "HH:mm:ss", true));
+		log.info("Patients submitted: {}", successCount.get());
+		log.info("Started at        : {}", new Date(start));
+		log.info("Ended at          : {}", new Date());
+		log.info("Duration          : {}",
+		    org.apache.commons.lang3.time.DurationFormatUtils.formatDuration(duration, "HH:mm:ss", true));
 		log.info("======================================================================");
 		log.info("Switching to incremental loading");
 		

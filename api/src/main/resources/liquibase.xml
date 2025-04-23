@@ -8,12 +8,12 @@
     <changeSet author="dchirinda" id="20250408-1100">
         <preConditions onFail="MARK_RAN">
             <not>
-                <tableExists tableName="mpi_initial_load_task_controller"/>
+                <tableExists tableName="mpi_initial_load_task_status"/>
             </not>
         </preConditions>
-        <comment>Adding mpi_initial_load_task_controller table</comment>
+        <comment>Adding mpi_initial_load_task_status table</comment>
 
-        <createTable tableName="mpi_initial_load_task_controller">
+        <createTable tableName="mpi_initial_load_task_status">
             <column autoIncrement="true" name="id" type="BIGINT">
                 <constraints nullable="false" primaryKey="true"/>
             </column>
@@ -29,10 +29,6 @@
             </column>
 
             <column name="end_date" type="DATETIME(3)">
-            </column>
-
-            <column name="is_active" type="BOOLEAN">
-                <constraints nullable="false"/>
             </column>
 
             <column name="is_locked" type="BOOLEAN">

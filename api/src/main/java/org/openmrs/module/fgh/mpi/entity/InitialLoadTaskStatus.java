@@ -6,7 +6,7 @@ public class InitialLoadTaskStatus {
 	
 	private Integer id;
 	
-	private boolean isRunning;
+	private boolean running;
 	
 	private Integer patientOffsetId;
 	
@@ -14,9 +14,7 @@ public class InitialLoadTaskStatus {
 	
 	private Date endDate;
 	
-	private boolean isActive;
-	
-	private boolean isLocked;
+	private boolean locked;
 	
 	public Integer getId() {
 		return id;
@@ -27,11 +25,11 @@ public class InitialLoadTaskStatus {
 	}
 	
 	public boolean isRunning() {
-		return isRunning;
+		return running;
 	}
 	
 	public void setRunning(boolean running) {
-		isRunning = running;
+		this.running = running;
 	}
 	
 	public Integer getPatientOffsetId() {
@@ -58,19 +56,11 @@ public class InitialLoadTaskStatus {
 		this.endDate = endDate;
 	}
 	
-	public boolean isActive() {
-		return isActive;
-	}
-	
-	public void setActive(boolean active) {
-		isActive = active;
-	}
-	
 	public boolean isLocked() {
-		return isLocked;
+		return locked;
 	}
 	
 	public void setLocked(boolean locked) {
-		isLocked = locked;
+		this.locked = locked;
 	}
 }
