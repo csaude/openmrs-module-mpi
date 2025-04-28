@@ -29,6 +29,7 @@ import org.openmrs.EncounterType;
 import org.openmrs.api.APIException;
 import org.openmrs.api.context.Context;
 import org.openmrs.api.db.DAOException;
+import org.openmrs.module.fgh.mpi.entity.InitialLoadTaskStatus;
 import org.openmrs.module.fgh.mpi.integ.MpiContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -129,7 +130,7 @@ public class MpiUtils {
 	
 	/**
 	 * Executes the specified query
-	 * 
+	 *
 	 * @param query the query to execute
 	 * @return results
 	 * @throws SQLException
@@ -156,6 +157,24 @@ public class MpiUtils {
 		}
 		
 		return results;
+	}
+	
+	public static List<Integer> executePatientQuery(String query, Object... params) {
+		List<Integer> patientsId = new ArrayList<>();
+		
+		try (Connection conn = getDataSource().getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
+			
+			try (ResultSet rs = stmt.executeQuery()) {
+				while (rs.next()) {
+					patientsId.add(rs.getInt("patient_id"));
+				}
+			}
+			return patientsId;
+			
+		}
+		catch (SQLException e) {
+			throw new DAOException("Error querying patients", e);
+		}
 	}
 	
 	/**
@@ -192,7 +211,7 @@ public class MpiUtils {
 	
 	/**
 	 * Gets the DataSource object
-	 * 
+	 *
 	 * @return javax.sql.DataSource object
 	 */
 	private static DataSource getDataSource() {
@@ -214,6 +233,77 @@ public class MpiUtils {
 	 */
 	public static Path createPath(String parent, String... additionalPaths) {
 		return Paths.get(parent, additionalPaths);
+	}
+	
+	public static InitialLoadTaskStatus fetchInitialLoadTaskStatus() throws SQLException {
+		InitialLoadTaskStatus initialLoadTaskStatus = null;
+		try (Connection conn = getDataSource().getConnection();
+		        PreparedStatement stmt = conn.prepareStatement(
+		            "select * from mpi_initial_load_task_status where is_running = true and end_date is null")) {
+			
+			try (ResultSet rs = stmt.executeQuery()) {
+				while (rs.next()) {
+					initialLoadTaskStatus = new InitialLoadTaskStatus();
+					initialLoadTaskStatus.setId(rs.getInt("id"));
+					initialLoadTaskStatus.setPatientOffsetId(rs.getInt("patient_offset_id"));
+					initialLoadTaskStatus.setStartDate(rs.getTimestamp("start_date"));
+					initialLoadTaskStatus.setEndDate(rs.getTimestamp("end_date"));
+					initialLoadTaskStatus.setRunning(rs.getBoolean("is_running"));
+					initialLoadTaskStatus.setLocked(rs.getBoolean("is_locked"));
+				}
+				
+				return initialLoadTaskStatus;
+				
+			}
+		}
+		catch (SQLException e) {
+			throw new DAOException("Error querying InitialLoadTaskStatus", e);
+		}
+	}
+	
+	public static void createInitialLoadTaskStatus(InitialLoadTaskStatus loadTaskStatus) {
+		String query = "INSERT INTO mpi_initial_load_task_status (patient_offset_id, start_date, is_running, is_locked) "
+		        + "VALUES (?, ?, ?, ?)";
+		
+		try (Connection conn = getDataSource().getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
+			
+			stmt.setInt(1, loadTaskStatus.getPatientOffsetId());
+			stmt.setTimestamp(2, new java.sql.Timestamp(loadTaskStatus.getStartDate().getTime()));
+			stmt.setBoolean(3, loadTaskStatus.isRunning());
+			stmt.setBoolean(4, loadTaskStatus.isLocked());
+			
+			stmt.executeUpdate();
+			
+		}
+		catch (SQLException e) {
+			throw new DAOException("Error creating InitialLoadTaskStatus", e);
+		}
+	}
+	
+	public static void updateInitialLoadTaskStatus(InitialLoadTaskStatus loadTaskStatus) {
+		String query = "UPDATE mpi_initial_load_task_status SET "
+		        + "patient_offset_id = ?, start_date = ?, end_date = ?, is_running = ?, is_locked = ? " + " WHERE id = ?";
+		
+		try (Connection conn = getDataSource().getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
+			
+			stmt.setInt(1, loadTaskStatus.getPatientOffsetId());
+			stmt.setTimestamp(2, new java.sql.Timestamp(loadTaskStatus.getStartDate().getTime()));
+			stmt.setTimestamp(3,
+			    loadTaskStatus.getEndDate() != null ? new java.sql.Timestamp(loadTaskStatus.getEndDate().getTime()) : null);
+			stmt.setBoolean(4, loadTaskStatus.isRunning());
+			stmt.setBoolean(5, loadTaskStatus.isLocked());
+			stmt.setInt(6, loadTaskStatus.getId());
+			
+			int rowsUpdated = stmt.executeUpdate();
+			
+			if (rowsUpdated == 0) {
+				throw new DAOException("No InitialLoadTaskStatus record found with id " + loadTaskStatus.getId());
+			}
+			
+		}
+		catch (SQLException e) {
+			throw new DAOException("Error updating InitialLoadTaskStatus", e);
+		}
 	}
 	
 }

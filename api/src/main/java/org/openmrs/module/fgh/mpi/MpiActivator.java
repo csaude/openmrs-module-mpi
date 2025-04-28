@@ -24,6 +24,7 @@ import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.openmrs.api.APIException;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.BaseModuleActivator;
+import org.openmrs.module.fgh.mpi.entity.InitialLoadTaskStatus;
 import org.openmrs.module.fgh.mpi.task.MpiIntegrationTask;
 import org.openmrs.module.fgh.mpi.utils.MpiUtils;
 import org.openmrs.scheduler.SchedulerException;
@@ -33,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.sql.SQLException;
 import java.util.Date;
 
 import static org.openmrs.util.OpenmrsUtil.getApplicationDataDirectory;
@@ -135,11 +137,26 @@ public class MpiActivator extends BaseModuleActivator {
 			} else {
 				log.info("Task already registered: {}", TASK_NAME);
 			}
+			this.validateTask();
 		}
 		catch (SchedulerException e) {
 			log.error("Failed to register scheduled task", e);
 		}
 		
+	}
+	
+	private void validateTask() {
+		try {
+			InitialLoadTaskStatus loadTaskStatus = MpiUtils.fetchInitialLoadTaskStatus();
+			if (loadTaskStatus != null && loadTaskStatus.isRunning() && loadTaskStatus.isLocked()) {
+				log.info("Task {} has been locked. Proceeding with unlock process", TASK_NAME);
+				loadTaskStatus.setLocked(Boolean.FALSE);
+				MpiUtils.updateInitialLoadTaskStatus(loadTaskStatus);
+			}
+		}
+		catch (SQLException e) {
+			throw new RuntimeException("An error occurred while trying to update the initial load task status", e);
+		}
 	}
 	
 }
