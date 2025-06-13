@@ -7,7 +7,7 @@
 
     <groupId>org.openmrs.module.fgh</groupId>
     <artifactId>mpi</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>2.0.0</version>
     <packaging>pom</packaging>
     <name>MPI Module</name>
     <description>
@@ -44,7 +44,7 @@
         <javaCompilerVersion>11</javaCompilerVersion>
         <openmrsPlatformVersion>2.6.0</openmrsPlatformVersion>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <debeziumVersion>1.0.1-SNAPSHOT</debeziumVersion>
+        <debeziumVersion>2.0.0</debeziumVersion>
         <httpclientVersion>4.5.13</httpclientVersion>
     </properties>
 
